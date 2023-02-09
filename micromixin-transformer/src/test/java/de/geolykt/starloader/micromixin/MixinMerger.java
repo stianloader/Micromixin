@@ -16,16 +16,11 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.TraceClassVisitor;
-import org.spongepowered.asm.launch.MixinBootstrap;
-import org.spongepowered.asm.mixin.MixinEnvironment;
-import org.spongepowered.asm.mixin.Mixins;
-import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
 import de.geolykt.micromixin.BytecodeProvider;
 import de.geolykt.micromixin.MixinConfig;
 import de.geolykt.micromixin.MixinConfig.InvalidMixinConfigException;
 import de.geolykt.micromixin.MixinTransformer;
-import de.geolykt.starloader.micromixin.mixin.MixinServiceImpl;
 
 public class MixinMerger {
 
@@ -65,10 +60,8 @@ public class MixinMerger {
     }
 
     @SuppressWarnings("null")
-    public static void tryTransform(IMixinTransformer transformer, MixinTransformer<Void> micromixinTransformer, String name) {
+    public static void tryTransform(MixinTransformer<Void> micromixinTransformer, String name) {
         byte[] raw = readClass(name);
-        byte[] official = transformer.transformClass(MixinEnvironment.getDefaultEnvironment(), name, raw);
-//        byte[] official = raw;
         byte[] reimpl;
         try {
             ClassNode cnmm = new ClassNode();
@@ -85,15 +78,10 @@ public class MixinMerger {
         } catch (Exception e1) {
             try {
                 Files.createDirectories(Paths.get("generated", "raw", name.replace('.', '/')).getParent());
-                Files.createDirectories(Paths.get("generated", "official", name.replace('.', '/')).getParent());
                 Files.createDirectories(Paths.get("generated", "raw-asm", name.replace('.', '/')).getParent());
-                Files.createDirectories(Paths.get("generated", "official-asm", name.replace('.', '/')).getParent());
                 Files.write(Paths.get("generated", "raw", name.replace('.', '/') + ".class"), raw);
-                Files.write(Paths.get("generated", "official", name.replace('.', '/') + ".class"), official);
                 TraceClassVisitor rawVisit = new TraceClassVisitor(new PrintWriter(Files.newOutputStream(Paths.get("generated", "raw-asm", name.replace('.', '/') + ".dis"))));
-                TraceClassVisitor officialVisit = new TraceClassVisitor(new PrintWriter(Files.newOutputStream(Paths.get("generated", "official-asm", name.replace('.', '/') + ".dis"))));
                 new ClassReader(raw).accept(rawVisit, 0);
-                new ClassReader(official).accept(officialVisit, 0);
             } catch (IOException e) {
                 IllegalStateException t = new IllegalStateException(e);
                 t.addSuppressed(e1);
@@ -103,19 +91,14 @@ public class MixinMerger {
         }
         try {
             Files.createDirectories(Paths.get("generated", "raw", name.replace('.', '/')).getParent());
-            Files.createDirectories(Paths.get("generated", "official", name.replace('.', '/')).getParent());
             Files.createDirectories(Paths.get("generated", "reimpl", name.replace('.', '/')).getParent());
             Files.createDirectories(Paths.get("generated", "raw-asm", name.replace('.', '/')).getParent());
-            Files.createDirectories(Paths.get("generated", "official-asm", name.replace('.', '/')).getParent());
             Files.createDirectories(Paths.get("generated", "reimpl-asm", name.replace('.', '/')).getParent());
             Files.write(Paths.get("generated", "raw", name.replace('.', '/') + ".class"), raw);
-            Files.write(Paths.get("generated", "official", name.replace('.', '/') + ".class"), official);
             Files.write(Paths.get("generated", "reimpl", name.replace('.', '/') + ".class"), reimpl);
             TraceClassVisitor rawVisit = new TraceClassVisitor(new PrintWriter(Files.newOutputStream(Paths.get("generated", "raw-asm", name.replace('.', '/') + ".dis"))));
-            TraceClassVisitor officialVisit = new TraceClassVisitor(new PrintWriter(Files.newOutputStream(Paths.get("generated", "official-asm", name.replace('.', '/') + ".dis"))));
             TraceClassVisitor reimplVsisit = new TraceClassVisitor(new PrintWriter(Files.newOutputStream(Paths.get("generated", "reimpl-asm", name.replace('.', '/') + ".dis"))));
             new ClassReader(raw).accept(rawVisit, 0);
-            new ClassReader(official).accept(officialVisit, 0);
             new ClassReader(reimpl).accept(reimplVsisit, 0);
         } catch (IOException e) {
             e.printStackTrace();
@@ -123,7 +106,6 @@ public class MixinMerger {
     }
 
     public static void main(String[] args) {
-        MixinBootstrap.init();
         MixinTransformer<Void> micromixinTransformer = new MixinTransformer<>(new BytecodeProvider<Void>() {
             @SuppressWarnings("null")
             @Override
@@ -141,19 +123,17 @@ public class MixinMerger {
                 }
             }
         });
-        Mixins.addConfiguration("j8mixinconfig.json");
         try {
             micromixinTransformer.addMixin(null, MixinConfig.fromJson(new JSONObject(new String(readAllBytes(MixinMerger.class.getClassLoader().getResourceAsStream("j8mixinconfig.json"))))));
         } catch (JSONException | InvalidMixinConfigException e) {
             e.printStackTrace();
         }
 
-        IMixinTransformer transformer = MixinServiceImpl.factory.createTransformer();
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.InjectTarget");
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.OverwriteTarget");
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.FieldInjectTarget");
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.erronous.TooManyAtReturn");
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.selector.SelectorTestA");
-        tryTransform(transformer, micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.selector.NumberSelectorTest");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.InjectTarget");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.OverwriteTarget");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.FieldInjectTarget");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.erronous.TooManyAtReturn");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.selector.SelectorTestA");
+        tryTransform(micromixinTransformer, "de.geolykt.starloader.micromixin.test.j8.selector.NumberSelectorTest");
     }
 }
