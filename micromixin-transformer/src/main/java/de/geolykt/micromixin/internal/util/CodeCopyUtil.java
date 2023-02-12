@@ -46,7 +46,6 @@ public class CodeCopyUtil {
         return desc.replace("L" + a.name + ";", "L" + b.name + ";");
     }
 
-    @NotNull
     public static void copyTo(@NotNull MethodNode source, @NotNull MixinStub sourceStub, @NotNull MethodNode copyTarget,
             @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper) {
         AbstractInsnNode copySourceStart = source.instructions.getFirst();

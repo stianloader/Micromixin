@@ -36,6 +36,11 @@ import de.geolykt.micromixin.internal.util.Remapper;
 public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
 
     @NotNull
+    private static final String CALLBACK_INFO_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
+    @NotNull
+    private static final String CALLBACK_INFO_RETURNABLE_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
+
+    @NotNull
     public final Collection<MixinAtAnnotation> at;
     @NotNull
     public final Collection<MixinTargetSelector> selectors;
@@ -165,34 +170,102 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
             System.err.println("[WARNING:MM/MIA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
         }
         // IMPLEMENT the hell that is known as local capture
+        // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
             LabelNode label = entry.getKey();
             MethodNode method = entry.getValue();
-            if ((method.access & Opcodes.ACC_STATIC) != 0) {
-                InsnList injectedInsns = new InsnList();
-                injectedInsns.add(new TypeInsnNode(Opcodes.NEW, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo"));
-                injectedInsns.add(new InsnNode(this.cancellable ? Opcodes.DUP2 : Opcodes.DUP));
-                injectedInsns.add(new LdcInsnNode(method.name));
-                injectedInsns.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
-                injectedInsns.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "<init>", "(Ljava/lang/String;Z)V"));
-                injectedInsns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
+            int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
+            InsnList injected = new InsnList();
+            if (returnType != 'V') {
+                int returnOpcode = AnnotationUtil.getReturnOpcode(returnType);
+                AbstractInsnNode nextInsn = label.getNext();
+                while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
+                    nextInsn = nextInsn.getNext();
+                }
+                if (nextInsn.getOpcode() == returnOpcode) {
+                    injected.add(new InsnNode(Opcodes.ACONST_NULL));
+                } else {
+                    injected.add(new InsnNode(Opcodes.DUP));
+                }
+                // Now RET (or RET, RET - but the first RET is used later and thus discarded for our purposes)
+                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
+                // Now RET, CIR
+                injected.add(new InsnNode(Opcodes.DUP2));
+                // Now RET, CIR, RET, CIR
+                injected.add(new InsnNode(Opcodes.SWAP));
+                // Now RET, CIR, CIR, RET
+                injected.add(new LdcInsnNode(method.name));
+                injected.add(new InsnNode(Opcodes.SWAP));
+                // Now RET, CIR, CIR, NAME, RET
+                injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
+                injected.add(new InsnNode(Opcodes.SWAP));
+                // Now RET, CIR, CIR, NAME, CANCELLABLE, RET
+                String ctorDesc;
+                if (returnOpcode == Opcodes.ARETURN) {
+                    ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
+                } else {
+                    ctorDesc = "(Ljava/lang/String;Z" + returnType + ")V";
+                }
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
+                // Now RET, CIR
+                injected.add(new InsnNode(Opcodes.DUP));
+                // Now RET, CIR, CIR
+                if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                    injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
+                } else {
+                    injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    injected.add(new InsnNode(Opcodes.SWAP));
+                    // Now RET, CIR, THIS, CIR
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
+                }
+                // Now RET, CIR
+                if (cancellable) {
+                    injected.add(new InsnNode(Opcodes.DUP));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "isCancelled", "()Z"));
+                    // Now RET, CIR, BOOL
+                    LabelNode skipReturn = new LabelNode();
+                    injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
+                    // Now RET, CIR
+                    if (returnOpcode == Opcodes.ARETURN) {
+                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue", "()Ljava/lang/Object;"));
+                        injected.add(new TypeInsnNode(Opcodes.CHECKCAST, method.desc.substring(method.desc.lastIndexOf(')') + 1))); // TODO Is that the proper cast syntax?
+                    } else {
+                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
+                    }
+                    // Now RET, VAL
+                    injected.add(new InsnNode(returnOpcode));
+                    injected.add(skipReturn);
+                    // If it did jump (and thus didn't return) it is RET, CIR
+                }
+                // (Both paths have RET, CIR on the stack)
+                injected.add(new InsnNode(Opcodes.POP2)); // Perhaps with less lazy engineering one could avoid having this pop, but at the moment it does just as well
+                // Now nothing (or RET, but that RET is used later)
+            } else if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_TYPE));
+                injected.add(new InsnNode(Opcodes.DUP));
+                if (cancellable) {
+                    injected.add(new InsnNode(Opcodes.DUP));
+                }
+                injected.add(new LdcInsnNode(method.name));
+                injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
+                injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 if (this.cancellable) {
                     // TODO What happens if two injectors have the same entrypoint? Is mixin smart or not so smart here?
-                    injectedInsns.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
                     LabelNode skipReturn = new LabelNode();
-                    injectedInsns.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
-                    injectedInsns.add(new InsnNode(Opcodes.RETURN));
-                    injectedInsns.add(skipReturn);
+                    injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
+                    injected.add(new InsnNode(Opcodes.RETURN));
+                    injected.add(skipReturn);
                 }
-                method.instructions.insert(label, injectedInsns); // Not insertBefore due to jump instructions and stuff
             } else {
                 int idx = getCallbackInfoIndex(method, cancellable);
-                InsnList injected = new InsnList();
+                injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 if (cancellable) {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
                     LabelNode skipReturn = new LabelNode();
                     injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
                     injected.add(new InsnNode(Opcodes.RETURN));
@@ -200,6 +273,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 }
                 injected.add(label);
             }
+            method.instructions.insert(label, injected); // Not insertBefore due to jump instructions and stuff
         }
     }
 
@@ -215,7 +289,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 return -1;
             }
             TypeInsnNode typeInsn = (TypeInsnNode) insn;
-            if (!typeInsn.desc.equals("org/spongepowered/asm/mixin/injection/callback/CallbackInfo")
+            if (!typeInsn.desc.equals(CALLBACK_INFO_TYPE)
                     || (insn = insn.getNext()).getOpcode() != Opcodes.DUP
                     || (insn = insn.getNext()).getOpcode() != Opcodes.LDC
                     || ((LdcInsnNode) insn).cst.equals(method.name)) {
@@ -293,11 +367,11 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
         }
         int index = scanNextFreeLVTIndex(method);
         InsnList injected = new InsnList();
-        injected.add(new TypeInsnNode(Opcodes.NEW, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo"));
+        injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_TYPE));
         injected.add(new InsnNode(Opcodes.DUP));
         injected.add(new LdcInsnNode(method.name));
         injected.add(new InsnNode(cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
-        injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "org/spongepowered/asm/mixin/injection/callback/CallbackInfo", "<init>", "(Ljava/lang/String;Z)V"));
+        injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
         injected.add(new VarInsnNode(Opcodes.ASTORE, index));
         method.instructions.insert(injected);
         return index;
@@ -305,7 +379,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
 
     @Override
     public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            de.geolykt.micromixin.internal.util.@NotNull Remapper remapper,
+            @NotNull Remapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         // NOP
     }

@@ -13,6 +13,7 @@ import org.objectweb.asm.tree.FieldNode;
 import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
+import de.geolykt.micromixin.internal.annotation.VirtualFieldOverlayAnnotation;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinFieldStub implements ClassMemberStub {
@@ -45,6 +46,9 @@ public class MixinFieldStub implements ClassMemberStub {
                     }
                 }
             }
+        }
+        if (annotations.isEmpty()) {
+            annotations.add(new VirtualFieldOverlayAnnotation());
         }
         // TODO Implicit field overwrite/overlay!
         return new MixinFieldStub(owner, field, Collections.unmodifiableCollection(annotations));

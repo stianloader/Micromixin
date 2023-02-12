@@ -1,6 +1,7 @@
 package de.geolykt.micromixin.internal.annotation;
 
 import org.jetbrains.annotations.NotNull;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -54,5 +55,29 @@ class AnnotationUtil {
             }
         }
         return false;
+    }
+
+    static int getReturnOpcode(int descReturnType) {
+        switch (descReturnType) {
+        case 'V': // void
+            return Opcodes.RETURN;
+        case '[': // array
+        case 'L': // object
+            return Opcodes.ARETURN;
+        case 'I': // int
+        case 'S': // short
+        case 'C': // char
+        case 'Z': // boolean
+        case 'B': // byte
+            return Opcodes.IRETURN;
+        case 'J': // long
+            return Opcodes.LRETURN;
+        case 'F': // float
+            return Opcodes.FRETURN;
+        case 'D': // double
+            return Opcodes.DRETURN;
+        default:
+            throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
+        }
     }
 }

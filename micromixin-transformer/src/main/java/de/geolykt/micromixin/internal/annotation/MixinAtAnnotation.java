@@ -90,6 +90,7 @@ public class MixinAtAnnotation {
 
     @NotNull
     public Collection<LabelNode> getLabels(@NotNull MethodNode method) {
+        // IMPLEMENT Hide mixin injector calls. The main part would be done through annotations (see the comment on CallbackInfo-chaining in MixinInjectAnnotation)
         switch (this.value) {
         case "RETURN": { // BeforeReturn
             List<LabelNode> returns = new ArrayList<>();
