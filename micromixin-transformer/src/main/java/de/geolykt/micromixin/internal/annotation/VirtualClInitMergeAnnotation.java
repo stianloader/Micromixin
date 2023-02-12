@@ -5,6 +5,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import de.geolykt.micromixin.internal.HandlerContextHelper;
@@ -37,14 +38,24 @@ public class VirtualClInitMergeAnnotation implements MixinAnnotation<MixinMethod
             target = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
             target.instructions.add(new InsnNode(Opcodes.RETURN));
         }
-        AbstractInsnNode last = target.instructions.getLast();
-        while (last.getOpcode() == -1) {
-            last = last.getPrevious();
+        AbstractInsnNode nextOutInsn = target.instructions.getLast();
+        while (nextOutInsn.getOpcode() == -1) {
+            nextOutInsn = nextOutInsn.getPrevious();
         }
-        if (last.getOpcode() != Opcodes.RETURN) {
+        if (nextOutInsn.getOpcode() != Opcodes.RETURN) {
             throw new IllegalStateException("Invalid clinit block: " + to.name + "." + target.name + target.desc + ": Last instruction should be a RETURN opcode.");
         }
-        CodeCopyUtil.copyTo(this.src, sourceStub, target, last, to, remapper);
+        AbstractInsnNode previousOutInsn = nextOutInsn.getPrevious();
+        if (previousOutInsn == null) {
+            previousOutInsn = new LabelNode();
+            target.instructions.insertBefore(nextOutInsn, previousOutInsn);
+        }
+        AbstractInsnNode startInInsn = src.instructions.getFirst();
+        AbstractInsnNode endInInsn = src.instructions.getLast();
+        if (startInInsn == null || endInInsn == null) {
+            throw new IllegalStateException("abstract clinit method: " + source.owner.name + "." + source.getName() + source.getDesc());
+        }
+        CodeCopyUtil.copyTo(src, startInInsn, endInInsn, sourceStub, target, previousOutInsn, to, remapper, true);
     }
 
     @Override

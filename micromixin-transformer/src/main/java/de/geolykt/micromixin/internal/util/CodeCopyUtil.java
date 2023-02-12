@@ -68,7 +68,7 @@ public class CodeCopyUtil {
                 && copyTargetStart.getOpcode() != Opcodes.RETURN) {
             throw new IllegalStateException("Invalid copy target: " + targetOwner.name + "." + copyTarget.name + copyTarget.desc + ": Last instruction should be a XRETURN opcode.");
         }
-        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, endInInsn, targetOwner, remapper, true);
+        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, copyTargetStart, targetOwner, remapper, true);
     }
 
     @NotNull

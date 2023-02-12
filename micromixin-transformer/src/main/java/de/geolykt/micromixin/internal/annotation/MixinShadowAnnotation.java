@@ -61,10 +61,11 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
         if (name.startsWith(this.prefix)) {
             name = name.substring(this.prefix.length());
         }
-        // TODO do we need to resolve methods of superclasses/super-interfaces?
+        // TODO do we need to resolve methods of superclasses/super-interfaces? Also, in which orders are aliases selected?
         for (MethodNode tmethod : target.methods) {
             if (tmethod.name.equals(name) && tmethod.desc.equals(desc)) {
                 out.remapMethod(source.owner.name, source.method.desc, source.method.name, name);
+                return;
             }
         }
         for (String alias : this.aliases) {
@@ -75,6 +76,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
             for (MethodNode tmethod : target.methods) {
                 if (tmethod.name.equals(alias) && tmethod.desc.equals(desc)) {
                     out.remapMethod(source.owner.name, source.method.desc, source.method.name, alias);
+                    return;
                 }
             }
         }
@@ -87,10 +89,11 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
         if (name.startsWith(this.prefix)) {
             name = name.substring(this.prefix.length());
         }
-        // TODO do we need to resolve fields of superclasses?
+        // TODO do we need to resolve fields of superclasses? Also, in which orders are aliases selected?
         for (FieldNode tfield : target.fields) {
             if (tfield.name.equals(name) && tfield.desc.equals(desc)) {
                 out.remapField(source.owner.name, source.field.desc, source.field.name, name);
+                return;
             }
         }
         for (String alias : this.aliases) {
@@ -101,10 +104,11 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
             for (FieldNode tfield : target.fields) {
                 if (tfield.name.equals(alias) && tfield.desc.equals(desc)) {
                     out.remapField(source.owner.name, source.field.desc, source.field.name, alias);
+                    return;
                 }
             }
         }
-        throw new IllegalStateException("Unresolved @Shadow-annotated field: " + source.owner.name + "." + source.field.name + " " + source.field.desc);
+        throw new IllegalStateException("Unresolved @Shadow-annotated field: " + source.owner.name + "." + name + " " + source.field.desc + " (remapped as \"" + desc + "\", targetting \"" + target.name + "\")");
     }
 
     @Override
