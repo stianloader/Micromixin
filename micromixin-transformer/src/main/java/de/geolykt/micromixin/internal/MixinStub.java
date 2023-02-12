@@ -84,11 +84,12 @@ public class MixinStub implements Comparable<MixinStub> {
         // TODO That probably doesn't work when the source class is an interface.
         // We may need to analyse the proper behaviour there
         r.remapClassName(this.sourceNode.name, targetClass.name);
-        for (MixinMethodStub method : this.methods) {
-            method.collectMappings(targetClass, hctx, this, r, sharedBuilder);
-        }
+        // Note: Before calling the #collectMappings methods, the class mappings should be known (as it greatly simplifies the method/field lookup process)
         for (MixinFieldStub field : this.fields) {
             field.collectMappings(targetClass, hctx, this, r, sharedBuilder);
+        }
+        for (MixinMethodStub method : this.methods) {
+            method.collectMappings(targetClass, hctx, this, r, sharedBuilder);
         }
         return r;
     }

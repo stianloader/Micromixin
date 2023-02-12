@@ -48,7 +48,7 @@ public class CodeCopyUtil {
 
     @NotNull
     public static void copyTo(@NotNull MethodNode source, @NotNull MixinStub sourceStub, @NotNull MethodNode copyTarget,
-            @NotNull AbstractInsnNode previousInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper) {
+            @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper) {
         AbstractInsnNode copySourceStart = source.instructions.getFirst();
         if (copySourceStart == null) {
             throw new IllegalStateException("Source instruction list is empty!");
@@ -68,10 +68,11 @@ public class CodeCopyUtil {
                 && copyTargetStart.getOpcode() != Opcodes.RETURN) {
             throw new IllegalStateException("Invalid copy target: " + targetOwner.name + "." + copyTarget.name + copyTarget.desc + ": Last instruction should be a XRETURN opcode.");
         }
-        copyTo(source, copySourceStart, previousInsn, sourceStub, copyTarget, previousInsn, targetOwner, remapper, true);
+        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, endInInsn, targetOwner, remapper, true);
     }
 
     @NotNull
+    @Deprecated
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
             @NotNull ClassNode target, @NotNull String handlerName) {
         ClassNode sourceClass = sourceStub.sourceNode;

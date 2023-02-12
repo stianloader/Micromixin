@@ -1,7 +1,5 @@
 package de.geolykt.micromixin.internal.annotation;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -19,15 +17,8 @@ import de.geolykt.micromixin.internal.util.Remapper;
 public class VirtualConstructorMergeAnnotation implements MixinAnnotation<MixinMethodStub> {
 
     @NotNull
-    private final MethodNode src;
-
-    public VirtualConstructorMergeAnnotation(@NotNull MethodNode src) {
-        this.src = src;
-    }
-
-    @NotNull
-    private static MethodInsnNode getConstructorInvokeInsn(@NotNull ClassNode node, @NotNull MethodNode ctor) {
-        AbstractInsnNode insn = ctor.instructions.getFirst();
+    private static MethodInsnNode getConstructorInvokeInsn(@NotNull ClassNode node, @NotNull MethodNode source) {
+        AbstractInsnNode insn = source.instructions.getFirst();
         int newDepth = 0;
         while (insn != null) {
             if (insn.getOpcode() != Opcodes.INVOKESPECIAL) {
@@ -55,21 +46,25 @@ public class VirtualConstructorMergeAnnotation implements MixinAnnotation<MixinM
             }
             insn = insn.getNext();
         }
-        return (MethodInsnNode) Objects.requireNonNull(insn, "Instructions exhausted");
+        if (insn == null) {
+            throw new NullPointerException("Instructions exhausted");
+        } else {
+            return (MethodInsnNode) insn;
+        }
     }
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
-        if (!src.desc.equals("()V")) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.src.name + this.src.desc + ". Expected no-args constructor!");
+        if (!source.method.desc.equals("()V")) {
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + source.method.name + source.method.desc + ". Expected no-args constructor!");
         }
-        AbstractInsnNode firstInsn = getConstructorInvokeInsn(to, src).getNext();
+        AbstractInsnNode firstInsn = getConstructorInvokeInsn(source.owner, source.method).getNext();
         if (firstInsn == null) {
             return; // Nothing to merge
         }
-        AbstractInsnNode lastInsn = this.src.instructions.getLast();
+        AbstractInsnNode lastInsn = source.method.instructions.getLast();
         if (lastInsn == null) {
             throw new AssertionError(); // Sadly `InsnList#getLast` is not nullable due to empty lists being a thing.
         }
@@ -77,7 +72,7 @@ public class VirtualConstructorMergeAnnotation implements MixinAnnotation<MixinM
             if (m.name.equals("<init>")) {
                 MethodInsnNode targetInsn = getConstructorInvokeInsn(to, m);
                 if (targetInsn.owner.equals(to.superName)) {
-                    CodeCopyUtil.copyTo(src, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, true);
+                    CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, true);
                 }
             }
         }

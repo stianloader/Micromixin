@@ -11,15 +11,10 @@ in a decent fashion. <b>By no means is it a full reimplementation</b>, but we tr
 keep compatibility whereever possible.
 
 Painpoints of the official Mixin implementation that this implementation seeks to avoid:
- - JPMS being an absolute hellscape
+ - Mixin's JPMS being an absolute hellscape
  - Mixin being very hard to use outside it's intended habitat (keyword: Modlauncher)
- - No reliance on outdated libraries
+ - Mixin being reliant on outdated libraries
  - Service hell
  - Not being present on OSSRH. (As of now this is an afterthought, not actually done)
- - May break with so-called "ASM crashers"
- - Dependency hell (Only org.json:json and cafed00d is needed)
+ - Dependency hell (Only org.json:json and objectweb's asm is needed under micromixin)
  - Integration with newer Java versions being confusing at best
-
-Pain that would be induced by using this implementation instead of the official one:
- - No integration with OW2-ASM ClassNodes
- - Depends on Cafed00d, which is only present on jitpack. Also pretty unknown library

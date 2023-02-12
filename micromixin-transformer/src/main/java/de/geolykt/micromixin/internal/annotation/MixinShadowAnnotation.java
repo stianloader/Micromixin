@@ -33,6 +33,9 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
     public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation) {
         String prefix = "shadow$";
         List<String> aliases = Collections.emptyList();
+        if (annotation.values == null) {
+            return new MixinShadowAnnotation<>(prefix, aliases);
+        }
         for (int i = 0; i < annotation.values.size(); i += 2) {
             String name = (String) annotation.values.get(i);
             if (name.equals("aliases")) {

@@ -14,12 +14,12 @@ import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinInjectAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinOverwriteAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
+import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualClInitMergeAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualConstructorMergeAnnotation;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinMethodStub implements ClassMemberStub {
-    // IMPLEMENT @Unique
 
     @NotNull
     public final ClassNode owner;
@@ -46,15 +46,17 @@ public class MixinMethodStub implements ClassMemberStub {
                         annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
                         annotations.add(MixinShadowAnnotation.parse(annot));
+                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
+                        annotations.add(MixinUniqueAnnotation.parse(annot));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }
                 }
             }
         }
-        if (annotations.isEmpty()) { // FIXME That is the wrong approach once we support @Unique
+        if (annotations.isEmpty()) {
             if (method.name.equals("<init>") && method.desc.equals("()V")) {
-                annotations.add(new VirtualConstructorMergeAnnotation(method));
+                annotations.add(new VirtualConstructorMergeAnnotation());
             } else if (method.name.equals("<clinit>") && method.desc.equals("()V")) {
                 annotations.add(new VirtualClInitMergeAnnotation(method));
             } else {

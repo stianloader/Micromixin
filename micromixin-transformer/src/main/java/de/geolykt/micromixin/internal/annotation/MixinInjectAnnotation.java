@@ -33,7 +33,7 @@ import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.DescString;
 import de.geolykt.micromixin.internal.util.Remapper;
 
-public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
+public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
 
     @NotNull
     public final Collection<MixinAtAnnotation> at;
@@ -45,14 +45,14 @@ public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
     private final int expect;
     private final boolean cancellable;
 
-    public MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect) {
+    private MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
+            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
-        this.cancellable = false; // IMPLEMENT support
+        this.cancellable = cancellable; 
     }
 
     @NotNull
@@ -63,6 +63,7 @@ public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
         String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method, true);
         int require = -1;
         int expect = -1;
+        boolean cancellable = false;
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
             Object val = annot.values.get(i + 1);
@@ -105,6 +106,8 @@ public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("cancellable")) {
+                cancellable = (Boolean) cancellable;
             } else {
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
@@ -124,7 +127,7 @@ public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
             // IMPLEMENT what about injector groups?
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect);
+        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable);
     }
 
     @Override
@@ -159,7 +162,7 @@ public class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
         }
         if (labels.size() < this.expect) {
             // IMPLEMENT proper logging mechanism
-            System.err.println("Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
+            System.err.println("[WARNING:MM/MIA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
         }
         // IMPLEMENT the hell that is known as local capture
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
