@@ -57,6 +57,10 @@ class AnnotationUtil {
         return false;
     }
 
+    static boolean isCategory2(int descType) {
+        return descType == 'J' || descType == 'D';
+    }
+
     static int getReturnOpcode(int descReturnType) {
         switch (descReturnType) {
         case 'V': // void
@@ -76,6 +80,50 @@ class AnnotationUtil {
             return Opcodes.FRETURN;
         case 'D': // double
             return Opcodes.DRETURN;
+        default:
+            throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
+        }
+    }
+
+    static int getStoreOpcode(int descReturnType) {
+        switch (descReturnType) {
+        case '[': // array
+        case 'L': // object
+            return Opcodes.ASTORE;
+        case 'I': // int
+        case 'S': // short
+        case 'C': // char
+        case 'Z': // boolean
+        case 'B': // byte
+            return Opcodes.ISTORE;
+        case 'J': // long
+            return Opcodes.LSTORE;
+        case 'F': // float
+            return Opcodes.FSTORE;
+        case 'D': // double
+            return Opcodes.DSTORE;
+        default:
+            throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
+        }
+    }
+
+    static int getLoadOpcode(int descReturnType) {
+        switch (descReturnType) {
+        case '[': // array
+        case 'L': // object
+            return Opcodes.ALOAD;
+        case 'I': // int
+        case 'S': // short
+        case 'C': // char
+        case 'Z': // boolean
+        case 'B': // byte
+            return Opcodes.ILOAD;
+        case 'J': // long
+            return Opcodes.LLOAD;
+        case 'F': // float
+            return Opcodes.FLOAD;
+        case 'D': // double
+            return Opcodes.DLOAD;
         default:
             throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
         }

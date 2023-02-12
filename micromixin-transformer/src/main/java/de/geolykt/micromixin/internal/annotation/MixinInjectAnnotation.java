@@ -175,15 +175,76 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
             LabelNode label = entry.getKey();
             MethodNode method = entry.getValue();
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
+            boolean category2 = AnnotationUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
-            if (returnType != 'V') {
+            if (returnType != 'V' && category2) {
+                // This method could theoretically work with both cat 1 and cat 2 return types,
+                // but uses the local variable table for temporary storage
+                int returnOpcode = AnnotationUtil.getReturnOpcode(returnType);
+                int lvt0 = scanNextFreeLVTIndex(method);
+                AbstractInsnNode nextInsn = label.getNext();
+                while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
+                    nextInsn = nextInsn.getNext();
+                }
+                int storedType;
+                if (nextInsn.getOpcode() != returnOpcode) {
+                    injected.add(new InsnNode(Opcodes.ACONST_NULL)); // FIXME Use other value
+                    storedType = 'L';
+                } else {
+                    injected.add(new InsnNode(Opcodes.DUP2));
+                    storedType = returnType;
+                }
+                int storeOpcode = AnnotationUtil.getStoreOpcode(storedType);
+                int loadOpcode = AnnotationUtil.getLoadOpcode(storedType);
+
+                injected.add(new VarInsnNode(storeOpcode, lvt0));
+                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
+                injected.add(new InsnNode(Opcodes.DUP));
+                injected.add(new LdcInsnNode(method.name));
+                injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
+                injected.add(new VarInsnNode(loadOpcode, lvt0));
+                String ctorDesc;
+                if (returnType == 'L') {
+                    ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
+                } else {
+                    ctorDesc = "(Ljava/lang/String;Z" + ((char) returnType) + ")V";
+                }
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
+                // Operand stack: CIR
+                injected.add(new InsnNode(Opcodes.DUP));
+                if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                    injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
+                } else {
+                    injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    injected.add(new InsnNode(Opcodes.SWAP));
+                    // Now RET, CIR, THIS, CIR
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
+                }
+                // Operand stack: CIR
+                if (cancellable) {
+                    injected.add(new InsnNode(Opcodes.DUP));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "isCancelled", "()Z"));
+                    // Now CIR, BOOL
+                    LabelNode skipReturn = new LabelNode();
+                    injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
+                    // Now CIR
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
+                    // Now VAL
+                    injected.add(new InsnNode(returnOpcode));
+                    injected.add(skipReturn);
+                }
+                // Operand stack: CIR (Both paths)
+                injected.add(new InsnNode(Opcodes.POP));
+            } else if (returnType != 'V') {
+                // Note: only applies for category 1 return types.
+                // In turn, it wholly operates on the stack.
                 int returnOpcode = AnnotationUtil.getReturnOpcode(returnType);
                 AbstractInsnNode nextInsn = label.getNext();
                 while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
                     nextInsn = nextInsn.getNext();
                 }
-                if (nextInsn.getOpcode() == returnOpcode) {
-                    injected.add(new InsnNode(Opcodes.ACONST_NULL));
+                if (nextInsn.getOpcode() != returnOpcode) {
+                    injected.add(new InsnNode(Opcodes.ACONST_NULL)); // FIXME Use other value for ints, floats, double and longs
                 } else {
                     injected.add(new InsnNode(Opcodes.DUP));
                 }
@@ -204,7 +265,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 if (returnOpcode == Opcodes.ARETURN) {
                     ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
                 } else {
-                    ctorDesc = "(Ljava/lang/String;Z" + returnType + ")V";
+                    ctorDesc = "(Ljava/lang/String;Z" + ((char) returnType) + ")V";
                 }
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
                 // Now RET, CIR

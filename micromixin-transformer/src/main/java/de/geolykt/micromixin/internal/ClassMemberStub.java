@@ -16,6 +16,8 @@ public interface ClassMemberStub {
     @NotNull
     String getDesc();
 
+    int getAccess();
+
     void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub stub, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder);
 
     // Is such a system viable if we need to remap descriptors beforehand too?

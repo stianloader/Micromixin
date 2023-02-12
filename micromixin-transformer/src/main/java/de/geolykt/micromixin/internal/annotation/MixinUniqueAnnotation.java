@@ -9,11 +9,8 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 import de.geolykt.micromixin.internal.ClassMemberStub;
-import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinFieldStub;
-import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
-import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOverlayAnnotation<T> {
@@ -56,21 +53,6 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     }
 
     @Override
-    public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull Remapper remapper,
-            @NotNull StringBuilder sharedBuilder) {
-        if (source instanceof MixinMethodStub) {
-            if ((((MixinMethodStub) source).method.access & Opcodes.ACC_PUBLIC) != 0 && !silent) {
-                // FIXME Use proper logging mechanisms instead
-                System.err.println("[WARNING:MM/MUA]: @Unique-annotated method is public. @Unique will have no effect. Affected method: " + source.getOwner().name + "." + source.getName() + source.getDesc());
-            }
-        } else if (source instanceof MixinFieldStub && (((MixinFieldStub) source).field.access & Opcodes.ACC_PUBLIC) != 0) {
-            return; // @Unique does nothing on public fields
-        }
-        super.apply(to, hctx, sourceStub, source, remapper, sharedBuilder);
-    }
-
-    @Override
     public boolean allowOverwrite(@NotNull T source, @NotNull ClassNode target) {
         return false;
     }
@@ -83,6 +65,13 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
         String desc = source.getDesc();
         if (desc.charAt(0) == '(') {
             // Method
+            if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
+                if (!this.silent) {
+                    // TODO proper logging mechanisms
+                    System.err.println("[WARNING:MM/MUA]: @Unique-annotated method is public. @Unique will have no effect. Affected method: " + source.getOwner().name + "." + source.getName() + source.getDesc());
+                }
+                return name;
+            }
             desc = remapper.getRemappedMethodDescriptor(desc, sharedBuilder);
             // TODO Is the prefix really optional?
             if (!AnnotationUtil.hasMethod(target, name, desc)) {
@@ -90,6 +79,9 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
             }
         } else {
             // Field
+            if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
+                return name;
+            }
             desc = remapper.getRemappedFieldDescriptor(desc, sharedBuilder);
             if (!AnnotationUtil.hasField(target, name, desc)) {
                 return name;
@@ -100,6 +92,11 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
 
     @Override
     protected void handleAlreadyExisting(@NotNull T source, @NotNull ClassNode target) {
+        if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
+            // TODO How are we supposed to react?
+            System.out.println("[ERROR:MM/MUA]: " + source.getOwner().name + "." + source.getName() + " " + source.getDesc() + " is public and annotated through @Unique. Furthermore, it collides with something already present in the class.");
+            return;
+        }
         // IMPLEMENT UID Regeneration.
         // TODO Proper logging mechanisms
         System.err.println("[ERROR:MM/MUA]: Unable to transform class " + target.name + " due to @Unique collision. Ensure that you do not have multiple Micromixin instances running.");

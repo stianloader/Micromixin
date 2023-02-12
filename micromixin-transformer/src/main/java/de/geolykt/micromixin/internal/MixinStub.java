@@ -71,7 +71,7 @@ public class MixinStub implements Comparable<MixinStub> {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);
         }
         // Merge interfaces
-        for (String itf : sourceNode.interfaces) {
+        for (String itf : this.sourceNode.interfaces) {
             if (!target.interfaces.contains(itf)) {
                 target.interfaces.add(itf);
             }

@@ -88,4 +88,9 @@ public class MixinFieldStub implements ClassMemberStub {
             annotation.collectMappings(this, target, out, sharedBuilder);
         }
     }
+
+    @Override
+    public int getAccess() {
+        return this.field.access;
+    }
 }
