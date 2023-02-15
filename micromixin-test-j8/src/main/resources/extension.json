@@ -1,0 +1,7 @@
+{
+  "entrypoint": "de.geolykt.starloader.micromixin.test.j8.TestBootstrap",
+  "name": "MicromixinJ8Tests",
+  "version": "0.0.1-SNAPSHOT",
+  "mixinConfig": "j8mixinconfig.json",
+  "dependencies": [ ]
+}

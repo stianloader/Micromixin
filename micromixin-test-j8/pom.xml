@@ -8,18 +8,37 @@
     <artifactId>micromixin-test-j8</artifactId>
     <name>J8-Test-Sources</name>
     <description>Java 8 Test sources for Micromixin</description>
+
     <repositories>
         <repository>
             <id>sponge</id>
             <url>https://repo.spongepowered.org/maven</url>
         </repository>
+        <repository>
+            <id>geolykt</id>
+            <url>https://geolykt.de/maven</url>
+        </repository>
     </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.spongepowered</groupId>
             <artifactId>mixin</artifactId>
             <version>0.8.5</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>de.geolykt.starloader</groupId>
+            <artifactId>launcher</artifactId>
+            <version>3.0.0</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <!-- Let's not test against our Mixin fork -->
+                    <artifactId>mixin</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

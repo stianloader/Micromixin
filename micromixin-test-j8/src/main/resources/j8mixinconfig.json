@@ -5,11 +5,6 @@
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "InjectTargetMixin",
-    "OverwriteTargetMixin",
-    "FieldInjectTargetMixin",
-    "erronous.TooManyAtMixin",
-    "selector.SelectorMixinA",
-    "selector.NumberSelectorMixin"
+    "InjectionHeadTestMixins"
   ]
 }
