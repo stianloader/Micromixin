@@ -112,7 +112,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
             } else if (name.equals("cancellable")) {
-                cancellable = (Boolean) cancellable;
+                cancellable = (Boolean) val;
             } else {
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
@@ -188,7 +188,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 }
                 int storedType;
                 if (nextInsn.getOpcode() != returnOpcode) {
-                    injected.add(new InsnNode(Opcodes.ACONST_NULL)); // FIXME Use other value
+                    injected.add(new InsnNode(Opcodes.ACONST_NULL));
                     storedType = 'L';
                 } else {
                     injected.add(new InsnNode(Opcodes.DUP2));
@@ -204,10 +204,10 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new VarInsnNode(loadOpcode, lvt0));
                 String ctorDesc;
-                if (returnType == 'L') {
+                if (storedType == 'L') {
                     ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
                 } else {
-                    ctorDesc = "(Ljava/lang/String;Z" + ((char) returnType) + ")V";
+                    ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
                 }
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
                 // Operand stack: CIR
@@ -243,10 +243,13 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
                     nextInsn = nextInsn.getNext();
                 }
+                int storedType;
                 if (nextInsn.getOpcode() != returnOpcode) {
-                    injected.add(new InsnNode(Opcodes.ACONST_NULL)); // FIXME Use other value for ints, floats, double and longs
+                    injected.add(new InsnNode(Opcodes.ACONST_NULL));
+                    storedType = 'L';
                 } else {
-                    injected.add(new InsnNode(Opcodes.DUP));
+                    injected.add(new InsnNode(Opcodes.DUP2));
+                    storedType = returnType;
                 }
                 // Now RET (or RET, RET - but the first RET is used later and thus discarded for our purposes)
                 injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
@@ -262,10 +265,10 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 injected.add(new InsnNode(Opcodes.SWAP));
                 // Now RET, CIR, CIR, NAME, CANCELLABLE, RET
                 String ctorDesc;
-                if (returnOpcode == Opcodes.ARETURN) {
+                if (storedType == 'L') {
                     ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
                 } else {
-                    ctorDesc = "(Ljava/lang/String;Z" + ((char) returnType) + ")V";
+                    ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
                 }
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
                 // Now RET, CIR
@@ -289,7 +292,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                     // Now RET, CIR
                     if (returnOpcode == Opcodes.ARETURN) {
                         injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue", "()Ljava/lang/Object;"));
-                        injected.add(new TypeInsnNode(Opcodes.CHECKCAST, method.desc.substring(method.desc.lastIndexOf(')') + 1))); // TODO Is that the proper cast syntax?
+                        injected.add(new TypeInsnNode(Opcodes.CHECKCAST, method.desc.substring(method.desc.lastIndexOf(')') + 2, method.desc.length() - 1)));
                     } else {
                         injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
                     }
