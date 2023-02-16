@@ -49,15 +49,17 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
     private final int require;
     private final int expect;
     private final boolean cancellable;
+    private final boolean denyVoids;
 
     private MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable) {
+            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
-        this.cancellable = cancellable; 
+        this.cancellable = cancellable;
+        this.denyVoids = denyVoids;
     }
 
     @NotNull
@@ -65,10 +67,11 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
         List<MixinAtAnnotation> at = new ArrayList<>();
         Collection<@NotNull MixinDescAnnotation> target = null;
         @NotNull String[] targetSelectors = null;
-        String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method, true);
+        String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method);
         int require = -1;
         int expect = -1;
         boolean cancellable = false;
+        boolean denyVoids = AnnotationUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(AnnotationUtil.getLastType(method.desc));
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
             Object val = annot.values.get(i + 1);
@@ -132,7 +135,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
             // IMPLEMENT what about injector groups?
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable);
+        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids);
     }
 
     @Override
@@ -147,6 +150,9 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 if (targetMethod != null) {
                     if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.value + "\") does not support usage within a constructor.");
+                    }
+                    if (this.denyVoids && targetMethod.desc.codePointBefore(targetMethod.desc.length()) == 'V') {
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + "V, which is a void method. The injector however has a CallbackInfoReturnable, which suggests a non-void type as the target's return type. This issue is caused due to the following selector (Make sure to set the return type accordingly!): " + selector);
                     }
                     // Verify access modifiers (TODO How about static -> non-static?)
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
@@ -171,6 +177,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
         }
         // IMPLEMENT the hell that is known as local capture
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
+        // FIXME Micromixins Produces invalid bytecode when injecting a CIR handle call to something that should only need a CI handle call.
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
             LabelNode label = entry.getKey();
             MethodNode method = entry.getValue();
@@ -220,6 +227,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                     // Now RET, CIR, THIS, CIR
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
+                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Operand stack: CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
@@ -282,6 +290,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                     // Now RET, CIR, THIS, CIR
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
+                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Now RET, CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
@@ -314,6 +323,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
+                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
                     // TODO What happens if two injectors have the same entrypoint? Is mixin smart or not so smart here?
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
@@ -327,6 +337,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
+                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (cancellable) {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));

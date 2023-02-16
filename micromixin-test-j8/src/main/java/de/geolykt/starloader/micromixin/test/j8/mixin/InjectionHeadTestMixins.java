@@ -12,6 +12,8 @@ import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
 @Mixin(InjectionHeadTest.class)
 public class InjectionHeadTestMixins {
 
+    // TODO implicit injector selection (i.e. injector method's name is the same as the inject target)
+
     // TODO An injector such as follows will not work:
     /*
     @Inject(target = @Desc(value = "expectNoThrowD"),
@@ -25,6 +27,13 @@ public class InjectionHeadTestMixins {
     // A test is dearly needed as MM most likely does not account for that at the moment
     // (CI injects cannot operate where CIR would be appropriate)
     // The signature of the CIR does not influence selection.
+
+    @Inject(target = @Desc(value = "expectNoThrowB", ret = byte.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectNoThrowB(CallbackInfoReturnable<Byte> ci) {
+        ci.cancel();
+    }
 
     @Inject(target = @Desc(value = "expectNoThrowC", ret = char.class), // TODO The `ret = char.class` part is required!
             cancellable = true,
@@ -92,6 +101,13 @@ public class InjectionHeadTestMixins {
 
     // ---
 
+    @Inject(target = @Desc(value = "expectThrowB", ret = byte.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectThrowB(CallbackInfoReturnable<Byte> ci) {
+        throw new RuntimeException();
+    }
+
     @Inject(target = @Desc(value = "expectThrowC", ret = char.class),
             cancellable = true,
             at = @At("HEAD"))
@@ -157,6 +173,12 @@ public class InjectionHeadTestMixins {
     }
 
     // ---
+
+    @Inject(target = @Desc(value = "expectInvalidCancellationB", ret = byte.class),
+            at = @At("HEAD"))
+    private static void injectExpectInvalidCancellationB(CallbackInfoReturnable<Byte> ci) {
+        ci.cancel();
+    }
 
     @Inject(target = @Desc(value = "expectInvalidCancellationC", ret = char.class),
             cancellable = false,
@@ -224,6 +246,12 @@ public class InjectionHeadTestMixins {
 
     // ---
 
+    @Inject(target = @Desc(value = "expectImplicitlyInvalidCancellationB", ret = byte.class),
+            at = @At("HEAD"))
+    private static void injectExpectImplicitlyInvalidCancellationB(CallbackInfoReturnable<Byte> ci) {
+        ci.cancel();
+    }
+
     @Inject(target = @Desc(value = "expectImplicitlyInvalidCancellationC", ret = char.class),
             at = @At("HEAD"))
     private static void injectExpectImplicitlyInvalidCancellationC(CallbackInfoReturnable<Character> ci) {
@@ -277,5 +305,128 @@ public class InjectionHeadTestMixins {
             at = @At("HEAD"))
     private static void injectExpectImplicitlyInvalidCancellationZ(CallbackInfoReturnable<Boolean> ci) {
         ci.cancel();
+    }
+
+    // ---
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultB", ret = byte.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultB(CallbackInfoReturnable<Byte> ci) {
+        ci.setReturnValue((byte) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultC", ret = char.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultC(CallbackInfoReturnable<Character> ci) {
+        ci.setReturnValue((char) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultD", ret = double.class),
+            at = @At("HEAD"),
+            require = 1)
+    private static void injectExpectReturnNondefaultD(CallbackInfoReturnable<Double> ci) {
+        ci.setReturnValue(1D);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultF", ret = float.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultF(CallbackInfoReturnable<Float> ci) {
+        ci.setReturnValue(1F);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultI", ret = int.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultI(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(1);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultJ", ret = long.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultJ(CallbackInfoReturnable<Long> ci) {
+        ci.setReturnValue(1L);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultL", ret = Object.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultL(CallbackInfoReturnable<Object> ci) {
+        ci.setReturnValue(new Object());
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultS", ret = short.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultS(CallbackInfoReturnable<Short> ci) {
+        ci.setReturnValue((short) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectReturnNondefaultZ", ret = boolean.class),
+            at = @At("HEAD"))
+    private static void injectExpectReturnNondefaultZ(CallbackInfoReturnable<Boolean> ci) {
+        ci.setReturnValue(true);
+    }
+
+    // ---
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultB", ret = byte.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultB(CallbackInfoReturnable<Byte> ci) {
+        ci.setReturnValue((byte) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultC", ret = char.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultC(CallbackInfoReturnable<Character> ci) {
+        ci.setReturnValue((char) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultD", ret = double.class),
+            cancellable = true,
+            at = @At("HEAD"),
+            require = 1)
+    private static void injectExpectCancellableReturnNondefaultD(CallbackInfoReturnable<Double> ci) {
+        ci.setReturnValue(1D);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultF", ret = float.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultF(CallbackInfoReturnable<Float> ci) {
+        ci.setReturnValue(1F);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultI", ret = int.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultI(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(1);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultJ", ret = long.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultJ(CallbackInfoReturnable<Long> ci) {
+        ci.setReturnValue(1L);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultL", ret = Object.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultL(CallbackInfoReturnable<Object> ci) {
+        ci.setReturnValue(new Object());
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultS", ret = short.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultS(CallbackInfoReturnable<Short> ci) {
+        ci.setReturnValue((short) 1);
+    }
+
+    @Inject(target = @Desc(value = "expectCancellableReturnNondefaultZ", ret = boolean.class),
+            cancellable = true,
+            at = @At("HEAD"))
+    private static void injectExpectCancellableReturnNondefaultZ(CallbackInfoReturnable<Boolean> ci) {
+        ci.setReturnValue(true);
     }
 }

@@ -1,6 +1,6 @@
 # Micromixin
 
-Micromixin is a leightweight reimplementation of Spongepowered's Mixin framework.
+Micromixin is a lightweight reimplementation of Spongepowered's Mixin framework.
 
 ## Why reimplement?
 
@@ -18,3 +18,8 @@ Painpoints of the official Mixin implementation that this implementation seeks t
  - Not being present on OSSRH. (As of now this is an afterthought, not actually done)
  - Dependency hell (Only org.json:json and objectweb's asm is needed under micromixin)
  - Integration with newer Java versions being confusing at best
+ - Sponge's Mixins supports operand stack manipulation by declaring @Inject handlers
+   as something other than void (see
+   <https://discord.com/channels/142425412096491520/626802111455297538/1075864621589733387>
+   ). Micromixin rejects that practice and will POP/POP2 such operands as that leads
+   to unstable behaviour.

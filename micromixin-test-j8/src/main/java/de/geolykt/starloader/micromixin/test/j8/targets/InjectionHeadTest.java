@@ -2,6 +2,10 @@ package de.geolykt.starloader.micromixin.test.j8.targets;
 
 public class InjectionHeadTest {
 
+    public static byte expectNoThrowB() {
+        throw new AssertionError();
+    }
+
     public static char expectNoThrowC() {
         throw new AssertionError();
     }
@@ -37,6 +41,10 @@ public class InjectionHeadTest {
 
     public static boolean expectNoThrowZ() {
         throw new AssertionError();
+    }
+
+    public static byte expectThrowB() {
+        return 0;
     }
 
     public static char expectThrowC() {
@@ -78,6 +86,10 @@ public class InjectionHeadTest {
 
     // ---
 
+    public static byte expectInvalidCancellationB() {
+        return 0;
+    }
+
     public static char expectInvalidCancellationC() {
         return 0;
     }
@@ -116,6 +128,10 @@ public class InjectionHeadTest {
 
     // ---
 
+    public static byte expectImplicitlyInvalidCancellationB() {
+        return 0;
+    }
+
     public static char expectImplicitlyInvalidCancellationC() {
         return 0;
     }
@@ -149,6 +165,82 @@ public class InjectionHeadTest {
     }
 
     public static boolean expectImplicitlyInvalidCancellationZ() {
+        return false;
+    }
+
+    // ---
+
+    public static byte expectReturnNondefaultB() {
+        return 0;
+    }
+
+    public static char expectReturnNondefaultC() {
+        return 0;
+    }
+
+    public static double expectReturnNondefaultD() {
+        return 0;
+    }
+
+    public static float expectReturnNondefaultF() {
+        return 0;
+    }
+
+    public static int expectReturnNondefaultI() {
+        return 0;
+    }
+
+    public static long expectReturnNondefaultJ() {
+        return 0;
+    }
+
+    public static Object expectReturnNondefaultL() {
+        return null;
+    }
+
+    public static short expectReturnNondefaultS() {
+        return 0;
+    }
+
+    public static boolean expectReturnNondefaultZ() {
+        return false;
+    }
+
+    // ---
+
+    public static byte expectCancellableReturnNondefaultB() {
+        return 0;
+    }
+
+    public static char expectCancellableReturnNondefaultC() {
+        return 0;
+    }
+
+    public static double expectCancellableReturnNondefaultD() {
+        return 0;
+    }
+
+    public static float expectCancellableReturnNondefaultF() {
+        return 0;
+    }
+
+    public static int expectCancellableReturnNondefaultI() {
+        return 0;
+    }
+
+    public static long expectCancellableReturnNondefaultJ() {
+        return 0;
+    }
+
+    public static Object expectCancellableReturnNondefaultL() {
+        return null;
+    }
+
+    public static short expectCancellableReturnNondefaultS() {
+        return 0;
+    }
+
+    public static boolean expectCancellableReturnNondefaultZ() {
         return false;
     }
 }
