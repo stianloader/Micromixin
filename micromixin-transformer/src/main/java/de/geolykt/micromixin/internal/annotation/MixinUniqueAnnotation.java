@@ -53,8 +53,16 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     }
 
     @Override
-    public boolean allowOverwrite(@NotNull T source, @NotNull ClassNode target) {
-        return false;
+    public boolean handleCollision(@NotNull T source, @NotNull ClassNode target, int access) {
+        if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
+            // TODO How are we supposed to react?
+            System.out.println("[ERROR:MM/MUA]: " + source.getOwner().name + "." + source.getName() + " " + source.getDesc() + " is public and annotated through @Unique. Furthermore, it collides with something already present in the class.");
+            return false;
+        }
+        // IMPLEMENT UID Regeneration.
+        // TODO Proper logging mechanisms
+        System.err.println("[ERROR:MM/MUA]: Unable to transform class " + target.name + " due to @Unique collision. Ensure that you do not have multiple Micromixin instances running.");
+        throw new UnsupportedOperationException("Unique prefix (\"" + uniquePrefix + "\") does not suffice. Note: restarting the application usually suffices as that regenerates the unique prefix for the member.");
     }
 
     @Override
@@ -88,18 +96,5 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
             }
         }
         return uniquePrefix + name;
-    }
-
-    @Override
-    protected void handleAlreadyExisting(@NotNull T source, @NotNull ClassNode target) {
-        if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
-            // TODO How are we supposed to react?
-            System.out.println("[ERROR:MM/MUA]: " + source.getOwner().name + "." + source.getName() + " " + source.getDesc() + " is public and annotated through @Unique. Furthermore, it collides with something already present in the class.");
-            return;
-        }
-        // IMPLEMENT UID Regeneration.
-        // TODO Proper logging mechanisms
-        System.err.println("[ERROR:MM/MUA]: Unable to transform class " + target.name + " due to @Unique collision. Ensure that you do not have multiple Micromixin instances running.");
-        throw new UnsupportedOperationException("Unique prefix (\"" + uniquePrefix + "\") does not suffice. Note: restarting the application usually suffices as that regenerates the unique prefix for the member.");
     }
 }

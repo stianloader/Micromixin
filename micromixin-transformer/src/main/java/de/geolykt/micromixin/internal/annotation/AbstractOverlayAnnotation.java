@@ -39,13 +39,9 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> imple
         String desiredDescMapped = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
 
         boolean overwrite = false;
-        if (AnnotationUtil.hasField(target, desiredName, desiredDescMapped)) {
-            if (allowOverwrite(source, target)) {
-                overwrite = true;
-            } else {
-                handleAlreadyExisting(source, target);
-                return;
-            }
+        FieldNode overwritten = AnnotationUtil.getField(target, desiredName, desiredDescMapped);
+        if (overwritten != null && !handleCollision(source, target, overwritten.access)) {
+            return;
         }
 
         if (pre) {
@@ -56,13 +52,8 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> imple
 
         // Remove the old field
         if (overwrite) {
-            for (FieldNode field : target.fields) {
-                if (field.name.equals(desiredName) && field.desc.equals(desiredDescMapped)) {
-                    // TODO How about copying access modifiers and annotations?
-                    target.fields.remove(field);
-                    break; // Otherwise CME
-                }
-            }
+            // TODO How about copying access modifiers and annotations?
+            target.fields.remove(overwritten);
         }
 
         // And create a new one
@@ -77,14 +68,9 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> imple
         MixinMethodStub stub = (MixinMethodStub) source;
         String desiredName = getDesiredName(source, target, remapper, sharedBuilder);
         String desiredDescMapped = remapper.getRemappedMethodDescriptor(source.getDesc(), sharedBuilder);
-        boolean overwrite = false;
-        if (AnnotationUtil.hasMethod(target, desiredName, desiredDescMapped)) {
-            if (allowOverwrite(source, target)) {
-                overwrite = true;
-            } else {
-                handleAlreadyExisting(source, target);
-                return;
-            }
+        MethodNode overwritten = AnnotationUtil.getMethod(target, desiredName, desiredDescMapped);
+        if (overwritten != null && !handleCollision(source, target, overwritten.access)) {
+            return;
         }
 
         if (pre) {
@@ -95,14 +81,11 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> imple
         sourceStub = Objects.requireNonNull(sourceStub, "\"sourceStub\" may not be null if \"pre\" is false as per method contract.");
 
         // Remove the old method
-        if (overwrite) {
-            for (MethodNode method : target.methods) {
-                if (method.name.equals(desiredName) && method.desc.equals(desiredDescMapped)) {
-                    // TODO How about copying access modifiers and annotations?
-                    // How about exceptions?
-                    target.methods.remove(method);
-                    break; // Otherwise CME
-                }
+        if (overwritten != null) {
+            // TODO How about copying access modifiers (such as synchronised) and annotations?
+            // How about exceptions?
+            if (!target.methods.remove(overwritten)) {
+                throw new IllegalStateException("Tried to remove a method that does not exist.");
             }
         }
 
@@ -135,13 +118,16 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> imple
         }
     }
 
-    public abstract boolean allowOverwrite(@NotNull T source, @NotNull ClassNode target);
     @NotNull
     public abstract String getDesiredName(@NotNull T source, @NotNull ClassNode target, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder);
 
-    protected void handleAlreadyExisting(@NotNull T source, @NotNull ClassNode target) {
-        // Can be overridden if different behaviour is needed
-        // TODO Use proper logging mechanisms
-        System.err.println("[MM/AOA] Cannot overlay " + source.getOwner().name + "." + source.getName() + " " + source.getDesc() + " into class " + target.name + " as it's desired name and descriptor collides with an already existing one");
-    }
+    /**
+     * Method that is called if the source collides with an already existing member.
+     *
+     * @param source The source handler
+     * @param target The target class
+     * @param collidedAccess The access modifiers of the member that already exists.
+     * @return True to overwrite the member, false to abort overlaying.
+     */
+    public abstract boolean handleCollision(@NotNull T source, @NotNull ClassNode target, int collidedAccess);
 }

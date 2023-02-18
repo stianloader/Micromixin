@@ -6,6 +6,9 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "InjectionHeadTestMixins",
-    "MultiInjectTestMixins"
+    "MultiInjectTestMixins",
+    "MixinOverwriteTestMixins",
+    "invalid.InvalidOverwriteAliasTestMixins",
+    "invalid.InvalidOverwriteAccessReductionMixins"
   ]
 }

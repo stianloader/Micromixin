@@ -4,15 +4,42 @@ import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
 
 public class TestHarness {
 
     public static TestReport runAllTests() {
         TestReport report = new TestReport();
+        runClassloadingFailures(report);
         runInjectionHeadTests(report);
         runMultiInjectionTests(report);
+        runOverwriteTests(report);
         return report;
+    }
+
+    public static void runClassloadingFailures(TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InvalidOverwriteAccessReduction");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InvalidOverwriteAliasTest");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InvalidOverwriteAliasTestB");
+        LoggerFactory.getLogger(TestHarness.class).info("ClassloadingFailures:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
+    }
+
+    public static void runOverwriteTests(TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnitAssertEquals("MixinOverwriteTest.implicitlyOverwrittenMethod", MixinOverwriteTest::acc$implicitlyOverwrittenMethod, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.implicitlyOverwrittenMethodDescMismatch", MixinOverwriteTest::acc$implicitlyOverwrittenMethodDescMismatch, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethod", MixinOverwriteTest::explicitlyOverwrittenMethod, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyProtectedMethod", MixinOverwriteTest::explicitlyProtectedMethod, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.implicitlyOverwrittenMethodDescMismatch", MixinOverwriteTest::explicitlyProtectedMethod, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedPriority", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedPriority, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedMultiA", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedMultiA, 1);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedMultiB", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedMultiB, 0);
+        set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedPriorityAlias", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedPriorityAlias, 2);
+        LoggerFactory.getLogger(TestHarness.class).info("MixinOverwriteTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runMultiInjectionTests(TestReport report) {

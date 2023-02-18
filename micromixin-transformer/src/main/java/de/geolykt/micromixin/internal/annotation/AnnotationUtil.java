@@ -18,6 +18,19 @@ class AnnotationUtil {
     static final int CI_LEN = CALLBACK_INFO_NAME.length();
     static final int CIR_LEN = CALLBACK_INFO_RETURNABLE_NAME.length();
 
+    static boolean hasReducedAccess(int witnessAccess, int testAccess) {
+        if ((witnessAccess & Opcodes.ACC_PUBLIC) != 0) {
+            return (testAccess & Opcodes.ACC_PUBLIC) == 0;
+        } else if ((witnessAccess & Opcodes.ACC_PROTECTED) != 0) {
+            return (testAccess & (Opcodes.ACC_PROTECTED | Opcodes.ACC_PUBLIC)) == 0;
+        } else if ((witnessAccess & Opcodes.ACC_PRIVATE) != 0) {
+            return false; // You can't go below private
+        } else {
+            // Package-protected
+            return (testAccess & Opcodes.ACC_PRIVATE) != 0;
+        }
+    }
+
     @Nullable
     static String getLastType(@NotNull String methodDesc) {
         DescString dstring = new DescString(methodDesc);
@@ -46,24 +59,34 @@ class AnnotationUtil {
         }
     }
 
-    static boolean hasMethod(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
-        // TODO Also check supers? (and interfaces too?)
+    @Nullable
+    static MethodNode getMethod(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
         for (MethodNode method : node.methods) {
             if (method.name.equals(name) && method.desc.equals(desc)) {
-                return true;
+                return method;
             }
         }
-        return false;
+        return null;
+    }
+
+    @Nullable
+    static FieldNode getField(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
+        for (FieldNode field : node.fields) {
+            if (field.name.equals(name) && field.desc.equals(desc)) {
+                return field;
+            }
+        }
+        return null;
+    }
+
+    static boolean hasMethod(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
+        // TODO Also check supers? (and interfaces too?)
+        return getMethod(node, name, desc) != null;
     }
 
     static boolean hasField(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
         // TODO Also check supers?
-        for (FieldNode field : node.fields) {
-            if (field.name.equals(name) && field.desc.equals(desc)) {
-                return true;
-            }
-        }
-        return false;
+        return getField(node, name, desc) != null;
     }
 
     static boolean isCategory2(int descType) {

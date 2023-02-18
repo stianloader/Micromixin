@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -22,12 +23,16 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
     }
 
     @NotNull
-    public static MixinOverwriteAnnotation generateImplicit(@NotNull ClassNode node, @NotNull MethodNode method) {
+    public static MixinOverwriteAnnotation generateImplicit(@NotNull ClassNode node, @NotNull MethodNode method) throws MixinParseException {
+        // Only explicitly @Overwrite-annotated method can be public and static at the same time.
+        if ((method.access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC)) == (Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC)) {
+            throw new MixinParseException("The handler method " + node.name + "." + method.name + method.desc + ", which is implicitly an @Overwrite-annotated method, is public and static. Mixin however does not support both access modifiers existing at the same time. So instead explicitly define it as a @Overwrite-annotated method or use @Unique if the intention to overwrite a method is not there.");
+        }
         return new MixinOverwriteAnnotation(null);
     }
 
     @NotNull
-    public static MixinOverwriteAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) {
+    public static MixinOverwriteAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) throws MixinParseException {
         List<String> aliases = null;
         if (annot.values != null) {
             for (int i = 0; i < annot.values.size(); i += 2) {
@@ -46,7 +51,29 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
     }
 
     @Override
-    public boolean allowOverwrite(@NotNull MixinMethodStub source, @NotNull ClassNode target) {
+    public boolean handleCollision(@NotNull MixinMethodStub source, @NotNull ClassNode target, int access) {
+
+        // Mixin does not support overwriting into public static methods when using aliases.
+        // It's a very strange limitation, but whatever
+        if ((access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC)) == (Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC) && this.aliases != null) {
+            throw new IllegalStateException("The handler method " + source.owner.name + "." + source.getName() + source.getDesc() + " targets a method in " + target.name + ". As the handler specified aliases and the targetted method is public and static, an overwrite is no possible. Instead explicitly use @Overwrite for the target or manually transform that method through the plattform's supported transformation API.");
+        }
+
+        // Mixin does not allow intermingling between static and non-static methods, understandably so.
+        if ((source.getAccess() & Opcodes.ACC_STATIC) == 0) {
+            if ((access & Opcodes.ACC_STATIC) != 0) {
+                // source = not static, access = static
+                throw new IllegalStateException("The handler method " + source.owner.name + "." + source.getName() + source.getDesc() + ", which targets a member in " + target.name + ", is not static, but the targetted member is static. Consider making the handler static (should it be possible without dealing with other limitations of @Overwrite).");
+            }
+        } else if ((access & Opcodes.ACC_STATIC) == 0) {
+            // source = static, access = not static
+            throw new IllegalStateException("The handler method " + source.owner.name + "." + source.getName() + source.getDesc() + ", which targets a member in " + target.name + ", is static, but the targetted member is not static. Consider making the handler not static or readjust the targetted method.");
+        }
+
+        // Don't allow for access modification reduction
+        if (AnnotationUtil.hasReducedAccess(access, source.getAccess())) {
+            throw new IllegalStateException("The handler method " + source.owner.name + "." + source.getName() + source.getDesc() + ", which targets a member in " + target.name + ", has a lesser access modifier than the method it targets. Try to keep the access flags the same across both methods.");
+        }
         return true;
     }
 
@@ -61,6 +88,9 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
         for (MethodNode method : target.methods) {
             if (!method.desc.equals(desiredDesc)) {
                 continue;
+            }
+            if (method.name.equals(source.getName())) {
+                return source.getName();
             }
             for (String alias : aliases) {
                 if (alias.equals(method.name)) {

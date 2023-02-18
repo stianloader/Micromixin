@@ -230,6 +230,17 @@ public class TestSet {
         }));
     }
 
+    public void addUnitExpectClassloadingFailure(String name) {
+        this.units.add(new TestUnit(name, () -> {
+            try {
+                getClass().getClassLoader().loadClass(name);
+            } catch (ClassNotFoundException cnfe) {
+                return;
+            }
+            throw new IllegalStateException("Loaded class " + name + " without a classloading failure, but a failure was anticipated.");
+        }));
+    }
+
     @FunctionalInterface
     public static interface ByteSupplier {
         byte getAsByte();

@@ -177,7 +177,6 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
         }
         // IMPLEMENT the hell that is known as local capture
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
-        // FIXME Micromixins Produces invalid bytecode when injecting a CIR handle call to something that should only need a CI handle call.
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
             LabelNode label = entry.getKey();
             MethodNode method = entry.getValue();
