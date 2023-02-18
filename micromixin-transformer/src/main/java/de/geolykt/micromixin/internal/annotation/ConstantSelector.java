@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 
 import de.geolykt.micromixin.internal.MixinParseException;
 
-public interface ConstantSelector {
+public abstract class ConstantSelector {
 
     @NotNull
     public static ConstantSelector parse(@NotNull List<String> args) {
@@ -33,16 +33,16 @@ public interface ConstantSelector {
         throw new MixinParseException("Cannot find any constant values in @At(\"CONSTANT\") args. An example would be @At(value = \"CONSTANT\", args = {\"intValue=5\"}). Note: Whitespaces are not allowed between either side of the equals.");
     }
 
-    boolean matchesConstant(@NotNull AbstractInsnNode insn);
+    public abstract boolean matchesConstant(@NotNull AbstractInsnNode insn);
 
-    public class NullConstantSelector implements ConstantSelector {
+    public static class NullConstantSelector extends ConstantSelector {
         @Override
         public boolean matchesConstant(@NotNull AbstractInsnNode insn) {
             return insn.getOpcode() == Opcodes.ACONST_NULL;
         }
     }
 
-    public class IntConstantSelector implements ConstantSelector {
+    public static class IntConstantSelector extends ConstantSelector {
         private final int value;
 
         public IntConstantSelector(int value) {
@@ -71,7 +71,7 @@ public interface ConstantSelector {
         }
     }
 
-    public class StringConstantSelector implements ConstantSelector {
+    public static class StringConstantSelector extends ConstantSelector {
         @NotNull
         private final String value;
 

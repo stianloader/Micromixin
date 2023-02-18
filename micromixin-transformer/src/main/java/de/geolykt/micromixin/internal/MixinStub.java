@@ -32,8 +32,8 @@ public class MixinStub implements Comparable<MixinStub> {
 
     @NotNull
     public static MixinStub parse(int defaultPriority, @NotNull ClassNode node) {
-        List<MixinMethodStub> methods = new ArrayList<>();
-        List<MixinFieldStub> fields = new ArrayList<>();
+        List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
+        List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
         for (MethodNode method : node.methods) {
             if (method == null) {
                 throw new NullPointerException();

@@ -38,7 +38,7 @@ public class MixinHeader {
         if (mixinAnnot == null) {
             throw new MixinParseException("Did not find a @Mixin Annotation in class " + node.name);
         }
-        List<String> targets = new ArrayList<>();
+        List<String> targets = new ArrayList<String>();
         int priority = defaultPriority;
         for (int i = 0; i < mixinAnnot.values.size(); i += 2) {
             String name = (String) mixinAnnot.values.get(i);
@@ -61,7 +61,7 @@ public class MixinHeader {
                 throw new MixinParseException("Unimplemented key in @Mixin: " + name);
             }
         }
-        List<String> saneTargets = new ArrayList<>();
+        List<String> saneTargets = new ArrayList<String>();
         for (String t : targets) {
             if (t.charAt(0) != 'L') {
                 throw new MixinParseException("Incorrect mixin target in class " + node.name + ": " + t + " (Note: arrays and primitives are not supported.)");

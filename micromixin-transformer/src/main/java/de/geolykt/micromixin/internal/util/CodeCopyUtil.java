@@ -4,9 +4,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -73,8 +71,8 @@ public class CodeCopyUtil {
     @NotNull
     @Deprecated
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
-            @NotNull ClassNode target, @NotNull String handlerName) {
-        ClassNode sourceClass = sourceStub.sourceNode;
+            final @NotNull ClassNode target, @NotNull String handlerName) {
+        final ClassNode sourceClass = sourceStub.sourceNode;
         MethodNode handler = new MethodNode();
         handler.name = handlerName;
         handler.desc = remapDesc(source.desc, sourceClass, target);
@@ -179,7 +177,7 @@ public class CodeCopyUtil {
 
     @Nullable
     private static AbstractInsnNode duplicateRemap(@NotNull AbstractInsnNode in,
-            @NotNull Remapper remapper, @NotNull UnaryOperator<LabelNode> labelNodeMapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull Remapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder) {
         switch (in.getType()) {
         case AbstractInsnNode.INSN:
             return new InsnNode(in.getOpcode());
@@ -279,10 +277,22 @@ public class CodeCopyUtil {
         AbstractInsnNode inInsn = startInInsn.getPrevious();
         Objects.requireNonNull(endInInsn, "endInInsn must not be null");
         InsnList copiedInstructions = new InsnList();
-        Map<LabelNode, LabelNode> labelMap = new HashMap<>();
-        Set<LabelNode> declaredLabels = new HashSet<>();
+        final Map<LabelNode, LabelNode> labelMap = new HashMap<LabelNode, LabelNode>();
+        Set<LabelNode> declaredLabels = new HashSet<LabelNode>();
         StringBuilder sharedBuilder = new StringBuilder();
         LabelNode endLabel = new LabelNode();
+        LabelNodeMapper labelMapper = new LabelNodeMapper() {
+            @Override
+            @NotNull
+            public LabelNode apply(LabelNode label) {
+                LabelNode l = labelMap.get(label);
+                if (l == null) {
+                  l = new LabelNode();
+                  labelMap.put(label, l);
+                }
+                return l;
+            }
+        };
         do {
             if (inInsn == null) {
                 inInsn = startInInsn;
@@ -299,14 +309,7 @@ public class CodeCopyUtil {
             } else if (inInsn instanceof LabelNode) {
                 declaredLabels.add((LabelNode) inInsn);
             }
-            AbstractInsnNode insn = duplicateRemap(inInsn, remapper, (label) -> {
-                LabelNode l = labelMap.get(label);
-                if (l == null) {
-                    l = new LabelNode();
-                    labelMap.put(label, l);
-                }
-                return l;
-            }, sharedBuilder);
+            AbstractInsnNode insn = duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder);
             if (insn != null) {
                 copiedInstructions.add(insn);
             }

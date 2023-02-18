@@ -3,7 +3,6 @@ package de.geolykt.micromixin;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -13,6 +12,7 @@ import org.objectweb.asm.tree.ClassNode;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
+import de.geolykt.micromixin.internal.util.Objects;
 
 /**
  * The central brain of Micromixin.
@@ -31,11 +31,11 @@ import de.geolykt.micromixin.internal.MixinStub;
  */
 public class MixinTransformer<M> {
 
-    private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<>();
-    private final Map<ModularityAttached<M, String>, MixinConfig> mixins = new HashMap<>();
-    private final Map<ModularityAttached<M, String>, ClassNode> mixinNodes = new HashMap<>();
-    private final Map<ModularityAttached<M, String>, MixinStub> mixinStubs = new HashMap<>();
-    private final Map<String, TreeSet<MixinStub>> mixinTargets = new HashMap<>();
+    private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    private final Map<ModularityAttached<M, String>, MixinConfig> mixins = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    private final Map<ModularityAttached<M, String>, ClassNode> mixinNodes = new HashMap<ModularityAttached<M, String>, ClassNode>();
+    private final Map<ModularityAttached<M, String>, MixinStub> mixinStubs = new HashMap<ModularityAttached<M, String>, MixinStub>();
+    private final Map<String, TreeSet<MixinStub>> mixinTargets = new HashMap<String, TreeSet<MixinStub>>();
     private final BytecodeProvider<M> bytecodeProvider;
 
     public MixinTransformer(BytecodeProvider<M> bytecodeProvider) {
@@ -47,32 +47,34 @@ public class MixinTransformer<M> {
         if (isMixin(attachment, config.mixinPackage)) { // FIXME: also validate other configs inserted previously.
             throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") target the same package (" + config.mixinPackage + ").");
         }
-        packageDeclarations.put(new ModularityAttached<>(attachment, config.mixinPackage), config);
+        packageDeclarations.put(new ModularityAttached<M, String>(attachment, config.mixinPackage), config);
         // FIXME unregister registered stuff if it fails
         for (String mixin : config.mixins) {
-            ModularityAttached<M, String> mixinRef = new ModularityAttached<>(attachment, config.mixinPackage + "/" + mixin);
-            if (mixins.putIfAbsent(mixinRef, config) != null) {
+            ModularityAttached<M, String> mixinRef = new ModularityAttached<M, String>(attachment, config.mixinPackage + "/" + mixin);
+            if (mixins.containsKey(mixinRef)) {
                 throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") use the same class (" + mixinRef.value + ").");
             }
+            mixins.put(mixinRef, config);
             try {
                 ClassNode node = bytecodeProvider.getClassNode(attachment, mixinRef.value);
                 MixinStub stub = MixinStub.parse(config.priority, node);
                 mixinNodes.put(mixinRef, node);
                 mixinStubs.put(mixinRef, stub);
-                Set<String> targets = new HashSet<>();
+                Set<String> targets = new HashSet<String>();
                 for (String desc : stub.header.targets) {
                     if (!targets.add(desc)) {
                         continue;
                     }
-                    mixinTargets.compute(desc, (ignore, val) -> {
-                        if (val == null) {
-                            val = new TreeSet<>();
-                        }
-                        val.add(stub);
-                        return val;
-                    });
+                    TreeSet<MixinStub> val = mixinTargets.get(desc);
+                    if (val == null) {
+                        val = new TreeSet<MixinStub>();
+                        mixinTargets.put(mixin, val);
+                    }
+                    val.add(stub);
                 }
-            } catch (ClassNotFoundException | MixinParseException e) {
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Broken mixin: " + mixinRef.value + " (attached via " + attachment + ")", e);
+            } catch (MixinParseException e) {
                 throw new IllegalStateException("Broken mixin: " + mixinRef.value + " (attached via " + attachment + ")", e);
             }
         }
@@ -90,7 +92,7 @@ public class MixinTransformer<M> {
      * @return True if it is within the package, false otherwise.
      */
     public boolean isMixin(M attachment, @NotNull String internalName) {
-        ModularityAttached<M, String> attached = new ModularityAttached<>(attachment, internalName);
+        ModularityAttached<M, String> attached = new ModularityAttached<M, String>(attachment, internalName);
         if (packageDeclarations.containsKey(attached)) {
             return true;
         }

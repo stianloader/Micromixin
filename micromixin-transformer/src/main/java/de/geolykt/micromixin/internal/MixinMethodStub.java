@@ -36,7 +36,7 @@ public class MixinMethodStub implements ClassMemberStub {
 
     @NotNull
     public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method) {
-        List<MixinAnnotation<MixinMethodStub>> annotations = new ArrayList<>();
+        List<MixinAnnotation<MixinMethodStub>> annotations = new ArrayList<MixinAnnotation<MixinMethodStub>>();
         if (method.visibleAnnotations != null) {
             for (AnnotationNode annot : method.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
@@ -45,9 +45,9 @@ public class MixinMethodStub implements ClassMemberStub {
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;")) {
                         annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.parse(annot));
+                        annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
-                        annotations.add(MixinUniqueAnnotation.parse(annot));
+                        annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }

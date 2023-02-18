@@ -91,10 +91,10 @@ public class MixinAtAnnotation {
     @NotNull
     public Collection<LabelNode> getLabels(@NotNull MethodNode method) {
         // IMPLEMENT Hide mixin injector calls. The main part would be done through annotations (see the comment on CallbackInfo-chaining in MixinInjectAnnotation)
-        switch (this.value) {
-        case "RETURN": { // BeforeReturn
-            List<LabelNode> returns = new ArrayList<>();
-            for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+        InsnList instructions = method.instructions;
+        if (this.value.equals("RETURN")) {
+            List<LabelNode> returns = new ArrayList<LabelNode>();
+            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
                 switch (insn.getOpcode()) {
                 case Opcodes.IRETURN:
                 case Opcodes.LRETURN:
@@ -102,13 +102,12 @@ public class MixinAtAnnotation {
                 case Opcodes.DRETURN:
                 case Opcodes.ARETURN:
                 case Opcodes.RETURN:
-                    returns.add(getNodeBefore(insn, method.instructions));
+                    returns.add(getNodeBefore(insn, instructions));
                 }
             }
             return returns;
-        }
-        case "TAIL": {// BeforeLastReturn
-            for (AbstractInsnNode insn = method.instructions.getLast(); insn != null; insn = insn.getPrevious()) {
+        } else if (this.value.equals("TAIL")) {// BeforeLastReturn
+            for (AbstractInsnNode insn = instructions.getLast(); insn != null; insn = insn.getPrevious()) {
                 switch (insn.getOpcode()) {
                 case Opcodes.IRETURN:
                 case Opcodes.LRETURN:
@@ -116,29 +115,28 @@ public class MixinAtAnnotation {
                 case Opcodes.DRETURN:
                 case Opcodes.ARETURN:
                 case Opcodes.RETURN:
-                    return Collections.singletonList(getNodeBefore(insn, method.instructions));
+                    return Collections.singletonList(getNodeBefore(insn, instructions));
                 }
             }
-        }
-        case "CONSTANT": {// BeforeConstant
+            throw new IllegalStateException("Instructions exhausted");
+        } else if (this.value.equals("CONSTANT")) {// BeforeConstant
             ConstantSelector selector = constantSelector;
             if (selector == null) {
                 throw new InternalError();
             }
             // IMPLEMENT fetch ordinal
-            List<LabelNode> labels = new ArrayList<>();
-            for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+            List<LabelNode> labels = new ArrayList<LabelNode>();
+            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
                 if (selector.matchesConstant(insn)) {
-                    labels.add(getNodeBefore(insn, method.instructions));
+                    labels.add(getNodeBefore(insn, instructions));
                 }
             }
             return labels;
-        }
-        case "HEAD": {
-            for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+        } else if (this.value.equals("HEAD")) {
+            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
                 if (insn.getOpcode() != -1) {
                     LabelNode temp = new LabelNode();
-                    method.instructions.insertBefore(temp, insn);
+                    instructions.insertBefore(temp, insn);
                     return Collections.singletonList(temp);
                 } else if (insn instanceof LabelNode) {
                     @SuppressWarnings("null")
@@ -148,10 +146,9 @@ public class MixinAtAnnotation {
             }
             // There are no instructions in the list
             LabelNode temp = new LabelNode();
-            method.instructions.insert(temp);
+            instructions.insert(temp);
             return Collections.singletonList(temp);
-        }
-        default:
+        } else {
             throw new MixinParseException("Unimplemented @At-value: " + this.value);
         }
     }

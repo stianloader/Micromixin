@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
@@ -32,9 +31,10 @@ import de.geolykt.micromixin.internal.selectors.MixinTargetSelector;
 import de.geolykt.micromixin.internal.selectors.StringSelector;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.DescString;
+import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.Remapper;
 
-public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodStub> {
+public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     @NotNull
     private static final String CALLBACK_INFO_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
@@ -65,7 +65,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
 
     @NotNull
     public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) {
-        List<MixinAtAnnotation> at = new ArrayList<>();
+        List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;
         String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method);
@@ -93,7 +93,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 if (target != null) {
                     throw new MixinParseException("Duplicate \"target\" field in @Inject.");
                 }
-                target = new ArrayList<>();
+                target = new ArrayList<MixinDescAnnotation>();
                 @SuppressWarnings("unchecked")
                 List<AnnotationNode> atValues = ((List<AnnotationNode>) val);
                 for (AnnotationNode atValue : atValues) {
@@ -121,7 +121,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
         }
-        List<MixinTargetSelector> selectors = new ArrayList<>();
+        List<MixinTargetSelector> selectors = new ArrayList<MixinTargetSelector>();
         if (target != null) {
             for (MixinDescAnnotation desc : target) {
                 selectors.add(new DescSelector(Objects.requireNonNull(desc)));
@@ -144,7 +144,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name);
-        Map<LabelNode, MethodNode> labels = new HashMap<>();
+        Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
             for (MixinAtAnnotation at : this.at) {
                 MethodNode targetMethod = selector.selectMethod(to, sourceStub);

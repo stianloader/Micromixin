@@ -1,6 +1,6 @@
 package de.geolykt.micromixin.internal.annotation;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +20,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     // TODO Now I see why Mixin uses the blackboard and why it is mandatory. As of now it isn't something that is necessarily
     // required, but it might improve stability in rare edge cases (mostly caused by layered transformation) and bad luck
     // We likely want to store the UID counter globally in order to nullify all chances of UID collisions.
-    private static final AtomicLong UID_COUNTER = new AtomicLong(ThreadLocalRandom.current().nextLong(Integer.MAX_VALUE));
+    private static final AtomicLong UID_COUNTER = new AtomicLong(new Random().nextInt() + (1L << 32));
     private final String uniquePrefix = "$unique$" + Long.toHexString(UID_COUNTER.getAndIncrement());
 
     private MixinUniqueAnnotation(boolean silent) {
@@ -40,7 +40,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
                 }
             }
         }
-        return new MixinUniqueAnnotation<>(silent);
+        return new MixinUniqueAnnotation<T0>(silent);
     }
 
     @Override

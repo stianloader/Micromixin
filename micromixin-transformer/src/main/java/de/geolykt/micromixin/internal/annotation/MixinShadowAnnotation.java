@@ -17,7 +17,7 @@ import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.Remapper;
 
-public final class MixinShadowAnnotation<T extends ClassMemberStub> implements MixinAnnotation<T> {
+public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
 
     @NotNull
     private final String prefix;
@@ -34,7 +34,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
         String prefix = "shadow$";
         List<String> aliases = Collections.emptyList();
         if (annotation.values == null) {
-            return new MixinShadowAnnotation<>(prefix, aliases);
+            return new MixinShadowAnnotation<T0>(prefix, aliases);
         }
         for (int i = 0; i < annotation.values.size(); i += 2) {
             String name = (String) annotation.values.get(i);
@@ -52,7 +52,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> implements M
                 throw new MixinParseException("Unimplemented option for @Shadow: " + name);
             }
         }
-        return new MixinShadowAnnotation<>(prefix, aliases);
+        return new MixinShadowAnnotation<T0>(prefix, aliases);
     }
 
     private void apply(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull Remapper out, @NotNull StringBuilder sharedBuilder) {

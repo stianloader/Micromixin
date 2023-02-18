@@ -1,5 +1,6 @@
 package de.geolykt.micromixin.internal.util;
 
+import java.util.Objects;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +21,7 @@ import de.geolykt.micromixin.internal.MemberDesc;
  */
 public class MemberRenameMap {
 
-    private final Map<MemberDesc, String> renames = new HashMap<MemberDesc, String>();
+    private final Map<MemberDesc, String> renames = new HashMap<>();
 
     public MemberRenameMap() {
     }
@@ -34,23 +35,16 @@ public class MemberRenameMap {
         return renames.get(new MemberDesc(owner, oldName, descriptor));
     }
 
+    @SuppressWarnings("null")
     @NotNull
     public String getOrDefault(@NotNull String owner, @NotNull String descriptor, @NotNull String oldName, @NotNull String defaultValue) {
-        String o = renames.get(new MemberDesc(owner, oldName, descriptor));
-        if (o == null) {
-            return defaultValue;
-        }
-        return o;
+        return renames.getOrDefault(new MemberDesc(owner, oldName, descriptor), defaultValue);
     }
 
     @SuppressWarnings("null")
     @NotNull
     public String optGet(@NotNull String owner, @NotNull String descriptor, @NotNull String oldName) {
-        String o = renames.get(new MemberDesc(owner, oldName, descriptor));
-        if (o == null) {
-            return oldName;
-        }
-        return o;
+        return renames.getOrDefault(new MemberDesc(owner, oldName, descriptor), oldName);
     }
 
     public void put(@NotNull String owner, @NotNull String descriptor, @NotNull String name, @NotNull String newName) {
@@ -72,10 +66,6 @@ public class MemberRenameMap {
     }
 
     public void putAllIfAbsent(MemberRenameMap other) {
-        for (Map.Entry<MemberDesc, String> entry : other.renames.entrySet()) {
-            if (!this.renames.containsKey(entry.getKey())) {
-                this.renames.put(entry.getKey(), entry.getValue());
-            }
-        }
+        other.renames.forEach(this.renames::putIfAbsent);
     }
 }

@@ -14,7 +14,7 @@ import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.Remapper;
 
-public class VirtualConstructorMergeAnnotation implements MixinAnnotation<MixinMethodStub> {
+public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     @NotNull
     private static MethodInsnNode getConstructorInvokeInsn(@NotNull ClassNode node, @NotNull MethodNode source) {

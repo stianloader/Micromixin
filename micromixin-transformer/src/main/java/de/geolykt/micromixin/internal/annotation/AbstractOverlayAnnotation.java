@@ -1,7 +1,5 @@
 package de.geolykt.micromixin.internal.annotation;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -16,9 +14,10 @@ import de.geolykt.micromixin.internal.MixinFieldStub;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
+import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.Remapper;
 
-public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> implements MixinAnnotation<T> {
+public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
 
     @Override
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,

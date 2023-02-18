@@ -23,3 +23,5 @@ Painpoints of the official Mixin implementation that this implementation seeks t
    <https://discord.com/channels/142425412096491520/626802111455297538/1075864621589733387>
    ). Micromixin rejects that practice and will POP/POP2 such operands as that leads
    to unstable behaviour.
+ - Mixin using Java 8 (Micromixin uses Java 6, making it usable for some more niche
+   purposes)

@@ -1,9 +1,9 @@
 package de.geolykt.micromixin;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import de.geolykt.micromixin.internal.util.Objects;
 
 public class ModularityAttached<T, V> {
     @Nullable

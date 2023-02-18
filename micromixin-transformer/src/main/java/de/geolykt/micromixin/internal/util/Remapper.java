@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
@@ -14,7 +13,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 public class Remapper {
     public final MemberRenameMap fieldRenames = new MemberRenameMap();
     public final MemberRenameMap methodRenames = new MemberRenameMap();
-    public final Map<String, String> oldToNewClassName = new HashMap<>();
+    public final Map<String, String> oldToNewClassName = new HashMap<String, String>();
 
     /**
      * Remaps a class name.

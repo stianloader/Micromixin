@@ -33,14 +33,14 @@ public class MixinFieldStub implements ClassMemberStub {
 
     @NotNull
     public static MixinFieldStub parse(@NotNull ClassNode owner, @NotNull FieldNode field) {
-        List<MixinAnnotation<MixinFieldStub>> annotations = new ArrayList<>();
+        List<MixinAnnotation<MixinFieldStub>> annotations = new ArrayList<MixinAnnotation<MixinFieldStub>>();
         if (field.visibleAnnotations != null) {
             for (AnnotationNode annot : field.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.parse(annot));
+                        annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
-                        annotations.add(MixinUniqueAnnotation.parse(annot));
+                        annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }

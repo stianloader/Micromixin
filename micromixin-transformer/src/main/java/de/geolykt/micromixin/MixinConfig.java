@@ -55,7 +55,7 @@ public class MixinConfig {
             throw new InvalidMixinConfigException("The required field \"package\" is missing from the mixin configuration.");
         }
         mixinPackage = mixinPackage.replace('.', '/');
-        Set<String> mixinList = new HashSet<>();
+        Set<String> mixinList = new HashSet<String>();
         JSONArray mixins = object.optJSONArray("mixins");
         JSONArray client = object.optJSONArray("client");
         JSONArray server = object.optJSONArray("server");
@@ -87,8 +87,8 @@ public class MixinConfig {
                 object.optBoolean("verbose", false),
                 object.optString("refmap"),
                 object.optBoolean("setSourceFile", false),
-                Collections.emptyList(),
-                Collections.emptyList());
+                Collections.<String>emptyList(),
+                Collections.<String>emptyList());
     }
 
     protected MixinConfig(boolean required, @Nullable String minVersion, @NotNull String mixinPackage,
