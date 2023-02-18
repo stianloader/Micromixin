@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
+            <artifactId>annotations-java5</artifactId>
             <version>${annotations-version}</version>
             <scope>provided</scope>
         </dependency>

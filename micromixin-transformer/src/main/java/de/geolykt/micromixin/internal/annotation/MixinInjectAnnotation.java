@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
@@ -65,8 +66,8 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
     @NotNull
     public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) {
         List<MixinAtAnnotation> at = new ArrayList<>();
-        Collection<@NotNull MixinDescAnnotation> target = null;
-        @NotNull String[] targetSelectors = null;
+        Collection<MixinDescAnnotation> target = null;
+        String[] targetSelectors = null;
         String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method);
         int require = -1;
         int expect = -1;
@@ -108,7 +109,7 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
                     throw new MixinParseException("Duplicate \"method\" field in @Inject.");
                 }
                 @SuppressWarnings("all")
-                @NotNull String[] hack = (@NotNull String[]) ((List) val).toArray(new @NotNull String[0]);
+                @NotNull String[] hack = (String[]) ((List) val).toArray(new String[0]);
                 targetSelectors = hack;
             } else if (name.equals("require")) {
                 require = ((Integer) val).intValue();
@@ -122,13 +123,13 @@ public final class MixinInjectAnnotation implements MixinAnnotation<MixinMethodS
         }
         List<MixinTargetSelector> selectors = new ArrayList<>();
         if (target != null) {
-            for (@NotNull MixinDescAnnotation desc : target) {
-                selectors.add(new DescSelector(desc));
+            for (MixinDescAnnotation desc : target) {
+                selectors.add(new DescSelector(Objects.requireNonNull(desc)));
             }
         }
         if (targetSelectors != null) {
-            for (@NotNull String s : targetSelectors) {
-                selectors.add(new StringSelector(s));
+            for (String s : targetSelectors) {
+                selectors.add(new StringSelector(Objects.requireNonNull(s)));
             }
         }
         if (selectors.isEmpty()) {

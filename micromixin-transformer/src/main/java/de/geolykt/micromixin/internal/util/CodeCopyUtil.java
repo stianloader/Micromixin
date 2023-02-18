@@ -292,12 +292,12 @@ public class CodeCopyUtil {
                     throw new IllegalStateException("Instructions exhausted without reaching endInInsn!");
                 }
             }
-            if (inInsn instanceof LabelNode) {
-                declaredLabels.add((LabelNode) inInsn);
-            } else if (transformReturnToJump && inInsn.getOpcode() == Opcodes.RETURN) {
+            if (inInsn.getOpcode() == Opcodes.RETURN && transformReturnToJump) {
                 // TODO detect and remove useless jumps (i.e. strip the last RETURN instruction)
                 copiedInstructions.add(new JumpInsnNode(Opcodes.GOTO, endLabel));
                 continue;
+            } else if (inInsn instanceof LabelNode) {
+                declaredLabels.add((LabelNode) inInsn);
             }
             AbstractInsnNode insn = duplicateRemap(inInsn, remapper, (label) -> {
                 LabelNode l = labelMap.get(label);

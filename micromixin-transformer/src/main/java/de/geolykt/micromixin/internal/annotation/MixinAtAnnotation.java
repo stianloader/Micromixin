@@ -125,16 +125,12 @@ public class MixinAtAnnotation {
             if (selector == null) {
                 throw new InternalError();
             }
-            List<@NotNull AbstractInsnNode> selected = new ArrayList<>();
+            // IMPLEMENT fetch ordinal
+            List<LabelNode> labels = new ArrayList<>();
             for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
                 if (selector.matchesConstant(insn)) {
-                    selected.add(insn);
+                    labels.add(getNodeBefore(insn, method.instructions));
                 }
-            }
-            // IMPLEMENT fetch ordinal here
-            List<LabelNode> labels = new ArrayList<>();
-            for (AbstractInsnNode insn : selected) {
-                labels.add(getNodeBefore(insn, method.instructions));
             }
             return labels;
         }
@@ -143,17 +139,17 @@ public class MixinAtAnnotation {
                 if (insn.getOpcode() != -1) {
                     LabelNode temp = new LabelNode();
                     method.instructions.insertBefore(temp, insn);
-                    return Collections.<@NotNull LabelNode>singletonList(temp);
+                    return Collections.singletonList(temp);
                 } else if (insn instanceof LabelNode) {
                     @SuppressWarnings("null")
-                    LabelNode temp = (@NotNull LabelNode) insn; // I don't quite understand why that hack is necessary, but whatever floats your boat...
-                    return Collections.<@NotNull LabelNode>singletonList(temp);
+                    LabelNode temp = (LabelNode) insn; // I don't quite understand why that hack is necessary, but whatever floats your boat...
+                    return Collections.singletonList(temp);
                 }
             }
             // There are no instructions in the list
             LabelNode temp = new LabelNode();
             method.instructions.insert(temp);
-            return Collections.<@NotNull LabelNode>singletonList(temp);
+            return Collections.singletonList(temp);
         }
         default:
             throw new MixinParseException("Unimplemented @At-value: " + this.value);
