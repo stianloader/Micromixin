@@ -64,7 +64,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     }
 
     @NotNull
-    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) {
+    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) throws MixinParseException {
+        if ((method.access & Opcodes.ACC_STATIC) != 0 && (method.access & Opcodes.ACC_PRIVATE) == 0) {
+            throw new MixinParseException("The injector handler method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
+        }
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;

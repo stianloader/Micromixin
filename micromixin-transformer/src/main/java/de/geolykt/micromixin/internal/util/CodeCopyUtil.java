@@ -69,7 +69,6 @@ public class CodeCopyUtil {
     }
 
     @NotNull
-    @Deprecated
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
             final @NotNull ClassNode target, @NotNull String handlerName) {
         final ClassNode sourceClass = sourceStub.sourceNode;

@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
 
@@ -15,7 +16,38 @@ public class TestHarness {
         runInjectionHeadTests(report);
         runMultiInjectionTests(report);
         runOverwriteTests(report);
+        runInjectorRemapTests(report);
         return report;
+    }
+
+    public static void runInjectorRemapTests(TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance0", new InjectorRemapTest()::runInjectorInstance0, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance1", new InjectorRemapTest()::runInjectorInstance1, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance2", new InjectorRemapTest()::runInjectorInstance2, 0);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance3", new InjectorRemapTest()::runInjectorInstance3, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance4", new InjectorRemapTest()::runInjectorInstance4, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance5", new InjectorRemapTest()::runInjectorInstance5, 1);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorInstance6", new InjectorRemapTest()::runInjectorInstance6, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorInstance7", new InjectorRemapTest()::runInjectorInstance7, NoSuchMethodError.class);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance8", new InjectorRemapTest()::runInjectorInstance8, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance9", new InjectorRemapTest()::runInjectorInstance9, 1);
+        set.addUnit("InjectorRemapTest.runInjectorInstanceV0", new InjectorRemapTest()::runInjectorInstanceV0);
+        set.addUnit("InjectorRemapTest.runInjectorInstanceV1", new InjectorRemapTest()::runInjectorInstanceV1);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic0", InjectorRemapTest::runInjectorStatic0, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic1", InjectorRemapTest::runInjectorStatic1, NoSuchMethodError.class);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorStatic2", InjectorRemapTest::runInjectorStatic2, 0);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic3", InjectorRemapTest::runInjectorStatic3, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic4", InjectorRemapTest::runInjectorStatic4, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic5", InjectorRemapTest::runInjectorStatic5, NoSuchMethodError.class);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorStatic6", InjectorRemapTest::runInjectorStatic6, 1);
+        set.addUnitAssertEquals("InjectorRemapTest.runInjectorStatic7", InjectorRemapTest::runInjectorStatic7, 1);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic8", InjectorRemapTest::runInjectorStatic8, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic9", InjectorRemapTest::runInjectorStatic9, NoSuchMethodError.class);
+        set.addUnit("InjectorRemapTest.runInjectorStaticV0", InjectorRemapTest::runInjectorStaticV0);
+        set.addUnit("InjectorRemapTest.runInjectorStaticV1", InjectorRemapTest::runInjectorStaticV1);
+        LoggerFactory.getLogger(TestHarness.class).info("InjectorRemapTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runClassloadingFailures(TestReport report) {

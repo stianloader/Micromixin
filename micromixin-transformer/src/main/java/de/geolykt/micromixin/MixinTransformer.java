@@ -68,7 +68,7 @@ public class MixinTransformer<M> {
                     TreeSet<MixinStub> val = mixinTargets.get(desc);
                     if (val == null) {
                         val = new TreeSet<MixinStub>();
-                        mixinTargets.put(mixin, val);
+                        mixinTargets.put(desc, val);
                     }
                     val.add(stub);
                 }
