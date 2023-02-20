@@ -8,10 +8,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -65,62 +62,32 @@ public class CodeCopyUtil {
                 && copyTargetStart.getOpcode() != Opcodes.RETURN) {
             throw new IllegalStateException("Invalid copy target: " + targetOwner.name + "." + copyTarget.name + copyTarget.desc + ": Last instruction should be a XRETURN opcode.");
         }
-        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, copyTargetStart, targetOwner, remapper, true);
+        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, copyTargetStart, targetOwner, remapper, true, false);
     }
 
     @NotNull
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
-            final @NotNull ClassNode target, @NotNull String handlerName) {
+            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull Remapper remapper) {
+        // WARNING: This method is what many would call to be "bugged". That is intended!
+        // To those wondering, this method does not properly remap INVOKESTATIC methods because
+        // the official (Sponge) mixin implementation does not properly remap them either.
+        // I am not really satisfied with reproducing that bug, but what can I do there?
+        // The tests would only need to run in micromixin presence then, which I mean can be arranged
+        // but still feels odd.
         final ClassNode sourceClass = sourceStub.sourceNode;
         MethodNode handler = new MethodNode();
         handler.name = handlerName;
         handler.desc = remapDesc(source.desc, sourceClass, target);
         handler.exceptions = source.exceptions; // TODO same here? Possible.
         handler.access = source.access;
-        source.accept(new MethodVisitor(Opcodes.ASM9, handler) {
-            @Override
-            public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                // IMPLEMENT strip mixin annotations
-                return super.visitAnnotation(descriptor, visible);
-            }
-
-            @Override
-            public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-                // TODO support @Pseudo aliases
-                super.visitFieldInsn(opcode, owner.replace(sourceClass.name, target.name), name, remapDesc(descriptor, sourceClass, target));
-            }
-
-            @Override
-            public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
-                    Object... bootstrapMethodArguments) {
-                // FIXME Support
-                System.err.println("DEBUG[CCU/116]: name: " + name + "; desc: " + descriptor + "; bmHandle: " + bootstrapMethodHandle + "; bmArgs:" + Arrays.toString(bootstrapMethodArguments));
-                super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
-            }
-
-            @Override
-            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                // TODO Support @Pseudo aliases
-                super.visitMethodInsn(opcode, owner.replace(sourceClass.name, target.name), name, remapDesc(descriptor, sourceClass, target), isInterface);
-            }
-
-            @Override
-            public void visitMultiANewArrayInsn(String descriptor, int numDimensions) {
-                System.err.println("DEBUG[CCU/128]: " + descriptor); // TODO support
-                super.visitMultiANewArrayInsn(descriptor, numDimensions);
-            }
-
-            @Override
-            public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end,
-                    int index) {
-            }
-
-            @Override
-            public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-                System.err.println("DEBUG[CCU/139]: " + type); // TODO support
-                super.visitTryCatchBlock(start, end, handler, type);
-            }
-        });
+        AbstractInsnNode sourceStartInsn = source.instructions.getFirst();
+        AbstractInsnNode sourceEndInsn = source.instructions.getLast();
+        if (sourceStartInsn == null || sourceEndInsn == null) {
+            throw new IllegalStateException("The source method is empty!");
+        }
+        AbstractInsnNode prevOutInsn = new LabelNode();
+        handler.instructions.add(prevOutInsn);
+        copyTo(source, sourceStartInsn, sourceEndInsn, sourceStub, handler, prevOutInsn, target, remapper, false, true);
         target.methods.add(handler);
         return handler;
     }
@@ -176,7 +143,8 @@ public class CodeCopyUtil {
 
     @Nullable
     private static AbstractInsnNode duplicateRemap(@NotNull AbstractInsnNode in,
-            @NotNull Remapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull Remapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder,
+            boolean invalidInvokestaticRemapping) {
         switch (in.getType()) {
         case AbstractInsnNode.INSN:
             return new InsnNode(in.getOpcode());
@@ -195,6 +163,15 @@ public class CodeCopyUtil {
         }
         case AbstractInsnNode.METHOD_INSN: {
             MethodInsnNode methodInsn = (MethodInsnNode) in;
+            if (invalidInvokestaticRemapping && methodInsn.getOpcode() == Opcodes.INVOKESTATIC) {
+                // Yes, I'm being serious there.
+                // If this bothers you too much, don't hesitate to notify me so I can work out a solution.
+                // Otherwise you could work around a solution.
+                return new MethodInsnNode(methodInsn.getOpcode(),
+                        remapper.remapInternalName(methodInsn.owner, sharedBuilder),
+                        methodInsn.name,
+                        remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder));
+            }
             return new MethodInsnNode(methodInsn.getOpcode(),
                     remapper.remapInternalName(methodInsn.owner, sharedBuilder),
                     remapper.methodRenames.optGet(methodInsn.owner, methodInsn.desc, methodInsn.name),
@@ -267,12 +244,12 @@ public class CodeCopyUtil {
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
             @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper) {
-        copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, false);
+        copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, false, false);
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
             @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper,
-            boolean transformReturnToJump) {
+            boolean transformReturnToJump, boolean invalidInvokestaticRemapping) {
         AbstractInsnNode inInsn = startInInsn.getPrevious();
         Objects.requireNonNull(endInInsn, "endInInsn must not be null");
         InsnList copiedInstructions = new InsnList();
@@ -308,7 +285,7 @@ public class CodeCopyUtil {
             } else if (inInsn instanceof LabelNode) {
                 declaredLabels.add((LabelNode) inInsn);
             }
-            AbstractInsnNode insn = duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder);
+            AbstractInsnNode insn = duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder, invalidInvokestaticRemapping);
             if (insn != null) {
                 copiedInstructions.add(insn);
             }

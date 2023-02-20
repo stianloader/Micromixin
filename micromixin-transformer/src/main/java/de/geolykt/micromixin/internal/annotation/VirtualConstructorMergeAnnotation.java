@@ -72,7 +72,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
             if (m.name.equals("<init>")) {
                 MethodInsnNode targetInsn = getConstructorInvokeInsn(to, m);
                 if (targetInsn.owner.equals(to.superName)) {
-                    CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, true);
+                    CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, true, false);
                 }
             }
         }

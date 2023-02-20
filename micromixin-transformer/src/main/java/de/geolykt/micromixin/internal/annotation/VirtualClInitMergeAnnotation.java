@@ -55,7 +55,7 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
         if (startInInsn == null || endInInsn == null) {
             throw new IllegalStateException("abstract clinit method: " + source.owner.name + "." + source.getName() + source.getDesc());
         }
-        CodeCopyUtil.copyTo(src, startInInsn, endInInsn, sourceStub, target, previousOutInsn, to, remapper, true);
+        CodeCopyUtil.copyTo(src, startInInsn, endInInsn, sourceStub, target, previousOutInsn, to, remapper, true, false);
     }
 
     @Override

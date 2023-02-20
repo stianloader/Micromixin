@@ -11,6 +11,8 @@ import de.geolykt.micromixin.internal.MixinParseException;
 
 public class MixinDescAnnotation {
 
+    @Nullable
+    public final Type owner;
     @NotNull
     public final String value;
     @Nullable
@@ -18,7 +20,8 @@ public class MixinDescAnnotation {
     @NotNull
     public final MemberDesc target;
 
-    public MixinDescAnnotation(@NotNull String value, @Nullable Type ret, @NotNull MemberDesc target) {
+    private MixinDescAnnotation(@Nullable Type owner, @NotNull String value, @Nullable Type ret, @NotNull MemberDesc target) {
+        this.owner = owner;
         this.value = value;
         this.ret = ret;
         this.target = target;
@@ -28,6 +31,7 @@ public class MixinDescAnnotation {
     public static MixinDescAnnotation parse(@NotNull ClassNode node, @NotNull String fallbackMethodDesc, @NotNull AnnotationNode atValue) {
         String value = null;
         Type ret = null;
+        Type owner = null;
         for (int i = 0; i < atValue.values.size(); i += 2) {
             String name = (String) atValue.values.get(i);
             Object val = atValue.values.get(i + 1);
@@ -35,6 +39,8 @@ public class MixinDescAnnotation {
                 value = (String) val;
             } else if (name.equals("ret")) {
                 ret = (Type) val;
+            } else if (name.equals("owner")) {
+                owner = (Type) val;
             } else {
                 throw new MixinParseException("Unimplemented key in @Desc: " + name);
             }
@@ -46,13 +52,19 @@ public class MixinDescAnnotation {
             // The spongeian mixin implementation doesn't complain about this case, but it also doesn't work as intended in that case
             throw new MixinParseException("[(.] present in \"value\"");
         }
-        // IMPLEMENT owner/args
+        // IMPLEMENT args
         String splicedMethodDesc = fallbackMethodDesc;
         if (ret != null) {
             splicedMethodDesc = splicedMethodDesc.substring(0, splicedMethodDesc.lastIndexOf(')') + 1) + ret.getDescriptor();
         }
-        MemberDesc target = new MemberDesc(node.name, value, splicedMethodDesc);
-        return new MixinDescAnnotation(value, ret, target);
+        String ownerName;
+        if (owner != null) {
+            ownerName = owner.getInternalName();
+        } else {
+            ownerName = node.name;
+        }
+        MemberDesc target = new MemberDesc(ownerName, value, splicedMethodDesc);
+        return new MixinDescAnnotation(owner, value, ret, target);
     }
 
     @Override

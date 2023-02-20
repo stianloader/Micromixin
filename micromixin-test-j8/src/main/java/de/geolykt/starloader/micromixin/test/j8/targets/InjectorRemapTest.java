@@ -112,11 +112,27 @@ public class InjectorRemapTest {
         throw new AssertionError("Expected cancelling @Inject.");
     }
 
+    public void runInjectorInstanceV2() {
+        throw new AssertionError("Expected cancelling @Inject.");
+    }
+
+    public void runInjectorInstanceV3() {
+        throw new AssertionError("Expected cancelling @Inject.");
+    }
+
     public static void runInjectorStaticV0() {
         throw new AssertionError("Expected cancelling @Inject.");
     }
 
     public static void runInjectorStaticV1() {
+        throw new AssertionError("Expected cancelling @Inject.");
+    }
+
+    public static void runInjectorStaticV2() {
+        throw new AssertionError("Expected cancelling @Inject.");
+    }
+
+    public static void runInjectorStaticV3() {
         throw new AssertionError("Expected cancelling @Inject.");
     }
 }

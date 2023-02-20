@@ -54,7 +54,7 @@ public class MemberRenameMap {
     }
 
     public void put(@NotNull String owner, @NotNull String descriptor, @NotNull String name, @NotNull String newName) {
-        MemberDesc ref = new MemberDesc(owner, descriptor, name);
+        MemberDesc ref = new MemberDesc(owner, name, descriptor);
         String oldMapping = renames.get(ref);
         if (oldMapping == null) {
             renames.put(ref, Objects.requireNonNull(newName, "newName cannot be null."));

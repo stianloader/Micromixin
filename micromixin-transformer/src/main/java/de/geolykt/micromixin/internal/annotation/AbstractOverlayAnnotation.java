@@ -74,7 +74,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
         if (pre) {
             // Make the changes "public" to the entire class
-            remapper.remapMethod(source.getOwner().name, source.getDesc(), desiredName, desiredDescMapped);
+            remapper.remapMethod(source.getOwner().name, source.getDesc(), source.getName(), desiredName);
             return;
         }
         sourceStub = Objects.requireNonNull(sourceStub, "\"sourceStub\" may not be null if \"pre\" is false as per method contract.");

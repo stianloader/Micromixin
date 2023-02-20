@@ -34,6 +34,8 @@ public class TestHarness {
         set.addUnitAssertEquals("InjectorRemapTest.runInjectorInstance9", new InjectorRemapTest()::runInjectorInstance9, 1);
         set.addUnit("InjectorRemapTest.runInjectorInstanceV0", new InjectorRemapTest()::runInjectorInstanceV0);
         set.addUnit("InjectorRemapTest.runInjectorInstanceV1", new InjectorRemapTest()::runInjectorInstanceV1);
+        set.addUnit("InjectorRemapTest.runInjectorInstanceV2", new InjectorRemapTest()::runInjectorInstanceV2);
+        set.addUnit("InjectorRemapTest.runInjectorInstanceV3", new InjectorRemapTest()::runInjectorInstanceV3);
         set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic0", InjectorRemapTest::runInjectorStatic0, NoSuchMethodError.class);
         set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic1", InjectorRemapTest::runInjectorStatic1, NoSuchMethodError.class);
         set.addUnitAssertEquals("InjectorRemapTest.runInjectorStatic2", InjectorRemapTest::runInjectorStatic2, 0);
@@ -44,8 +46,10 @@ public class TestHarness {
         set.addUnitAssertEquals("InjectorRemapTest.runInjectorStatic7", InjectorRemapTest::runInjectorStatic7, 1);
         set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic8", InjectorRemapTest::runInjectorStatic8, NoSuchMethodError.class);
         set.addUnitExpectThrow("InjectorRemapTest.runInjectorStatic9", InjectorRemapTest::runInjectorStatic9, NoSuchMethodError.class);
-        set.addUnit("InjectorRemapTest.runInjectorStaticV0", InjectorRemapTest::runInjectorStaticV0);
-        set.addUnit("InjectorRemapTest.runInjectorStaticV1", InjectorRemapTest::runInjectorStaticV1);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStaticV0", InjectorRemapTest::runInjectorStaticV0, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStaticV1", InjectorRemapTest::runInjectorStaticV1, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStaticV2", InjectorRemapTest::runInjectorStaticV2, NoSuchMethodError.class);
+        set.addUnitExpectThrow("InjectorRemapTest.runInjectorStaticV3", InjectorRemapTest::runInjectorStaticV3, NoSuchMethodError.class);
         LoggerFactory.getLogger(TestHarness.class).info("InjectorRemapTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

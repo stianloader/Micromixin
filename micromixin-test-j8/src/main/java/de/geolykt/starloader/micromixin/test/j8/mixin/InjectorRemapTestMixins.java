@@ -42,6 +42,22 @@ public class InjectorRemapTestMixins {
     private void aliasingVoidShadowInstance() {
     }
 
+    @Shadow
+    private static void shadow$aliasedVoidStatic() {
+    }
+
+    @Shadow(prefix = "explicitShadow$")
+    private static void explicitShadow$aliasedVoidStatic() {
+    }
+
+    @Shadow
+    private void shadow$aliasedVoidInstance() {
+    }
+
+    @Shadow(prefix = "explicitShadow$")
+    private void explicitShadow$aliasedVoidInstance() {
+    }
+
     @Overwrite(aliases = "aliasedVoidStatic")
     private static void voidStatic() {
     }
@@ -102,7 +118,7 @@ public class InjectorRemapTestMixins {
         cir.setReturnValue(aliasingShadowMethodInstance());
     }
 
-    @Inject(at = @At("HEAD"), cancellable = true, method = "Lde/geolykt/starloader/micromixin/test/j8/targets/InjectorRemapTest;runInjectorInstanceV0()I")
+    @Inject(at = @At("HEAD"), cancellable = true, method = "Lde/geolykt/starloader/micromixin/test/j8/targets/InjectorRemapTest;runInjectorInstanceV0()V")
     private void injectInstanceV0(CallbackInfo ci) {
         aliasingShadowMethodInstance();
         ci.cancel();
@@ -111,6 +127,18 @@ public class InjectorRemapTestMixins {
     @Inject(at = @At("HEAD"), cancellable = true, target = @Desc(owner = InjectorRemapTest.class, value = "runInjectorInstanceV1"))
     private void injectInstanceV1(CallbackInfo ci) {
         voidInstance();
+        ci.cancel();
+    }
+
+    @Inject(at = @At("HEAD"), cancellable = true, method = "Lde/geolykt/starloader/micromixin/test/j8/targets/InjectorRemapTest;runInjectorInstanceV2()V")
+    private void injectInstanceV2(CallbackInfo ci) {
+        shadow$aliasedVoidInstance();
+        ci.cancel();
+    }
+
+    @Inject(at = @At("HEAD"), cancellable = true, target = @Desc(owner = InjectorRemapTest.class, value = "runInjectorInstanceV3", ret = void.class))
+    private void injectInstanceV3(CallbackInfo ci) {
+        explicitShadow$aliasedVoidInstance();
         ci.cancel();
     }
 
@@ -175,6 +203,18 @@ public class InjectorRemapTestMixins {
     @Inject(at = @At("HEAD"), cancellable = true, target = @Desc(owner = InjectorRemapTest.class, value = "runInjectorStaticV1"))
     private static void injectStaticV1(CallbackInfo ci) {
         voidStatic();
+        ci.cancel();
+    }
+
+    @Inject(at = @At("HEAD"), cancellable = true, method = "Lde/geolykt/starloader/micromixin/test/j8/targets/InjectorRemapTest;runInjectorStaticV2()V")
+    private static void injectStaticV2(CallbackInfo ci) {
+        shadow$aliasedVoidStatic();
+        ci.cancel();
+    }
+
+    @Inject(at = @At("HEAD"), cancellable = true, target = @Desc(owner = InjectorRemapTest.class, value = "runInjectorStaticV3", ret = void.class))
+    private static void injectStaticV3(CallbackInfo ci) {
+        explicitShadow$aliasedVoidStatic();
         ci.cancel();
     }
 }
