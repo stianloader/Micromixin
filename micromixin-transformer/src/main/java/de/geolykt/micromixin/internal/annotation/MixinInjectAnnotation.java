@@ -349,7 +349,6 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     injected.add(new InsnNode(Opcodes.RETURN));
                     injected.add(skipReturn);
                 }
-                injected.add(label);
             }
             method.instructions.insert(label, injected); // Not insertBefore due to jump instructions and stuff
         }
