@@ -45,7 +45,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
         if (pre) {
             // Make the changes "public" to the entire class
-            remapper.remapField(source.getOwner().name, source.getDesc(), desiredName, desiredDescMapped);
+            remapper.remapField(source.getOwner().name, source.getDesc(), source.getName(), desiredName);
             return;
         }
 

@@ -199,7 +199,7 @@ public class CodeCopyUtil {
             return labelNodeMapper.apply((LabelNode) in);
         case AbstractInsnNode.LDC_INSN:
             if (((LdcInsnNode) in).cst instanceof Type) {
-                return new LdcInsnNode(remapper.remapSingleDesc(((Type) ((LdcInsnNode) in).cst).getDescriptor(), sharedBuilder));
+                return new LdcInsnNode(Type.getType(remapper.remapSingleDesc(((Type) ((LdcInsnNode) in).cst).getDescriptor(), sharedBuilder)));
             } else {
                 return new LdcInsnNode(((LdcInsnNode) in).cst);
             }

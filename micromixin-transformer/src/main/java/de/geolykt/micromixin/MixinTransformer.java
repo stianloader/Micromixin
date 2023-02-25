@@ -8,6 +8,7 @@ import java.util.TreeSet;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.CheckClassAdapter;
 
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinParseException;
@@ -46,6 +47,7 @@ public class MixinTransformer<M> {
     private final BytecodeProvider<M> bytecodeProvider;
     @NotNull
     private final ClassWrapperPool pool;
+    private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
 
     public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
@@ -126,6 +128,14 @@ public class MixinTransformer<M> {
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
         for (MixinStub stub : mixins) {
             stub.applyTo(in, hctx);
+        }
+        if (DEBUG) {
+            try {
+                CheckClassAdapter cca = new CheckClassAdapter(null);
+                in.accept(cca);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
         }
     }
 }

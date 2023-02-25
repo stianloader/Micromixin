@@ -54,6 +54,12 @@ public class MemberRenameMap {
     }
 
     public void put(@NotNull String owner, @NotNull String descriptor, @NotNull String name, @NotNull String newName) {
+        if (newName.indexOf('.') != -1
+                || newName.indexOf(';') != -1
+                || newName.indexOf('[') != -1
+                || newName.indexOf('/') != -1) {
+            throw new IllegalArgumentException("newName is not a valid java identifier. It must not contain any of the following character: . ; [ /. However the string is:\"" + newName + "\"");
+        }
         MemberDesc ref = new MemberDesc(owner, name, descriptor);
         String oldMapping = renames.get(ref);
         if (oldMapping == null) {
