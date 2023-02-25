@@ -1,5 +1,6 @@
 package de.geolykt.micromixin.internal.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -301,6 +302,9 @@ public class CodeCopyUtil {
                 String htype = node.type;
                 if (htype != null) {
                     remapper.remapInternalName(htype, sharedBuilder);
+                }
+                if (output.tryCatchBlocks == null) {
+                    output.tryCatchBlocks = new ArrayList<TryCatchBlockNode>();
                 }
                 output.tryCatchBlocks.add(new TryCatchBlockNode(labelMap.get(node.start), labelMap.get(node.end), labelMap.get(node.handler), htype));
             }

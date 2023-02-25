@@ -1,0 +1,1 @@
+mvn install && cd ../../Starloader && ./gradlew shadowJar && cd ../micromixin/micromixin-transformer/

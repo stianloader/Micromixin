@@ -18,6 +18,7 @@ import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualClInitMergeAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualConstructorMergeAnnotation;
 import de.geolykt.micromixin.internal.util.Remapper;
+import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public class MixinMethodStub implements ClassMemberStub {
 
@@ -35,13 +36,13 @@ public class MixinMethodStub implements ClassMemberStub {
     }
 
     @NotNull
-    public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method) {
+    public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull ClassWrapperPool pool) {
         List<MixinAnnotation<MixinMethodStub>> annotations = new ArrayList<MixinAnnotation<MixinMethodStub>>();
         if (method.visibleAnnotations != null) {
             for (AnnotationNode annot : method.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Inject;")) {
-                        annotations.add(MixinInjectAnnotation.parse(node, method, annot));
+                        annotations.add(MixinInjectAnnotation.parse(node, method, annot, pool));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;")) {
                         annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {

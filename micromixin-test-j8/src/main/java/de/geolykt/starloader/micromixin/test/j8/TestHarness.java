@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.LocalCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
 
@@ -17,7 +18,16 @@ public class TestHarness {
         runMultiInjectionTests(report);
         runOverwriteTests(report);
         runInjectorRemapTests(report);
+        runLocalCaputureTest(report);
         return report;
+    }
+
+    public static void runLocalCaputureTest(TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnitAssertEquals("LocalCaptureTest.returnLocalStatic2", LocalCaptureTest::returnLocalStatic2, 1);
+        set.addUnitAssertEquals("LocalCaptureTest.returnLocalInstance2", new LocalCaptureTest()::returnLocalInstance2, 1);
+        LoggerFactory.getLogger(TestHarness.class).info("LocalCaptureTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runInjectorRemapTests(TestReport report) {

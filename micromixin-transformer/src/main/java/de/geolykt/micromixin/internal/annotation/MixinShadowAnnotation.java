@@ -15,6 +15,7 @@ import de.geolykt.micromixin.internal.MixinFieldStub;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
+import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
@@ -69,13 +70,10 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
             }
         }
         for (String alias : this.aliases) {
-            // TODO are aliases really affected by prefixes?
-            if (alias.startsWith(this.prefix)) {
-                alias = alias.substring(this.prefix.length());
-            }
+            // Note: aliases are not affected by prefixes.
             for (MethodNode tmethod : target.methods) {
                 if (tmethod.name.equals(alias) && tmethod.desc.equals(desc)) {
-                    out.remapMethod(source.owner.name, source.method.desc, source.method.name, alias);
+                    out.remapMethod(source.owner.name, source.method.desc, source.method.name, Objects.requireNonNull(alias, "Null alias"));
                     return;
                 }
             }
@@ -97,13 +95,10 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
             }
         }
         for (String alias : this.aliases) {
-            // TODO are aliases really affected by prefixes?
-            if (alias.startsWith(this.prefix)) {
-                alias = alias.substring(this.prefix.length());
-            }
+            // Note: aliases are not affected by prefixes.
             for (FieldNode tfield : target.fields) {
                 if (tfield.name.equals(alias) && tfield.desc.equals(desc)) {
-                    out.remapField(source.owner.name, source.field.desc, source.field.name, alias);
+                    out.remapField(source.owner.name, source.field.desc, source.field.name, Objects.requireNonNull(alias, "Null alias"));
                     return;
                 }
             }

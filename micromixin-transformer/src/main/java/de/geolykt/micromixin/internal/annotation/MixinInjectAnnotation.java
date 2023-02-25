@@ -1,5 +1,7 @@
 package de.geolykt.micromixin.internal.annotation;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,6 +23,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.Frame;
 
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
@@ -32,7 +36,14 @@ import de.geolykt.micromixin.internal.selectors.StringSelector;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.DescString;
 import de.geolykt.micromixin.internal.util.Objects;
+import de.geolykt.micromixin.internal.util.PrintUtils;
 import de.geolykt.micromixin.internal.util.Remapper;
+import de.geolykt.micromixin.internal.util.commenttable.CommentTable;
+import de.geolykt.micromixin.internal.util.commenttable.KeyValueTableSection;
+import de.geolykt.micromixin.internal.util.commenttable.StringTableSection;
+import de.geolykt.micromixin.internal.util.locals.LocalCaptureResult;
+import de.geolykt.micromixin.internal.util.locals.LocalsCapture;
+import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -51,9 +62,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     private final int expect;
     private final boolean cancellable;
     private final boolean denyVoids;
+    @NotNull
+    private final String locals;
+    @NotNull
+    private final ClassWrapperPool pool;
 
     private MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids) {
+            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids, @NotNull String locals,
+            @NotNull ClassWrapperPool pool) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
@@ -61,10 +77,12 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         this.expect = expect;
         this.cancellable = cancellable;
         this.denyVoids = denyVoids;
+        this.locals = locals;
+        this.pool = pool;
     }
 
     @NotNull
-    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot) throws MixinParseException {
+    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull ClassWrapperPool pool) throws MixinParseException {
         if ((method.access & Opcodes.ACC_STATIC) != 0 && (method.access & Opcodes.ACC_PRIVATE) == 0) {
             throw new MixinParseException("The injector handler method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
@@ -76,6 +94,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         int expect = -1;
         boolean cancellable = false;
         boolean denyVoids = AnnotationUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(AnnotationUtil.getLastType(method.desc));
+        String locals = null;
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
             Object val = annot.values.get(i + 1);
@@ -120,6 +139,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 expect = ((Integer) val).intValue();
             } else if (name.equals("cancellable")) {
                 cancellable = (Boolean) val;
+            } else if (name.equals("cancellable")) {
+                cancellable = (Boolean) val;
+            } else if (name.equals("locals")) {
+                locals = ((String[]) val)[1];
             } else {
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
@@ -139,7 +162,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             // IMPLEMENT what about injector groups?
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids);
+        if (locals == null) {
+            locals = "NO_CAPTURE";
+        }
+        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, pool);
     }
 
     @Override
@@ -187,6 +213,9 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
             boolean category2 = AnnotationUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
+            if (handleCapture(sourceStub.sourceNode, to, method, injected, label, sharedBuilder)) {
+                continue;
+            }
             if (returnType != 'V' && category2) {
                 // This method could theoretically work with both cat 1 and cat 2 return types,
                 // but uses the local variable table for temporary storage
@@ -352,6 +381,72 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
             method.instructions.insert(label, injected); // Not insertBefore due to jump instructions and stuff
         }
+    }
+
+    /**
+     * Handles local capture.
+     *
+     * @param handlerOwner The owner class of the injector source.
+     * @param targetClass The ASM {@link ClassNode} representation of the class that is targeted by the mixin
+     * @param target The ASM {@link MethodNode} representation of the method that should be transformed by the inject.
+     * @param out Instructions generated through the local capture that should be prefixed before the actual injection handling. Intended to load the local variables.
+     * @param label The label which is targeted by the injection.
+     * @param sharedBuilder A shared {@link StringBuilder} instance used to reduce duplicate allocations
+     * @return True to abort injection (for example with PRINT), false otherwise.
+     */
+    private boolean handleCapture(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target,
+            @NotNull InsnList out, LabelNode label, @NotNull StringBuilder sharedBuilder) {
+        if (this.locals.equals("NO_CAPTURE")) {
+            return false;
+        }
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.pool);
+        if (this.locals.equals("PRINT")) {
+            KeyValueTableSection injectionPointInfo = new KeyValueTableSection();
+            CommentTable printTable = new CommentTable().addSection(injectionPointInfo);
+
+            injectionPointInfo.add("Target Class", targetClass.name.replace('/', '.'));
+            sharedBuilder.setLength(0);
+            injectionPointInfo.add("Target Method",
+                    PrintUtils.stringifyAccessMethod(target.access, sharedBuilder)
+                    .append(' ')
+                    .append(target.name)
+                    .append(target.desc) // TODO Does the descriptor need to be more user-friendly?
+                    .toString());
+
+            Throwable error = result.error;
+            Frame<BasicValue> frame = result.frame;
+            String maxLocals;
+            String initialFrameSize = "<not implemented>";
+
+            if (error != null) {
+                List<String> lines = new ArrayList<String>();
+                lines.add("A fatal error has occured while analyzing the target method: ");
+                lines.add("");
+                lines.add("");
+                StringWriter writer = new StringWriter();
+                error.printStackTrace(new PrintWriter(writer));
+                for (String line : writer.getBuffer().toString().split("[\\n\\r]")) {
+                    lines.add(line);
+                }
+                printTable.addSection(new StringTableSection(lines));
+                maxLocals = "???";
+            } else if (frame == null) {
+                printTable.addSection(new StringTableSection(Collections.singletonList("Error: The desired injection point is not reachable. Local capture is not possible")));
+                maxLocals = "???";
+            } else {
+                maxLocals = Integer.toString(frame.getLocals());
+                printTable.addSection(result.asLocalPrintTable(sharedBuilder));
+                printTable.addSection(new StringTableSection(PrintUtils.getExpectedCallbackSignature(this.injectSource, target, frame, sharedBuilder)));
+            }
+
+            injectionPointInfo.add("Target Max LOCALS", maxLocals);
+            injectionPointInfo.add("Initial Frame Size", initialFrameSize);
+            injectionPointInfo.add("Callback Name", this.injectSource.name);
+            injectionPointInfo.add("Instruction", "<not implemented>"); // IMPLEMENT Show instruction in Local capture
+            System.err.println(printTable);
+            return true;
+        }
+        throw new IllegalStateException("Unsupported local capture flag: \"" + this.locals + "\"");
     }
 
     private static int searchCallbackInfoIndex(@NotNull MethodNode method, boolean cancellable) {

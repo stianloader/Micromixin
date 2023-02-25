@@ -7,5 +7,6 @@ module de.geolykt.starloader.micromixin {
     requires org.jetbrains.annotations;
 
     exports de.geolykt.micromixin;
+    exports de.geolykt.micromixin.supertypes;
     exports org.spongepowered.asm.mixin.injection.callback;
 }

@@ -1,5 +1,6 @@
 package de.geolykt.micromixin.internal.util;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,6 +15,7 @@ public final class Objects {
     }
 
     @NotNull
+    @Contract(pure = true, value = "!null -> param1; null -> fail")
     public static <T> T requireNonNull(T object) {
         if (object == null) {
             throw new NullPointerException();
@@ -22,6 +24,7 @@ public final class Objects {
     }
 
     @NotNull
+    @Contract(pure = true, value = "!null, _ -> param1; null, _ -> fail")
     public static <T> T requireNonNull(T object, @NotNull String message) {
         if (object == null) {
             throw new NullPointerException(message);
@@ -29,6 +32,7 @@ public final class Objects {
         return object;
     }
 
+    @Contract(pure = true, value = "null, !null -> false; null, null -> true; !null, null -> false")
     public static boolean equals(@Nullable Object o1, @Nullable Object o2) {
         if (o1 == null) {
             return o2 == null;

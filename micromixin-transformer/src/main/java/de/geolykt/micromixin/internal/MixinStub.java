@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import de.geolykt.micromixin.internal.util.Remapper;
+import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public class MixinStub implements Comparable<MixinStub> {
 
@@ -31,14 +32,14 @@ public class MixinStub implements Comparable<MixinStub> {
     }
 
     @NotNull
-    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node) {
+    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull ClassWrapperPool pool) {
         List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
         List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
         for (MethodNode method : node.methods) {
             if (method == null) {
                 throw new NullPointerException();
             }
-            MixinMethodStub methodStub = MixinMethodStub.parse(node, method);
+            MixinMethodStub methodStub = MixinMethodStub.parse(node, method, pool);
             methods.add(methodStub);
         }
         for (FieldNode field : node.fields) {

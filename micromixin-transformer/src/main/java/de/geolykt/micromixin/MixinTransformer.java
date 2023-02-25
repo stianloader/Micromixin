@@ -13,6 +13,7 @@ import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.Objects;
+import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 /**
  * The central brain of Micromixin.
@@ -31,15 +32,24 @@ import de.geolykt.micromixin.internal.util.Objects;
  */
 public class MixinTransformer<M> {
 
+    @NotNull
     private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    @NotNull
     private final Map<ModularityAttached<M, String>, MixinConfig> mixins = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    @NotNull
     private final Map<ModularityAttached<M, String>, ClassNode> mixinNodes = new HashMap<ModularityAttached<M, String>, ClassNode>();
+    @NotNull
     private final Map<ModularityAttached<M, String>, MixinStub> mixinStubs = new HashMap<ModularityAttached<M, String>, MixinStub>();
+    @NotNull
     private final Map<String, TreeSet<MixinStub>> mixinTargets = new HashMap<String, TreeSet<MixinStub>>();
+    @NotNull
     private final BytecodeProvider<M> bytecodeProvider;
+    @NotNull
+    private final ClassWrapperPool pool;
 
-    public MixinTransformer(BytecodeProvider<M> bytecodeProvider) {
+    public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
+        this.pool = pool;
     }
 
     public void addMixin(M attachment, @NotNull MixinConfig config) {
@@ -57,7 +67,7 @@ public class MixinTransformer<M> {
             mixins.put(mixinRef, config);
             try {
                 ClassNode node = bytecodeProvider.getClassNode(attachment, mixinRef.value);
-                MixinStub stub = MixinStub.parse(config.priority, node);
+                MixinStub stub = MixinStub.parse(config.priority, node, this.pool);
                 mixinNodes.put(mixinRef, node);
                 mixinStubs.put(mixinRef, stub);
                 Set<String> targets = new HashSet<String>();
