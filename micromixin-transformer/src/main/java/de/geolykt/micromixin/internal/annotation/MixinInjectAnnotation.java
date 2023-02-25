@@ -50,7 +50,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     @NotNull
     private static final String CALLBACK_INFO_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
     @NotNull
+    private static final String CALLBACK_INFO_DESC = "L" + CALLBACK_INFO_TYPE + ";";
+    @NotNull
     private static final String CALLBACK_INFO_RETURNABLE_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
+    @NotNull
+    private static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_TYPE + ";";
 
     @NotNull
     public final Collection<MixinAtAnnotation> at;
@@ -251,11 +255,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Operand stack: CIR
                 injected.add(new InsnNode(Opcodes.DUP));
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                    this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
+                    this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -314,11 +320,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(Opcodes.DUP));
                 // Now RET, CIR, CIR
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                    this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
+                    this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -353,6 +361,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new LdcInsnNode(method.name));
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
+                this.captureArguments(sourceStub, injected, to, method);
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
@@ -367,6 +376,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 int idx = getCallbackInfoIndex(method, cancellable);
                 injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
+                this.captureArguments(sourceStub, injected, to, method);
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (cancellable) {
@@ -567,5 +577,62 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             @NotNull Remapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         // NOP
+    }
+
+    private void captureArguments(@NotNull MixinStub sourceStub, @NotNull InsnList output, @NotNull ClassNode targetClass, @NotNull MethodNode targetMethod) {
+        DescString handlerDesc = new DescString(this.injectSource.desc);
+        DescString targetDesc = new DescString(targetMethod.desc);
+
+        int lvtIndex = 0;
+        if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
+            lvtIndex++;
+        }
+
+        while (handlerDesc.hasNext() && targetDesc.hasNext()) {
+            String handlerType = handlerDesc.nextType();
+            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(CALLBACK_INFO_RETURNABLE_DESC)) {
+                if (this.injectSource.desc.startsWith("(" + CALLBACK_INFO_DESC + ")")
+                        || this.injectSource.desc.startsWith("(" + CALLBACK_INFO_RETURNABLE_DESC + ")")) {
+                    // Not capturing any argument is supported even in the case of an argument underflow.
+                    return;
+                }
+                // Argument underflow (not supported by the spongeian implementation - even though underflows are supported for local capture):
+                // the break will cause an exception to fire - that is intended.
+                break;
+            }
+            String targetType = targetDesc.nextType();
+            if (!handlerType.equals(targetType)) {
+                // TODO Can it also be subtypes?
+                throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
+                        + "the target method defines different arguments than the source method is capturing. The first mismatched argument: \"" + handlerType + "\" defined by the handler where as \"" + targetType + "\" is defined by the target.");
+            }
+
+            int refType = targetType.codePointAt(0);
+            output.add(new VarInsnNode(AnnotationUtil.getLoadOpcode(refType), lvtIndex++));
+            if (AnnotationUtil.isCategory2(refType)) {
+                output.add(new InsnNode(Opcodes.DUP2_X1));
+                output.add(new InsnNode(Opcodes.POP2));
+            } else {
+                output.add(new InsnNode(Opcodes.SWAP));
+            }
+        }
+
+        if (targetDesc.hasNext()) {
+            // Argument underflows are not supported by the spongeian implementation
+            throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
+                    + "the target method has more arguments than the source method is capturing.");
+        } else if (handlerDesc.hasNext()) {
+            String handlerType = handlerDesc.nextType();
+            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(CALLBACK_INFO_RETURNABLE_DESC)) {
+                return;
+            }
+            // handler wishes to capture more arguments than it should.
+            // It is rather self-explanatory that argument overflows are not supported.
+            throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
+                    + "the target method has less arguments than the source method is wishing to capture. The first extraneous argument is of type: " + handlerType);
+        } else {
+            // Both lists exhausted without reaching a CI or a CIR parameter.
+            throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " must have a CallbackInfo or a CallbackInfoReturnable in it's arguments. But it does not.");
+        }
     }
 }

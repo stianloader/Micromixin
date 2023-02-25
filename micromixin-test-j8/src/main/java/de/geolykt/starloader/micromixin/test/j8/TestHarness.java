@@ -3,6 +3,7 @@ package de.geolykt.starloader.micromixin.test.j8;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
+import de.geolykt.starloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.LocalCaptureTest;
@@ -19,7 +20,17 @@ public class TestHarness {
         runOverwriteTests(report);
         runInjectorRemapTests(report);
         runLocalCaputureTest(report);
+        runArgumentCaptureTest(report);
         return report;
+    }
+
+    private static void runArgumentCaptureTest(TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnit("ArgumentCaptureTest.<clinit>", () -> {
+            ArgumentCaptureTest.class.toString();
+        });
+        LoggerFactory.getLogger(TestHarness.class).info("ArgumentCaptureTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runLocalCaputureTest(TestReport report) {

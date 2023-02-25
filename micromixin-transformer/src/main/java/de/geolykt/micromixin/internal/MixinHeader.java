@@ -27,6 +27,9 @@ public class MixinHeader {
     @NotNull
     public static MixinHeader parse(@NotNull ClassNode node, int defaultPriority) throws MixinParseException {
         AnnotationNode mixinAnnot = null;
+        if (node.invisibleAnnotations == null) {
+            throw new MixinParseException("The class " + node.name + " does not contain a @Mixin-annotation and thus is an invalid mixin.");
+        }
         for (AnnotationNode annot : node.invisibleAnnotations) {
             if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Mixin;")) {
                 if (mixinAnnot != null) {
