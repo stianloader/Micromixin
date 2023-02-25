@@ -19,7 +19,8 @@ public class LocalsCapture {
     public static LocalCaptureResult captureLocals(@NotNull ClassNode owner, @NotNull MethodNode method, @NotNull AbstractInsnNode inspectionTarget, @NotNull ClassWrapperPool pool) {
         Analyzer<BasicValue> analyzer = new Analyzer<BasicValue>(new MicromixinVerifier(pool));
         try {
-            return new LocalCaptureResult(owner, method, getFrameAt(analyzer.analyzeAndComputeMaxs(owner.name, method), method, inspectionTarget));
+            Frame<BasicValue>[] frames = analyzer.analyzeAndComputeMaxs(owner.name, method);
+            return new LocalCaptureResult(owner, method, getFrameAt(frames, method, inspectionTarget), frames);
         } catch (AnalyzerException e) {
             return new LocalCaptureResult(owner, method, e);
         } catch (RuntimeException e) {

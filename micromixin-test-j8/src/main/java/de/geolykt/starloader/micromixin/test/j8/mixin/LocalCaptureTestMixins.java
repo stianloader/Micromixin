@@ -21,6 +21,5 @@ public class LocalCaptureTestMixins {
     @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalInstance2", ret = int.class),
             locals = LocalCapture.PRINT)
     private void injectorLocalInstance2(CallbackInfoReturnable<Integer> cir) {
-        
     }
 }

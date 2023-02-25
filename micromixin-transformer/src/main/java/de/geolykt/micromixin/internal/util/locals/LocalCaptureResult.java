@@ -26,18 +26,23 @@ public class LocalCaptureResult {
     @Nullable
     public final Frame<BasicValue> frame;
 
+    @Nullable
+    public final Frame<BasicValue>[] frames;
+
     public LocalCaptureResult(@NotNull ClassNode sourceOwner, @NotNull MethodNode sourceMethod, @NotNull Throwable error) {
         this.sourceOwner = sourceOwner;
         this.sourceMethod = sourceMethod;
         this.error = error;
         this.frame = null;
+        this.frames = null;
     }
 
-    public LocalCaptureResult(@NotNull ClassNode sourceOwner, @NotNull MethodNode sourceMethod, @Nullable Frame<BasicValue> frame) {
+    public LocalCaptureResult(@NotNull ClassNode sourceOwner, @NotNull MethodNode sourceMethod, @Nullable Frame<BasicValue> frame, Frame<BasicValue>[] frames) {
         this.sourceOwner = sourceOwner;
         this.sourceMethod = sourceMethod;
         this.error = null;
         this.frame = frame;
+        this.frames = frames;
     }
 
     @NotNull
@@ -61,7 +66,7 @@ public class LocalCaptureResult {
             String name;
             String capture;
             if (i == 0
-                    && (sourceMethod.access & Opcodes.ACC_STATIC) != 0
+                    && (sourceMethod.access & Opcodes.ACC_STATIC) == 0
                     && local.getType().getInternalName().equals(sourceOwner.name)) {
                 name = "this";
                 capture = "";

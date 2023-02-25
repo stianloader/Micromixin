@@ -19,6 +19,35 @@ public class DescString {
         return desc.length() != startIndex;
     }
 
+    public char nextReferenceType() {
+        char type = desc.charAt(startIndex);
+        if (type == 'L') {
+            // Object-type type
+            startIndex = desc.indexOf(';', startIndex) + 1;
+        } else if (type == '[') {
+            // array-type type - things will go spicy
+            if (asArray == null) {
+                asArray = desc.toCharArray();
+            }
+            int typePosition = -1;
+            for (int i = startIndex + 1; i < asArray.length; i++) {
+                if (asArray[i] != '[') {
+                    typePosition = i;
+                    break;
+                }
+            }
+            if (asArray[typePosition] == 'L') {
+                startIndex = desc.indexOf(';', startIndex) + 1;
+            } else {
+                startIndex = ++typePosition;
+            }
+        } else {
+            // Primitive-type type
+            startIndex++; // Increment index by one, since the size of the type is exactly one
+        }
+        return type;
+    }
+
     public String nextType() {
         char type = desc.charAt(startIndex);
         if (type == 'L') {

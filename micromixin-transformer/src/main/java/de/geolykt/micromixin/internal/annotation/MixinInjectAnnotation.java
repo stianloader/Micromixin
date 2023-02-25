@@ -205,7 +205,6 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             // IMPLEMENT proper logging mechanism
             System.err.println("[WARNING:MM/MIA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
         }
-        // IMPLEMENT the hell that is known as local capture
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
             LabelNode label = entry.getKey();
@@ -410,13 +409,27 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     PrintUtils.stringifyAccessMethod(target.access, sharedBuilder)
                     .append(' ')
                     .append(target.name)
-                    .append(target.desc) // TODO Does the descriptor need to be more user-friendly?
+                    .append(target.desc)
                     .toString());
 
             Throwable error = result.error;
             Frame<BasicValue> frame = result.frame;
             String maxLocals;
-            String initialFrameSize = "<not implemented>";
+            int initialFrameSize = 0;
+
+            if ((target.access & Opcodes.ACC_STATIC) == 0) {
+                initialFrameSize++;
+            }
+            {
+                DescString descString = new DescString(target.desc);
+                while (descString.hasNext()) {
+                    initialFrameSize++;
+                    char refType = descString.nextReferenceType();
+                    if (refType == 'J' || refType == 'D') {
+                        initialFrameSize++;
+                    }
+                }
+            }
 
             if (error != null) {
                 List<String> lines = new ArrayList<String>();
@@ -440,7 +453,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
 
             injectionPointInfo.add("Target Max LOCALS", maxLocals);
-            injectionPointInfo.add("Initial Frame Size", initialFrameSize);
+            injectionPointInfo.add("Initial Frame Size", Integer.toString(initialFrameSize));
             injectionPointInfo.add("Callback Name", this.injectSource.name);
             injectionPointInfo.add("Instruction", "<not implemented>"); // IMPLEMENT Show instruction in Local capture
             System.err.println(printTable);
@@ -513,8 +526,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         }
         DescString dstring = new DescString(method.desc);
         while (dstring.hasNext()) {
-            String type = dstring.nextType();
-            if (type.codePointAt(0) == 'J' || type.codePointAt(0) == 'D') {
+            char type = dstring.nextReferenceType();
+            if (type == 'J' || type == 'D') {
                 currentUsed += 2;
             } else {
                 currentUsed++;
