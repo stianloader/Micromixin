@@ -91,7 +91,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         // And create a new one
         String[] exceptions = stub.method.exceptions.toArray(new String[0]);
         for (int i = 0; i < exceptions.length; i++) {
-            exceptions[i] = remapper.remapInternalName(desiredDescMapped, sharedBuilder);
+            exceptions[i] = remapper.remapInternalName(Objects.requireNonNull(exceptions[i]), sharedBuilder);
         }
         MethodNode overlaidMethod = new MethodNode(stub.method.access, desiredName, desiredDescMapped, null, exceptions);
         AbstractInsnNode startInInsn = stub.method.instructions.getFirst();

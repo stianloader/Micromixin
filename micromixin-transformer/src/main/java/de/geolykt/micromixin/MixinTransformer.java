@@ -134,6 +134,7 @@ public class MixinTransformer<M> {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
                 in.accept(cca);
             } catch (Throwable t) {
+                System.err.println("Invalidly transformed class: " + in.name);
                 t.printStackTrace();
             }
         }

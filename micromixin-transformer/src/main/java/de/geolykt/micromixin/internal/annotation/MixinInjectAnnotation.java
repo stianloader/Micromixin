@@ -293,7 +293,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     injected.add(new InsnNode(Opcodes.ACONST_NULL));
                     storedType = 'L';
                 } else {
-                    injected.add(new InsnNode(Opcodes.DUP2));
+                    injected.add(new InsnNode(Opcodes.DUP));
                     storedType = returnType;
                 }
                 // Now RET (or RET, RET - but the first RET is used later and thus discarded for our purposes)
