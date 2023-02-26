@@ -9,6 +9,7 @@
     <modules>
         <module>micromixin-transformer</module>
         <module>micromixin-test-j8</module>
+        <module>micromixin-annotations</module>
     </modules>
     <properties>
         <asm-version>9.4</asm-version> <!-- https://mvnrepository.com/artifact/org.ow2.asm/asm -->

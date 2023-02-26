@@ -8,6 +8,7 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -20,7 +21,7 @@ public class MixinConfig {
 
         private static final long serialVersionUID = 1708886499084998432L;
 
-        protected InvalidMixinConfigException(String message) {
+        public InvalidMixinConfigException(String message) {
             super(message);
         }
     }
@@ -45,6 +46,17 @@ public class MixinConfig {
     public final Collection<String> client; // IMPLEMENT "client" in mixin config properly
     @NotNull
     public final Collection<String> server; // IMPLEMENT "server" in mixin config properly
+
+    @NotNull
+    public static MixinConfig fromString(@NotNull String s) throws InvalidMixinConfigException {
+        try {
+            return MixinConfig.fromJson(new JSONObject(s));
+        } catch (JSONException e) {
+            InvalidMixinConfigException throwEx = new InvalidMixinConfigException("The mixin contents do not follow the expected format!");
+            throwEx.initCause(e);
+            throw throwEx;
+        }
+    }
 
     @NotNull
     public static MixinConfig fromJson(@NotNull JSONObject object) throws InvalidMixinConfigException {

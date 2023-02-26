@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
@@ -32,6 +33,10 @@ public class LocalsCapture {
     private static <T extends Value> Frame<T> getFrameAt(Frame<T>[] frames, @NotNull MethodNode method, @NotNull AbstractInsnNode inspectionTarget) {
         int index = 0;
         for (AbstractInsnNode insn = method.instructions.getFirst(); insn != inspectionTarget; insn = insn.getNext()) {
+            if (insn instanceof FrameNode) {
+                // TODO are frame nodes counted or no?
+                continue;
+            }
             index++;
         }
         return frames[index];

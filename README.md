@@ -25,3 +25,16 @@ Painpoints of the official Mixin implementation that this implementation seeks t
    to unstable behaviour.
  - Mixin using Java 8 (Micromixin uses Java 6, making it usable for some more niche
    purposes)
+
+## Modules
+
+The Micromixin framework comes in three modules. "micromixin-annotations" includes
+all the traditional mixin annotations that are implemented by Micromixin - nothing more.
+"micromixin-transformer" includes the transformer and all other parts required to
+run micromixin. "micromixin-test-j8" includes tests for Micromxin and is the least
+interesting part of the project.
+
+Warning: <b>Do not use micromixin-annotations and micromixin-transformer at the same
+time!</b> They provide overlapping classes which can cause havoc at runtime.
+Micromixin-annotations should strictly be used for compilation and
+micromixin-transformer should strictly be used for runtime transformation.
