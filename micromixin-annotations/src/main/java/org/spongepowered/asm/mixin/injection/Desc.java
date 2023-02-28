@@ -1,9 +1,8 @@
 package org.spongepowered.asm.mixin.injection;
 
-import static java.lang.annotation.RetentionPolicy.CLASS;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * {@link Desc} is a metadata annotation to specify a specific class member without
@@ -16,7 +15,7 @@ import java.lang.annotation.Retention;
  * happen in an unintended manner.
  */
 @Documented
-@Retention(CLASS)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Desc {
 
     /**

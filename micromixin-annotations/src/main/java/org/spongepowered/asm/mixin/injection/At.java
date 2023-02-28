@@ -1,9 +1,8 @@
 package org.spongepowered.asm.mixin.injection;
 
-import static java.lang.annotation.RetentionPolicy.CLASS;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * The {@link At} annotation selects one or multiple instructions (depending on the circumstances no instructions
@@ -11,7 +10,7 @@ import java.lang.annotation.Retention;
  * For {@link Inject#at()} it is the instruction at which the injection should occur.
  */
 @Documented
-@Retention(CLASS)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface At {
 
     /**
