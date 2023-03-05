@@ -3,6 +3,7 @@ package de.geolykt.starloader.micromixin.test.j8;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
+import de.geolykt.starloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
 import de.geolykt.starloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectionHeadTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -21,7 +22,20 @@ public class TestHarness {
         runInjectorRemapTests(report);
         runLocalCaputureTest(report);
         runArgumentCaptureTest(report);
+        runLocalPrintingTest(report);
         return report;
+    }
+
+    private static void runLocalPrintingTest(TestReport report) {
+        TestSet set = new TestSet();
+        /*set.addUnit("test - do not use in production", () -> {
+            de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest.class.toString();
+        });*/
+        set.addUnitAssertLocalPrinting("de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest",
+                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_LOCAL_INSTANCE_0,
+                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_LOCAL_STATIC_0);
+        LoggerFactory.getLogger(TestHarness.class).info("LocalPrintingTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     private static void runArgumentCaptureTest(TestReport report) {

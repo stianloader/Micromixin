@@ -9,7 +9,11 @@ import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+
+import de.geolykt.starloader.micromixin.test.j8.localsprinting.LocalPrintingContext;
+import de.geolykt.starloader.micromixin.test.j8.localsprinting.LocalsPrintingIO;
 
 public class TestSet {
 
@@ -228,6 +232,27 @@ public class TestSet {
                 throw new AssertionError("Unit " + unit + " returned " + returned + ", but expected " + value + " to be returned");
             }
         }));
+    }
+
+    public void addUnitAssertLocalPrinting(@NotNull String name, @NotNull Runnable unit, String[]... witnessValues) {
+        addUnit(name, () -> {
+            LocalPrintingContext[] tests = LocalsPrintingIO.guardedRead(unit);
+            LocalPrintingContext[] witnesses = new LocalPrintingContext[witnessValues.length];
+            for (int i = 0; i < witnessValues.length; i++) {
+                witnesses[i] = LocalsPrintingIO.parse(witnessValues[i], 0, witnessValues[i].length);
+            }
+            LocalsPrintingIO.assertEquals(tests, witnesses);
+        });
+    }
+
+    public void addUnitAssertLocalPrinting(@NotNull String className, String[]... witnessValues) {
+        addUnitAssertLocalPrinting(className, () -> {
+            try {
+                getClass().getClassLoader().loadClass(className);
+            } catch (ClassNotFoundException e) {
+                throw new AssertionError(e);
+            }
+        }, witnessValues);
     }
 
     public void addUnitExpectClassloadingFailure(String name) {

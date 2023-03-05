@@ -9,6 +9,7 @@
     "InjectionHeadTestMixins",
     "InjectorRemapTestMixins",
     "LocalCaptureTestMixins",
+    "LocalPrintingTestMixins",
     "MultiInjectTestMixins",
     "MixinOverwriteTestMixins",
     "invalid.InvalidOverwriteAliasTestMixins",
