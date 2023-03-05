@@ -86,7 +86,7 @@ public class LocalsPrintingIO {
         }
     }
 
-    public static LocalPrintingContext[] guardedRead(@NotNull Runnable action) {
+    public static synchronized LocalPrintingContext[] guardedRead(@NotNull Runnable action) {
         PrintStream originErr = System.err;
         try {
             ByteArrayOutputStream byteOut = new ByteArrayOutputStream();

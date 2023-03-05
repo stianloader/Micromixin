@@ -1,5 +1,8 @@
 package de.geolykt.starloader.micromixin.test.j8;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -257,10 +260,19 @@ public class TestSet {
 
     public void addUnitExpectClassloadingFailure(String name) {
         this.units.add(new TestUnit(name, () -> {
+            PrintStream originOut = System.out;
             try {
+                System.setOut(new PrintStream(new OutputStream() {
+                    @Override
+                    public void write(int b) throws IOException {
+                        // NOP
+                    }
+                }));
                 getClass().getClassLoader().loadClass(name);
             } catch (ClassNotFoundException cnfe) {
                 return;
+            } finally {
+                System.setOut(originOut);
             }
             throw new IllegalStateException("Loaded class " + name + " without a classloading failure, but a failure was anticipated.");
         }));
