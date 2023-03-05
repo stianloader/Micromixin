@@ -33,6 +33,7 @@ import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.selectors.DescSelector;
 import de.geolykt.micromixin.internal.selectors.MixinTargetSelector;
 import de.geolykt.micromixin.internal.selectors.StringSelector;
+import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.DescString;
 import de.geolykt.micromixin.internal.util.Objects;
@@ -93,11 +94,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;
-        String fallbackMethodDesc = AnnotationUtil.getTargetDesc(method);
+        String fallbackMethodDesc = ASMUtil.getTargetDesc(method);
         int require = -1;
         int expect = -1;
         boolean cancellable = false;
-        boolean denyVoids = AnnotationUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(AnnotationUtil.getLastType(method.desc));
+        boolean denyVoids = ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(ASMUtil.getLastType(method.desc));
         String locals = null;
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
@@ -214,7 +215,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             LabelNode label = entry.getKey();
             MethodNode method = entry.getValue();
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
-            boolean category2 = AnnotationUtil.isCategory2(returnType);
+            boolean category2 = ASMUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
             if (handleCapture(sourceStub.sourceNode, to, method, injected, label, sharedBuilder)) {
                 continue;
@@ -222,7 +223,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             if (returnType != 'V' && category2) {
                 // This method could theoretically work with both cat 1 and cat 2 return types,
                 // but uses the local variable table for temporary storage
-                int returnOpcode = AnnotationUtil.getReturnOpcode(returnType);
+                int returnOpcode = ASMUtil.getReturnOpcode(returnType);
                 int lvt0 = scanNextFreeLVTIndex(method);
                 AbstractInsnNode nextInsn = label.getNext();
                 while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
@@ -236,8 +237,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     injected.add(new InsnNode(Opcodes.DUP2));
                     storedType = returnType;
                 }
-                int storeOpcode = AnnotationUtil.getStoreOpcode(storedType);
-                int loadOpcode = AnnotationUtil.getLoadOpcode(storedType);
+                int storeOpcode = ASMUtil.getStoreOpcode(storedType);
+                int loadOpcode = ASMUtil.getLoadOpcode(storedType);
 
                 injected.add(new VarInsnNode(storeOpcode, lvt0));
                 injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
@@ -264,7 +265,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
-                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
+                injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Operand stack: CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
@@ -283,7 +284,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             } else if (returnType != 'V') {
                 // Note: only applies for category 1 return types.
                 // In turn, it wholly operates on the stack.
-                int returnOpcode = AnnotationUtil.getReturnOpcode(returnType);
+                int returnOpcode = ASMUtil.getReturnOpcode(returnType);
                 AbstractInsnNode nextInsn = label.getNext();
                 while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
                     nextInsn = nextInsn.getNext();
@@ -329,7 +330,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     this.captureArguments(sourceStub, injected, to, method);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
-                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
+                injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Now RET, CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
@@ -363,7 +364,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
                 this.captureArguments(sourceStub, injected, to, method);
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
-                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
+                injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
                     // TODO What happens if two injectors have the same entrypoint? Is mixin smart or not so smart here?
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
@@ -378,7 +379,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 this.captureArguments(sourceStub, injected, to, method);
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
-                injected.add(new InsnNode(AnnotationUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
+                injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (cancellable) {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
@@ -415,31 +416,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
             injectionPointInfo.add("Target Class", targetClass.name.replace('/', '.'));
             sharedBuilder.setLength(0);
-            injectionPointInfo.add("Target Method",
-                    PrintUtils.stringifyAccessMethod(target.access, sharedBuilder)
-                    .append(' ')
-                    .append(target.name)
-                    .append(target.desc)
-                    .toString());
+            PrintUtils.fastPrettyMethodName(target.name, target.desc, target.access, sharedBuilder);
+            injectionPointInfo.add("Target Method", sharedBuilder.toString());
 
             Throwable error = result.error;
             Frame<BasicValue> frame = result.frame;
             String maxLocals;
-            int initialFrameSize = 0;
-
-            if ((target.access & Opcodes.ACC_STATIC) == 0) {
-                initialFrameSize++;
-            }
-            {
-                DescString descString = new DescString(target.desc);
-                while (descString.hasNext()) {
-                    initialFrameSize++;
-                    char refType = descString.nextReferenceType();
-                    if (refType == 'J' || refType == 'D') {
-                        initialFrameSize++;
-                    }
-                }
-            }
+            int initialFrameSize = ASMUtil.getInitialFrameSize(target);
 
             if (error != null) {
                 List<String> lines = new ArrayList<String>();
@@ -536,8 +519,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         }
         DescString dstring = new DescString(method.desc);
         while (dstring.hasNext()) {
-            char type = dstring.nextReferenceType();
-            if (type == 'J' || type == 'D') {
+            if (ASMUtil.isCategory2(dstring.nextReferenceType())) {
                 currentUsed += 2;
             } else {
                 currentUsed++;
@@ -608,8 +590,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
 
             int refType = targetType.codePointAt(0);
-            output.add(new VarInsnNode(AnnotationUtil.getLoadOpcode(refType), lvtIndex++));
-            if (AnnotationUtil.isCategory2(refType)) {
+            output.add(new VarInsnNode(ASMUtil.getLoadOpcode(refType), lvtIndex++));
+            if (ASMUtil.isCategory2(refType)) {
                 output.add(new InsnNode(Opcodes.DUP2_X1));
                 output.add(new InsnNode(Opcodes.POP2));
             } else {

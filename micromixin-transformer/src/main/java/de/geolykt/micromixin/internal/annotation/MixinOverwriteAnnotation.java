@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
+import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<MixinMethodStub> {
@@ -71,7 +72,7 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
         }
 
         // Don't allow for access modification reduction
-        if (AnnotationUtil.hasReducedAccess(access, source.getAccess())) {
+        if (ASMUtil.hasReducedAccess(access, source.getAccess())) {
             throw new IllegalStateException("The handler method " + source.owner.name + "." + source.getName() + source.getDesc() + ", which targets a member in " + target.name + ", has a lesser access modifier than the method it targets. Try to keep the access flags the same across both methods.");
         }
         return true;

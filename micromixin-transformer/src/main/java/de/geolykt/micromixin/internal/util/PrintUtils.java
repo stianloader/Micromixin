@@ -17,6 +17,19 @@ public class PrintUtils {
         throw new AssertionError();
     }
 
+    @Contract(mutates = "param4", pure = false, value = "null, _, _, _ -> fail; _, null, _, _ -> fail; _, _, _, null -> fail; !null, !null, _, !null -> param4")
+    @NotNull
+    public static final StringBuilder fastPrettyMethodName(@NotNull String name, @NotNull String methodDesc, int access, @NotNull StringBuilder out) {
+        access &= ~Opcodes.ACC_STATIC; // Sponge - what are you doing?
+        PrintUtils.stringifyAccessMethod(access, out);
+        out.append(' ');
+        PrintUtils.fastPrettySingleDesc(methodDesc, methodDesc.lastIndexOf(')') + 1, out);
+        out.append(' ');
+        out.append(name);
+        out.append("()");
+        return out;
+    }
+
     @NotNull
     public static final String prettyBracketedInt(int value, int maxValue, @NotNull StringBuilder sharedBuilder) {
         sharedBuilder.setLength(0);
@@ -84,7 +97,7 @@ public class PrintUtils {
 
     @Contract(mutates = "param2", pure = false, value = "_, !null -> param2; _, null -> fail")
     @NotNull
-    public static StringBuilder stringifyAccessMethod(int acc, @NotNull StringBuilder out) {
+    public static final StringBuilder stringifyAccessMethod(int acc, @NotNull StringBuilder out) {
         // Remove synthetic access modifiers
         acc &= ~(Opcodes.ACC_BRIDGE /* For fields: `volatile` */ | Opcodes.ACC_DEPRECATED
                 | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_ENUM
@@ -165,7 +178,7 @@ public class PrintUtils {
     }
 
     @NotNull
-    public static String getSimpleWrapperClassName(int primitiveType) {
+    public static final String getSimpleWrapperClassName(int primitiveType) {
         switch (primitiveType) {
         case 'B':
             return "Byte";

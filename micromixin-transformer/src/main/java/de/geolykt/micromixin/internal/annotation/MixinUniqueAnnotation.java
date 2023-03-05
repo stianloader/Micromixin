@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode;
 import de.geolykt.micromixin.internal.ClassMemberStub;
 import de.geolykt.micromixin.internal.MixinFieldStub;
 import de.geolykt.micromixin.internal.MixinParseException;
+import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOverlayAnnotation<T> {
@@ -82,7 +83,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
             }
             desc = remapper.getRemappedMethodDescriptor(desc, sharedBuilder);
             // TODO Is the prefix really optional?
-            if (!AnnotationUtil.hasMethod(target, name, desc)) {
+            if (!ASMUtil.hasMethod(target, name, desc)) {
                 return name;
             }
         } else {
@@ -91,7 +92,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
                 return name;
             }
             desc = remapper.getRemappedFieldDescriptor(desc, sharedBuilder);
-            if (!AnnotationUtil.hasField(target, name, desc)) {
+            if (!ASMUtil.hasField(target, name, desc)) {
                 return name;
             }
         }

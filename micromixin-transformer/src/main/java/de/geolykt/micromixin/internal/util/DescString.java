@@ -19,8 +19,8 @@ public class DescString {
         return desc.length() != startIndex;
     }
 
-    public char nextReferenceType() {
-        char type = desc.charAt(startIndex);
+    public int nextReferenceType() {
+        int type = desc.codePointAt(startIndex);
         if (type == 'L') {
             // Object-type type
             startIndex = desc.indexOf(';', startIndex) + 1;

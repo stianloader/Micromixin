@@ -13,6 +13,7 @@ import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinFieldStub;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinStub;
+import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.Remapper;
@@ -38,7 +39,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         String desiredDescMapped = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
 
         boolean overwrite = false;
-        FieldNode overwritten = AnnotationUtil.getField(target, desiredName, desiredDescMapped);
+        FieldNode overwritten = ASMUtil.getField(target, desiredName, desiredDescMapped);
         if (overwritten != null && !handleCollision(source, target, overwritten.access)) {
             return;
         }
@@ -67,7 +68,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         MixinMethodStub stub = (MixinMethodStub) source;
         String desiredName = getDesiredName(source, target, remapper, sharedBuilder);
         String desiredDescMapped = remapper.getRemappedMethodDescriptor(source.getDesc(), sharedBuilder);
-        MethodNode overwritten = AnnotationUtil.getMethod(target, desiredName, desiredDescMapped);
+        MethodNode overwritten = ASMUtil.getMethod(target, desiredName, desiredDescMapped);
         if (overwritten != null && !handleCollision(source, target, overwritten.access)) {
             return;
         }
