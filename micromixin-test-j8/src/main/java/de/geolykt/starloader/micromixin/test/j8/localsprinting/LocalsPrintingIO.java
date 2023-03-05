@@ -17,6 +17,27 @@ public class LocalsPrintingIO {
     @NotNull
     private static final String FALLBACK_STRING = "<error: unspecified>";
 
+    public static boolean compareMethodNames(@NotNull String methodA, @NotNull String methodB) {
+        int abracket = methodA.indexOf('(');
+        int bbracket = methodB.indexOf('(');
+        if (abracket != bbracket || !methodA.regionMatches(false, 0, methodB, 0, abracket)) {
+            return false;
+        }
+        int aidx, bidx;
+        aidx = bidx = abracket + 1;
+        while (aidx != -1 && bidx != -1) {
+            int aspace = methodA.indexOf(' ', aidx);
+            int bspace = methodB.indexOf(' ', bidx);
+            int typeLength = aspace - aidx;
+            if (bidx + typeLength != bspace || !methodA.regionMatches(false, aidx, methodB, bidx, typeLength)) {
+                return false;
+            }
+            aidx = methodA.indexOf(',', aspace);
+            bidx = methodB.indexOf(',', bspace);
+        }
+        return aidx == -1 && bidx == -1; // Compare argument count
+    }
+
     public static void assertEquals(@NotNull LocalPrintingContext test, @NotNull LocalPrintingContext witness) {
         if (!test.callbackName.equals(witness.callbackName)) {
             throw new AssertionError("Expected callback name of \"" + witness.callbackName + "\", but got \"" + test.callbackName + "\" instead.");
@@ -35,7 +56,7 @@ public class LocalsPrintingIO {
         if (!test.targetMaxLocals.equals(witness.targetMaxLocals)) {
             throw new AssertionError("Expected maximum value of locals at target of \"" + witness.targetMaxLocals + "\", but got \"" + test.targetMaxLocals + "\" instead.");
         }
-        if (!test.targetMethod.equals(witness.targetMethod)) {
+        if (!LocalsPrintingIO.compareMethodNames(test.targetMethod, witness.targetMethod)) {
             throw new AssertionError("Expected target method of \"" + witness.targetMethod + "\", but got \"" + test.targetMethod + "\" instead.");
         }
         assertLocalTableLenientlyEquals(test.localsTable, witness.localsTable);

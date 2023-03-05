@@ -17,6 +17,26 @@ public class PrintUtils {
         throw new AssertionError();
     }
 
+    public static final void fastPrettyArguments(@NotNull String desc, @NotNull StringBuilder out) {
+        if (desc.codePointAt(1) == ')') {
+            // No arguments. We can optimise this method then.
+            out.append("()");
+            return;
+        }
+        out.append('(');
+        // Since we already know that there is at least one argument we can do that (this is faster with comma placement)
+        int index = 1 + PrintUtils.fastPrettySingleDesc(desc, 1, out);
+        out.append(" arg0");
+        int endIndex = desc.lastIndexOf(')');
+        for (int i = 1; index != endIndex; i++) {
+            out.append(", ");
+            index += PrintUtils.fastPrettySingleDesc(desc, index, out);
+            out.append(" arg");
+            out.append(i);
+        }
+        out.append(')');
+    }
+
     @Contract(mutates = "param4", pure = false, value = "null, _, _, _ -> fail; _, null, _, _ -> fail; _, _, _, null -> fail; !null, !null, _, !null -> param4")
     @NotNull
     public static final StringBuilder fastPrettyMethodName(@NotNull String name, @NotNull String methodDesc, int access, @NotNull StringBuilder out) {
@@ -26,7 +46,7 @@ public class PrintUtils {
         PrintUtils.fastPrettySingleDesc(methodDesc, methodDesc.lastIndexOf(')') + 1, out);
         out.append(' ');
         out.append(name);
-        out.append("()");
+        PrintUtils.fastPrettyArguments(methodDesc, out);
         return out;
     }
 
@@ -43,43 +63,46 @@ public class PrintUtils {
         return sharedBuilder.append(string).append(']').toString();
     }
 
-    public static final void fastPrettySingleDesc(@NotNull String desc, int startIndex, @NotNull StringBuilder output) {
+    public static final int fastPrettySingleDesc(@NotNull String desc, int startIndex, @NotNull StringBuilder output) {
         switch (desc.codePointAt(startIndex)) {
         case 'V':
             output.append("void");
-            return;
+            return 1;
         case 'B':
             output.append("byte");
-            return;
+            return 1;
         case 'Z':
             output.append("boolean");
-            return;
+            return 1;
         case 'S':
             output.append("short");
-            return;
+            return 1;
         case 'C':
             output.append("char");
-            return;
+            return 1;
         case 'I':
             output.append("int");
-            return;
+            return 1;
         case 'J':
             output.append("long");
-            return;
+            return 1;
         case 'F':
             output.append("float");
-            return;
+            return 1;
         case 'D':
             output.append("double");
-            return;
+            return 1;
         case '[':
-            PrintUtils.fastPrettySingleDesc(desc, startIndex + 1, output);
+            int len = PrintUtils.fastPrettySingleDesc(desc, startIndex + 1, output);
             output.append("[]");
-            return;
+            return ++len;
         case 'L':
-            int beginIndex = Math.max(startIndex, desc.lastIndexOf('/')) + 1;
-            output.append(desc, beginIndex, desc.length() - 1);
-            return;
+            int endIndex = desc.indexOf(';', startIndex);
+            int beginIndex = Math.max(startIndex, desc.lastIndexOf('/', endIndex)) + 1;
+            output.append(desc, beginIndex, endIndex);
+            return endIndex - startIndex + 1;
+        default:
+            throw new IllegalStateException("Unknown type: " + ((char) desc.codePointAt(startIndex)));
         }
     }
 

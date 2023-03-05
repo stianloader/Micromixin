@@ -1,5 +1,7 @@
 package de.geolykt.micromixin.internal.util;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Utility for dissecting a method descriptor string.
  */
@@ -48,6 +50,7 @@ public class DescString {
         return type;
     }
 
+    @NotNull
     public String nextType() {
         char type = desc.charAt(startIndex);
         if (type == 'L') {
