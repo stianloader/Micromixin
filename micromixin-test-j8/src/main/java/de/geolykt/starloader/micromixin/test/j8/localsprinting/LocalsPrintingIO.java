@@ -194,12 +194,22 @@ public class LocalsPrintingIO {
                         adjustedParts[3] = parts[4]; // name
                         adjustedParts[4] = parts[5]; // <capture>
                     }
+                } else if (parts.length == 3) {
+                    if (parts[0].equals("[") && parts[1].codePointBefore(parts[1].length()) == ']' && parts[2].equals("<top>")) {
+                        adjustedParts[0] = ""; // The initial frame cannot end in the middle of a double (unless the computer did something dumb)
+                        adjustedParts[1] = parts[0] + parts[1]; // local
+                        adjustedParts[2] = "<top>"; // type (we already know that one)
+                        adjustedParts[3] = ""; // name (not present)
+                        adjustedParts[4] = "";
+                    } else if (parts[0].equals("LOCAL") && parts[1].equals("TYPE") && parts[2].equals("NAME")) {
+                        // Table header - safe to skip
+                        continue;
+                    } else {
+                        throw new IllegalStateException("Format error: Expected table header or the value at column index 2 to be \"<top>\"; Got " + parts[2] + " instead; Column content: " + Arrays.toString(parts));
+                    }
                 } else if (alreadyCaptured) {
                     throw new IllegalStateException("Format error: Cannot capture arguments with holes in between! Erroneous line: \"" + line + "\"");
                 } else if (parts.length != 4) {
-                    if (parts.length == 3 && parts[0].equals("LOCAL") && parts[1].equals("TYPE") && parts[2].equals("NAME")) {
-                        continue;
-                    }
                     throw new IllegalStateException("Format error: Expected column count: 4; Got " + parts.length + "; Column content: " + Arrays.toString(parts));
                 } else {
                     adjustedParts[0] = "";

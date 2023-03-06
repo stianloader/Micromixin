@@ -114,7 +114,7 @@ public class PrintUtils {
     }
 
     @NotNull
-    public static final String prettyType(Type type, @NotNull StringBuilder sharedBuilder) {
+    public static final String prettyType(@NotNull Type type, @NotNull StringBuilder sharedBuilder) {
         return PrintUtils.prettySingleDesc(type.getDescriptor(), sharedBuilder);
     }
 
@@ -238,10 +238,15 @@ public class PrintUtils {
         PrintUtils.fastPrettyPrintCallbackInfo(target, sharedBuilder);
         sharedBuilder.append(" ci");
         int maxLocals = frame.getLocals();
+        int reducedIndex = 0;
         for (int i = 0; i < maxLocals; i++) {
+            String localDesc = frame.getLocal(i).getType().getDescriptor();
             sharedBuilder.append(", ");
-            PrintUtils.fastPrettySingleDesc(frame.getLocal(i).getType().getDescriptor(), 0, sharedBuilder);
-            sharedBuilder.append(" local").append(i);
+            PrintUtils.fastPrettySingleDesc(localDesc, 0, sharedBuilder);
+            sharedBuilder.append(" local").append(reducedIndex++);
+            if (ASMUtil.isCategory2(localDesc.codePointAt(0))) {
+                i++; // Skip the second double/long part
+            }
         }
         sharedBuilder.append(") {");
         lines.add(sharedBuilder.toString());

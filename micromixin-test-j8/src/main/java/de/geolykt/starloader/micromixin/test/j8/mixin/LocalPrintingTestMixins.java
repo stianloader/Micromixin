@@ -42,6 +42,18 @@ public class LocalPrintingTestMixins {
         // NOP
     }
 
+    @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalStaticArg2", ret = int.class, args = {long.class, long.class}),
+            locals = LocalCapture.PRINT)
+    private static void injectorLocalStaticArg2(CallbackInfoReturnable<Integer> cir) {
+        // NOP
+    }
+
+    @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalStaticArg3", ret = int.class, args = {double.class, int.class}),
+            locals = LocalCapture.PRINT)
+    private static void injectorLocalStaticArg3(CallbackInfoReturnable<Integer> cir) {
+        // NOP
+    }
+
     @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalInstance0", ret = int.class),
             locals = LocalCapture.PRINT)
     private void injectorLocalInstance0(CallbackInfoReturnable<Integer> cir) {
@@ -69,6 +81,18 @@ public class LocalPrintingTestMixins {
     @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalInstanceArg1", ret = int.class, args = Object.class),
             locals = LocalCapture.PRINT)
     private void injectorLocalInstanceArg1B(Object arg, CallbackInfoReturnable<Integer> cir) {
+        // NOP
+    }
+
+    @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalInstanceArg2", ret = int.class, args = {long.class, long.class}),
+            locals = LocalCapture.PRINT)
+    private void injectorLocalInstanceArg2(CallbackInfoReturnable<Integer> cir) {
+        // NOP
+    }
+
+    @Inject(at = @At("RETURN"), target = @Desc(value = "returnLocalInstanceArg3", ret = int.class, args = {double.class, int.class}),
+            locals = LocalCapture.PRINT)
+    private void injectorLocalInstanceArg3(CallbackInfoReturnable<Integer> cir) {
         // NOP
     }
 }

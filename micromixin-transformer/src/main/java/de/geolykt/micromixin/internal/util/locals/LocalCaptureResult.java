@@ -3,6 +3,7 @@ package de.geolykt.micromixin.internal.util.locals;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
@@ -61,21 +62,39 @@ public class LocalCaptureResult {
         int maxLocals = frame.getLocals();
         int prettyPrintMax = Math.max(100, maxLocals);
         int initialFrameSize = ASMUtil.getInitialFrameSize(sourceMethod);
+        int reducedIndex = 0;
         for (int i = 0; i < maxLocals; i++) {
             BasicValue local = frame.getLocal(i);
             String marker = (i == initialFrameSize) ? ">" : ""; // The first captured local is marked with ">".
             String localIndex = PrintUtils.prettyBracketedInt(i, prettyPrintMax, sharedBuilder);
-            String type = PrintUtils.prettyType(local.getType(), sharedBuilder);
+            Type localType = local.getType();
+            if (localType == null) {
+                table.addRow("", localIndex, "", "", "");
+                continue;
+            }
+            String type = PrintUtils.prettyType(localType, sharedBuilder);
             String name;
-            String capture = (i < initialFrameSize) ? "" : "<capture>"; // All locals that are apart of the initial frame are not captured.
+            boolean noCapture = i < initialFrameSize; // All locals that are apart of the initial frame are not captured.
+            String capture = noCapture ? "" : "<capture>";
             if (i == 0
                     && (sourceMethod.access & Opcodes.ACC_STATIC) == 0
-                    && local.getType().getInternalName().equals(sourceOwner.name)) {
+                    && localType.getInternalName().equals(sourceOwner.name)) {
                 name = "this";
             } else {
-                name = "local" + i;
+                if (noCapture) {
+                    name = "arg" + reducedIndex++;
+                } else {
+                    if (i == initialFrameSize) {
+                        reducedIndex = 0;
+                    }
+                    name = "local" + reducedIndex++;
+                }
             }
             table.addRow(marker, localIndex, type, name, capture);
+            if (ASMUtil.isCategory2(localType.getDescriptor().codePointAt(0))) {
+                // Write the second long/double part as for some ungodly reason category 2 types take up 2 values on the stack
+                table.addRow("", PrintUtils.prettyBracketedInt(++i, prettyPrintMax, sharedBuilder), "<top>", "", "");
+            }
         }
         return table;
     }

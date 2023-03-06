@@ -1,166 +1,6 @@
 package de.geolykt.starloader.micromixin.test.j8.localsprinting;
 
 public class LocalPrintingWitnesses {
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_LOCAL_STATIC_0 = new String[] {
-            "/****************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                  */",
-            "/*      Target Method : public int returnLocalStatic0()                                                                     */",
-            "/*  Target Max LOCALS : 4                                                                                                   */",
-            "/* Initial Frame Size : 0                                                                                                   */",
-            "/*      Callback Name : injectorLocalStatic0                                                                                */",
-            "/*        Instruction : InjectionNode IRETURN                                                                               */",
-            "/****************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                      */",
-            "/* > [  0]                   int  local0                                             <capture>                              */",
-            "/*   [  1]                   int  local1                                             <capture>                              */",
-            "/*   [  2]                   int  local2                                             <capture>                              */",
-            "/*   [  3]                   int  local3                                             <capture>                              */",
-            "/****************************************************************************************************************************/",
-            "/*                                                                                                                          */",
-            "/* /**                                                                                                                      */",
-            "/*  * Expected callback signature                                                                                           */",
-            "/*  * /                                                                                                                     */",
-            "/* private void injectorLocalStatic0(CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
-            "/*     // Method body                                                                                                       */",
-            "/* }                                                                                                                        */",
-            "/*                                                                                                                          */",
-            "/****************************************************************************************************************************/"
-    };
-
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_0_B = new String[] {
-            "/******************************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                */",
-            "/*      Target Method : public int returnLocalStaticArg0(int arg0)                                                                        */",
-            "/*  Target Max LOCALS : 5                                                                                                                 */",
-            "/* Initial Frame Size : 1                                                                                                                 */",
-            "/*      Callback Name : injectorLocalStaticArg0B                                                                                          */",
-            "/*        Instruction : InjectionNode IRETURN                                                                                             */",
-            "/******************************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                                    */",
-            "/*   [  0]                   int  arg0                                                                                                    */",
-            "/* > [  1]                   int  local0                                             <capture>                                            */",
-            "/*   [  2]                   int  local1                                             <capture>                                            */",
-            "/*   [  3]                   int  local2                                             <capture>                                            */",
-            "/*   [  4]                   int  local3                                             <capture>                                            */",
-            "/******************************************************************************************************************************************/",
-            "/*                                                                                                                                        */",
-            "/* /**                                                                                                                                    */",
-            "/*  * Expected callback signature                                                                                                         */",
-            "/*  * /                                                                                                                                   */",
-            "/* private void injectorLocalStaticArg0A(int arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
-            "/*     // Method body                                                                                                                     */",
-            "/* }                                                                                                                                      */",
-            "/*                                                                                                                                        */",
-            "/******************************************************************************************************************************************/"
-    };
-
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_0_A = new String[] {
-            "/******************************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                */",
-            "/*      Target Method : public int returnLocalStaticArg0(int arg0)                                                                        */",
-            "/*  Target Max LOCALS : 5                                                                                                                 */",
-            "/* Initial Frame Size : 1                                                                                                                 */",
-            "/*      Callback Name : injectorLocalStaticArg0A                                                                                          */",
-            "/*        Instruction : InjectionNode IRETURN                                                                                             */",
-            "/******************************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                                    */",
-            "/*   [  0]                   int  arg0                                                                                                    */",
-            "/* > [  1]                   int  local0                                             <capture>                                            */",
-            "/*   [  2]                   int  local1                                             <capture>                                            */",
-            "/*   [  3]                   int  local2                                             <capture>                                            */",
-            "/*   [  4]                   int  local3                                             <capture>                                            */",
-            "/******************************************************************************************************************************************/",
-            "/*                                                                                                                                        */",
-            "/* /**                                                                                                                                    */",
-            "/*  * Expected callback signature                                                                                                         */",
-            "/*  * /                                                                                                                                   */",
-            "/* private void injectorLocalStaticArg0A(int arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
-            "/*     // Method body                                                                                                                     */",
-            "/* }                                                                                                                                      */",
-            "/*                                                                                                                                        */",
-            "/******************************************************************************************************************************************/"
-    };
-
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_LOCAL_INSTANCE_0 = new String[] {
-            "/****************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                  */",
-            "/*      Target Method : public int returnLocalInstance0()                                                                   */",
-            "/*  Target Max LOCALS : 4                                                                                                   */",
-            "/* Initial Frame Size : 1                                                                                                   */",
-            "/*      Callback Name : injectorLocalInstance0                                                                              */",
-            "/*        Instruction : InjectionNode IRETURN                                                                               */",
-            "/****************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                      */",
-            "/*   [  0]     LocalPrintingTest  this                                                                                      */",
-            "/* > [  1]                   int  local1                                             <capture>                              */",
-            "/*   [  2]                   int  local2                                             <capture>                              */",
-            "/*   [  3]                   int  local3                                             <capture>                              */",
-            "/****************************************************************************************************************************/",
-            "/*                                                                                                                          */",
-            "/* /**                                                                                                                      */",
-            "/*  * Expected callback signature                                                                                           */",
-            "/*  * /                                                                                                                     */",
-            "/* private void injectorLocalInstance0(CallbackInfoReturnable<Integer> cir, int local1, int local2, int local3) {           */",
-            "/*     // Method body                                                                                                       */",
-            "/* }                                                                                                                        */",
-            "/*                                                                                                                          */",
-            "/****************************************************************************************************************************/"
-    };
-
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_1_A = new String[] {
-            "/*********************************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                   */",
-            "/*      Target Method : public int returnLocalStaticArg1(Object arg0)                                                                        */",
-            "/*  Target Max LOCALS : 5                                                                                                                    */",
-            "/* Initial Frame Size : 1                                                                                                                    */",
-            "/*      Callback Name : injectorLocalStaticArg1A                                                                                             */",
-            "/*        Instruction : InjectionNode IRETURN                                                                                                */",
-            "/*********************************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                                       */",
-            "/*   [  0]                Object  arg0                                                                                                       */",
-            "/* > [  1]                   int  local0                                             <capture>                                               */",
-            "/*   [  2]                   int  local1                                             <capture>                                               */",
-            "/*   [  3]                   int  local2                                             <capture>                                               */",
-            "/*   [  4]                   int  local3                                             <capture>                                               */",
-            "/*********************************************************************************************************************************************/",
-            "/*                                                                                                                                           */",
-            "/* /**                                                                                                                                       */",
-            "/*  * Expected callback signature                                                                                                            */",
-            "/*  * /                                                                                                                                      */",
-            "/* private void injectorLocalStaticArg1A(Object arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
-            "/*     // Method body                                                                                                                        */",
-            "/* }                                                                                                                                         */",
-            "/*                                                                                                                                           */",
-            "/*********************************************************************************************************************************************/"
-    };
-
-    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_1_B = new String[] {
-            "/*********************************************************************************************************************************************/",
-            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                   */",
-            "/*      Target Method : public int returnLocalStaticArg1(Object arg0)                                                                        */",
-            "/*  Target Max LOCALS : 5                                                                                                                    */",
-            "/* Initial Frame Size : 1                                                                                                                    */",
-            "/*      Callback Name : injectorLocalStaticArg1B                                                                                             */",
-            "/*        Instruction : InjectionNode IRETURN                                                                                                */",
-            "/*********************************************************************************************************************************************/",
-            "/*   LOCAL                  TYPE  NAME                                                                                                       */",
-            "/*   [  0]                Object  arg0                                                                                                       */",
-            "/* > [  1]                   int  local0                                             <capture>                                               */",
-            "/*   [  2]                   int  local1                                             <capture>                                               */",
-            "/*   [  3]                   int  local2                                             <capture>                                               */",
-            "/*   [  4]                   int  local3                                             <capture>                                               */",
-            "/*********************************************************************************************************************************************/",
-            "/*                                                                                                                                           */",
-            "/* /**                                                                                                                                       */",
-            "/*  * Expected callback signature                                                                                                            */",
-            "/*  * /                                                                                                                                      */",
-            "/* private void injectorLocalStaticArg1B(Object arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
-            "/*     // Method body                                                                                                                        */",
-            "/* }                                                                                                                                         */",
-            "/*                                                                                                                                           */",
-            "/*********************************************************************************************************************************************/"
-    };
-
     public static final String[] LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_0_A = new String[] {
             "/********************************************************************************************************************************/",
             "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                      */",
@@ -269,32 +109,290 @@ public class LocalPrintingWitnesses {
             "/***********************************************************************************************************************************/"
     };
 
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_2 = new String[] {
+            "/*******************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                 */",
+            "/*      Target Method : public int returnLocalInstanceArg2(long arg0, long arg1)                                                           */",
+            "/*  Target Max LOCALS : 8                                                                                                                  */",
+            "/* Initial Frame Size : 5                                                                                                                  */",
+            "/*      Callback Name : injectorLocalInstanceArg2                                                                                          */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                              */",
+            "/*******************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                     */",
+            "/*   [  0]     LocalPrintingTest  this                                                                                                     */",
+            "/*   [  1]                  long  arg0                                                                                                     */",
+            "/*   [  2]                 <top>                                                                                                           */",
+            "/*   [  3]                  long  arg1                                                                                                     */",
+            "/*   [  4]                 <top>                                                                                                           */",
+            "/* > [  5]                   int  local1                                             <capture>                                             */",
+            "/*   [  6]                   int  local2                                             <capture>                                             */",
+            "/*   [  7]                   int  local3                                             <capture>                                             */",
+            "/*******************************************************************************************************************************************/",
+            "/*                                                                                                                                         */",
+            "/* /**                                                                                                                                     */",
+            "/*  * Expected callback signature                                                                                                          */",
+            "/*  * /                                                                                                                                    */",
+            "/* private void injectorLocalInstanceArg2(long arg0, long arg1, CallbackInfoReturnable<Integer> cir, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                      */",
+            "/* }                                                                                                                                       */",
+            "/*                                                                                                                                         */",
+            "/*******************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_3 = new String[] {
+            "/***********************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                     */",
+            "/*      Target Method : public int returnLocalInstanceArg3(double arg0, int arg1)                                                              */",
+            "/*  Target Max LOCALS : 10                                                                                                                     */",
+            "/* Initial Frame Size : 4                                                                                                                      */",
+            "/*      Callback Name : injectorLocalInstanceArg3                                                                                              */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                                  */",
+            "/***********************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                         */",
+            "/*   [  0]     LocalPrintingTest  this                                                                                                         */",
+            "/*   [  1]                double  arg0                                                                                                         */",
+            "/*   [  2]                 <top>                                                                                                               */",
+            "/*   [  3]                   int  arg1                                                                                                         */",
+            "/* > [  4]                  long  local1                                             <capture>                                                 */",
+            "/*   [  5]                 <top>                                                                                                               */",
+            "/*   [  6]                  long  local2                                             <capture>                                                 */",
+            "/*   [  7]                 <top>                                                                                                               */",
+            "/*   [  8]                  long  local3                                             <capture>                                                 */",
+            "/*   [  9]                 <top>                                                                                                               */",
+            "/***********************************************************************************************************************************************/",
+            "/*                                                                                                                                             */",
+            "/* /**                                                                                                                                         */",
+            "/*  * Expected callback signature                                                                                                              */",
+            "/*  * /                                                                                                                                        */",
+            "/* private void injectorLocalInstanceArg3(double arg0, int arg1, CallbackInfoReturnable<Integer> cir, long local1, long local2, long local3) { */",
+            "/*     // Method body                                                                                                                          */",
+            "/* }                                                                                                                                           */",
+            "/*                                                                                                                                             */",
+            "/***********************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_LOCAL_INSTANCE_0 = new String[] {
+            "/****************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                  */",
+            "/*      Target Method : public int returnLocalInstance0()                                                                   */",
+            "/*  Target Max LOCALS : 4                                                                                                   */",
+            "/* Initial Frame Size : 1                                                                                                   */",
+            "/*      Callback Name : injectorLocalInstance0                                                                              */",
+            "/*        Instruction : InjectionNode IRETURN                                                                               */",
+            "/****************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                      */",
+            "/*   [  0]     LocalPrintingTest  this                                                                                      */",
+            "/* > [  1]                   int  local1                                             <capture>                              */",
+            "/*   [  2]                   int  local2                                             <capture>                              */",
+            "/*   [  3]                   int  local3                                             <capture>                              */",
+            "/****************************************************************************************************************************/",
+            "/*                                                                                                                          */",
+            "/* /**                                                                                                                      */",
+            "/*  * Expected callback signature                                                                                           */",
+            "/*  * /                                                                                                                     */",
+            "/* private void injectorLocalInstance0(CallbackInfoReturnable<Integer> cir, int local1, int local2, int local3) {           */",
+            "/*     // Method body                                                                                                       */",
+            "/* }                                                                                                                        */",
+            "/*                                                                                                                          */",
+            "/****************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_LOCAL_STATIC_0 = new String[] {
+            "/****************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                  */",
+            "/*      Target Method : public int returnLocalStatic0()                                                                     */",
+            "/*  Target Max LOCALS : 4                                                                                                   */",
+            "/* Initial Frame Size : 0                                                                                                   */",
+            "/*      Callback Name : injectorLocalStatic0                                                                                */",
+            "/*        Instruction : InjectionNode IRETURN                                                                               */",
+            "/****************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                      */",
+            "/* > [  0]                   int  local0                                             <capture>                              */",
+            "/*   [  1]                   int  local1                                             <capture>                              */",
+            "/*   [  2]                   int  local2                                             <capture>                              */",
+            "/*   [  3]                   int  local3                                             <capture>                              */",
+            "/****************************************************************************************************************************/",
+            "/*                                                                                                                          */",
+            "/* /**                                                                                                                      */",
+            "/*  * Expected callback signature                                                                                           */",
+            "/*  * /                                                                                                                     */",
+            "/* private void injectorLocalStatic0(CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                       */",
+            "/* }                                                                                                                        */",
+            "/*                                                                                                                          */",
+            "/****************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_0_A = new String[] {
+            "/******************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                */",
+            "/*      Target Method : public int returnLocalStaticArg0(int arg0)                                                                        */",
+            "/*  Target Max LOCALS : 5                                                                                                                 */",
+            "/* Initial Frame Size : 1                                                                                                                 */",
+            "/*      Callback Name : injectorLocalStaticArg0A                                                                                          */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                             */",
+            "/******************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                    */",
+            "/*   [  0]                   int  arg0                                                                                                    */",
+            "/* > [  1]                   int  local0                                             <capture>                                            */",
+            "/*   [  2]                   int  local1                                             <capture>                                            */",
+            "/*   [  3]                   int  local2                                             <capture>                                            */",
+            "/*   [  4]                   int  local3                                             <capture>                                            */",
+            "/******************************************************************************************************************************************/",
+            "/*                                                                                                                                        */",
+            "/* /**                                                                                                                                    */",
+            "/*  * Expected callback signature                                                                                                         */",
+            "/*  * /                                                                                                                                   */",
+            "/* private void injectorLocalStaticArg0A(int arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                     */",
+            "/* }                                                                                                                                      */",
+            "/*                                                                                                                                        */",
+            "/******************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_0_B = new String[] {
+            "/******************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                */",
+            "/*      Target Method : public int returnLocalStaticArg0(int arg0)                                                                        */",
+            "/*  Target Max LOCALS : 5                                                                                                                 */",
+            "/* Initial Frame Size : 1                                                                                                                 */",
+            "/*      Callback Name : injectorLocalStaticArg0B                                                                                          */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                             */",
+            "/******************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                    */",
+            "/*   [  0]                   int  arg0                                                                                                    */",
+            "/* > [  1]                   int  local0                                             <capture>                                            */",
+            "/*   [  2]                   int  local1                                             <capture>                                            */",
+            "/*   [  3]                   int  local2                                             <capture>                                            */",
+            "/*   [  4]                   int  local3                                             <capture>                                            */",
+            "/******************************************************************************************************************************************/",
+            "/*                                                                                                                                        */",
+            "/* /**                                                                                                                                    */",
+            "/*  * Expected callback signature                                                                                                         */",
+            "/*  * /                                                                                                                                   */",
+            "/* private void injectorLocalStaticArg0A(int arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                     */",
+            "/* }                                                                                                                                      */",
+            "/*                                                                                                                                        */",
+            "/******************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_1_A = new String[] {
+            "/*********************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                   */",
+            "/*      Target Method : public int returnLocalStaticArg1(Object arg0)                                                                        */",
+            "/*  Target Max LOCALS : 5                                                                                                                    */",
+            "/* Initial Frame Size : 1                                                                                                                    */",
+            "/*      Callback Name : injectorLocalStaticArg1A                                                                                             */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                                */",
+            "/*********************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                       */",
+            "/*   [  0]                Object  arg0                                                                                                       */",
+            "/* > [  1]                   int  local0                                             <capture>                                               */",
+            "/*   [  2]                   int  local1                                             <capture>                                               */",
+            "/*   [  3]                   int  local2                                             <capture>                                               */",
+            "/*   [  4]                   int  local3                                             <capture>                                               */",
+            "/*********************************************************************************************************************************************/",
+            "/*                                                                                                                                           */",
+            "/* /**                                                                                                                                       */",
+            "/*  * Expected callback signature                                                                                                            */",
+            "/*  * /                                                                                                                                      */",
+            "/* private void injectorLocalStaticArg1A(Object arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                        */",
+            "/* }                                                                                                                                         */",
+            "/*                                                                                                                                           */",
+            "/*********************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_1_B = new String[] {
+            "/*********************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                   */",
+            "/*      Target Method : public int returnLocalStaticArg1(Object arg0)                                                                        */",
+            "/*  Target Max LOCALS : 5                                                                                                                    */",
+            "/* Initial Frame Size : 1                                                                                                                    */",
+            "/*      Callback Name : injectorLocalStaticArg1B                                                                                             */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                                */",
+            "/*********************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                       */",
+            "/*   [  0]                Object  arg0                                                                                                       */",
+            "/* > [  1]                   int  local0                                             <capture>                                               */",
+            "/*   [  2]                   int  local1                                             <capture>                                               */",
+            "/*   [  3]                   int  local2                                             <capture>                                               */",
+            "/*   [  4]                   int  local3                                             <capture>                                               */",
+            "/*********************************************************************************************************************************************/",
+            "/*                                                                                                                                           */",
+            "/* /**                                                                                                                                       */",
+            "/*  * Expected callback signature                                                                                                            */",
+            "/*  * /                                                                                                                                      */",
+            "/* private void injectorLocalStaticArg1B(Object arg0, CallbackInfoReturnable<Integer> cir, int local0, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                        */",
+            "/* }                                                                                                                                         */",
+            "/*                                                                                                                                           */",
+            "/*********************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_2 = new String[] {
+            "/*****************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                               */",
+            "/*      Target Method : public int returnLocalStaticArg2(long arg0, long arg1)                                                           */",
+            "/*  Target Max LOCALS : 7                                                                                                                */",
+            "/* Initial Frame Size : 4                                                                                                                */",
+            "/*      Callback Name : injectorLocalStaticArg2                                                                                          */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                            */",
+            "/*****************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                   */",
+            "/*   [  0]                  long  arg0                                                                                                   */",
+            "/*   [  1]                 <top>                                                                                                         */",
+            "/*   [  2]                  long  arg1                                                                                                   */",
+            "/*   [  3]                 <top>                                                                                                         */",
+            "/* > [  4]                   int  local1                                             <capture>                                           */",
+            "/*   [  5]                   int  local2                                             <capture>                                           */",
+            "/*   [  6]                   int  local3                                             <capture>                                           */",
+            "/*****************************************************************************************************************************************/",
+            "/*                                                                                                                                       */",
+            "/* /**                                                                                                                                   */",
+            "/*  * Expected callback signature                                                                                                        */",
+            "/*  * /                                                                                                                                  */",
+            "/* private void injectorLocalStaticArg2(long arg0, long arg1, CallbackInfoReturnable<Integer> cir, int local1, int local2, int local3) { */",
+            "/*     // Method body                                                                                                                    */",
+            "/* }                                                                                                                                     */",
+            "/*                                                                                                                                       */",
+            "/*****************************************************************************************************************************************/"
+    };
+
+    public static final String[] LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_3 = new String[] {
+            "/*********************************************************************************************************************************************/",
+            "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                                   */",
+            "/*      Target Method : public int returnLocalStaticArg3(double arg0, int arg1)                                                              */",
+            "/*  Target Max LOCALS : 9                                                                                                                    */",
+            "/* Initial Frame Size : 3                                                                                                                    */",
+            "/*      Callback Name : injectorLocalStaticArg3                                                                                              */",
+            "/*        Instruction : InjectionNode IRETURN                                                                                                */",
+            "/*********************************************************************************************************************************************/",
+            "/*   LOCAL                  TYPE  NAME                                                                                                       */",
+            "/*   [  0]                double  arg0                                                                                                       */",
+            "/*   [  1]                 <top>                                                                                                             */",
+            "/*   [  2]                   int  arg1                                                                                                       */",
+            "/* > [  3]                  long  local1                                             <capture>                                               */",
+            "/*   [  4]                 <top>                                                                                                             */",
+            "/*   [  5]                  long  local2                                             <capture>                                               */",
+            "/*   [  6]                 <top>                                                                                                             */",
+            "/*   [  7]                  long  local3                                             <capture>                                               */",
+            "/*   [  8]                 <top>                                                                                                             */",
+            "/*********************************************************************************************************************************************/",
+            "/*                                                                                                                                           */",
+            "/* /**                                                                                                                                       */",
+            "/*  * Expected callback signature                                                                                                            */",
+            "/*  * /                                                                                                                                      */",
+            "/* private void injectorLocalStaticArg3(double arg0, int arg1, CallbackInfoReturnable<Integer> cir, long local1, long local2, long local3) { */",
+            "/*     // Method body                                                                                                                        */",
+            "/* }                                                                                                                                         */",
+            "/*                                                                                                                                           */",
+            "/*********************************************************************************************************************************************/"
+    };
+
     public static void main(String[] args) {
-        String text = "\n"
-                + "/***********************************************************************************************************************************/\n"
-                + "/*       Target Class : de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest                                         */\n"
-                + "/*      Target Method : public int returnLocalInstanceArg1(Object arg0)                                                            */\n"
-                + "/*  Target Max LOCALS : 5                                                                                                          */\n"
-                + "/* Initial Frame Size : 2                                                                                                          */\n"
-                + "/*      Callback Name : injectorLocalInstanceArg1A                                                                                 */\n"
-                + "/*        Instruction : InjectionNode IRETURN                                                                                      */\n"
-                + "/***********************************************************************************************************************************/\n"
-                + "/*   LOCAL                  TYPE  NAME                                                                                             */\n"
-                + "/*   [  0]     LocalPrintingTest  this                                                                                             */\n"
-                + "/*   [  1]                Object  arg0                                                                                             */\n"
-                + "/* > [  2]                   int  local1                                             <capture>                                     */\n"
-                + "/*   [  3]                   int  local2                                             <capture>                                     */\n"
-                + "/*   [  4]                   int  local3                                             <capture>                                     */\n"
-                + "/***********************************************************************************************************************************/\n"
-                + "/*                                                                                                                                 */\n"
-                + "/* /**                                                                                                                             */\n"
-                + "/*  * Expected callback signature                                                                                                  */\n"
-                + "/*  * /                                                                                                                            */\n"
-                + "/* private void injectorLocalInstanceArg1A(Object arg0, CallbackInfoReturnable<Integer> cir, int local1, int local2, int local3) { */\n"
-                + "/*     // Method body                                                                                                              */\n"
-                + "/* }                                                                                                                               */\n"
-                + "/*                                                                                                                                 */\n"
-                + "/***********************************************************************************************************************************/";
+        String text = "";
         String[] split = text.split("[\\r\\n]");
         StringBuilder b = new StringBuilder();
         for (String s : split) {
