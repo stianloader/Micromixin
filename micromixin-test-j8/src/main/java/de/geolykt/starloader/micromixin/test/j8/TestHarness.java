@@ -47,6 +47,8 @@ public class TestHarness {
                 LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_2,
                 LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_STATIC_ARG_3);
         /**/
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InvalidPrintAttemptTestA");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InvalidPrintAttemptTestB");
         LoggerFactory.getLogger(TestHarness.class).info("LocalPrintingTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

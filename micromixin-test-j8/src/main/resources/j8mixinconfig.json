@@ -13,6 +13,8 @@
     "MultiInjectTestMixins",
     "MixinOverwriteTestMixins",
     "invalid.InvalidOverwriteAliasTestMixins",
-    "invalid.InvalidOverwriteAccessReductionMixins"
+    "invalid.InvalidOverwriteAccessReductionMixins",
+    "invalid.InvalidPrintAttemptMixinsA",
+    "invalid.InvalidPrintAttemptMixinsB"
   ]
 }

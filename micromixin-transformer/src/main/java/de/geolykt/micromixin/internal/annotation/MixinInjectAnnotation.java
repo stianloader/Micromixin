@@ -49,13 +49,7 @@ import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     @NotNull
-    private static final String CALLBACK_INFO_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
-    @NotNull
-    private static final String CALLBACK_INFO_DESC = "L" + CALLBACK_INFO_TYPE + ";";
-    @NotNull
-    private static final String CALLBACK_INFO_RETURNABLE_TYPE = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
-    @NotNull
-    private static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_TYPE + ";";
+    private static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
 
     @NotNull
     public final Collection<MixinAtAnnotation> at;
@@ -189,13 +183,15 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     if (this.denyVoids && targetMethod.desc.codePointBefore(targetMethod.desc.length()) == 'V') {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + "V, which is a void method. The injector however has a CallbackInfoReturnable, which suggests a non-void type as the target's return type. This issue is caused due to the following selector (Make sure to set the return type accordingly!): " + selector);
                     }
-                    // Verify access modifiers (TODO How about static -> non-static?)
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
                         if (((this.injectSource.access & Opcodes.ACC_STATIC) == 0)) {
                             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
                         } else if (((this.injectSource.access & Opcodes.ACC_PUBLIC) != 0)) {
                             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
                         }
+                    } else if ((this.injectSource.access & Opcodes.ACC_STATIC) != 0) {
+                        // Technically that one could be doable, but it'd be nasty.
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
                     for (LabelNode label : at.getLabels(targetMethod)) {
                         labels.put(label, targetMethod);
@@ -241,7 +237,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 int loadOpcode = ASMUtil.getLoadOpcode(storedType);
 
                 injected.add(new VarInsnNode(storeOpcode, lvt0));
-                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
+                injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME));
                 injected.add(new InsnNode(Opcodes.DUP));
                 injected.add(new LdcInsnNode(method.name));
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
@@ -252,7 +248,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 } else {
                     ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
                 }
-                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "<init>", ctorDesc));
                 // Operand stack: CIR
                 injected.add(new InsnNode(Opcodes.DUP));
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
@@ -269,12 +265,12 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Operand stack: CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "isCancelled", "()Z"));
                     // Now CIR, BOOL
                     LabelNode skipReturn = new LabelNode();
                     injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
                     // Now CIR
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
                     // Now VAL
                     injected.add(new InsnNode(returnOpcode));
                     injected.add(skipReturn);
@@ -298,7 +294,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     storedType = returnType;
                 }
                 // Now RET (or RET, RET - but the first RET is used later and thus discarded for our purposes)
-                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_RETURNABLE_TYPE));
+                injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME));
                 // Now RET, CIR
                 injected.add(new InsnNode(Opcodes.DUP2));
                 // Now RET, CIR, RET, CIR
@@ -316,7 +312,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 } else {
                     ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
                 }
-                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_RETURNABLE_TYPE, "<init>", ctorDesc));
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "<init>", ctorDesc));
                 // Now RET, CIR
                 injected.add(new InsnNode(Opcodes.DUP));
                 // Now RET, CIR, CIR
@@ -334,16 +330,16 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Now RET, CIR
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "isCancelled", "()Z"));
                     // Now RET, CIR, BOOL
                     LabelNode skipReturn = new LabelNode();
                     injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
                     // Now RET, CIR
                     if (returnOpcode == Opcodes.ARETURN) {
-                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue", "()Ljava/lang/Object;"));
+                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "getReturnValue", "()Ljava/lang/Object;"));
                         injected.add(new TypeInsnNode(Opcodes.CHECKCAST, method.desc.substring(method.desc.lastIndexOf(')') + 2, method.desc.length() - 1)));
                     } else {
-                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_RETURNABLE_TYPE, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
+                        injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
                     }
                     // Now RET, VAL
                     injected.add(new InsnNode(returnOpcode));
@@ -354,20 +350,20 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(Opcodes.POP2)); // Perhaps with less lazy engineering one could avoid having this pop, but at the moment it does just as well
                 // Now nothing (or RET, but that RET is used later)
             } else if ((method.access & Opcodes.ACC_STATIC) != 0) {
-                injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_TYPE));
+                injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_NAME));
                 injected.add(new InsnNode(Opcodes.DUP));
                 if (cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
                 }
                 injected.add(new LdcInsnNode(method.name));
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
-                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
+                injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_NAME, "<init>", "(Ljava/lang/String;Z)V"));
                 this.captureArguments(sourceStub, injected, to, method);
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
                     // TODO What happens if two injectors have the same entrypoint? Is mixin smart or not so smart here?
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_NAME, "isCancelled", "()Z"));
                     LabelNode skipReturn = new LabelNode();
                     injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
                     injected.add(new InsnNode(Opcodes.RETURN));
@@ -382,7 +378,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (cancellable) {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
-                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, CALLBACK_INFO_TYPE, "isCancelled", "()Z"));
+                    injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_NAME, "isCancelled", "()Z"));
                     LabelNode skipReturn = new LabelNode();
                     injected.add(new JumpInsnNode(Opcodes.IFEQ, skipReturn));
                     injected.add(new InsnNode(Opcodes.RETURN));
@@ -467,7 +463,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 return -1;
             }
             TypeInsnNode typeInsn = (TypeInsnNode) insn;
-            if (!typeInsn.desc.equals(CALLBACK_INFO_TYPE)
+            if (!typeInsn.desc.equals(ASMUtil.CALLBACK_INFO_NAME)
                     || (insn = insn.getNext()).getOpcode() != Opcodes.DUP
                     || (insn = insn.getNext()).getOpcode() != Opcodes.LDC
                     || ((LdcInsnNode) insn).cst.equals(method.name)) {
@@ -544,11 +540,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         }
         int index = scanNextFreeLVTIndex(method);
         InsnList injected = new InsnList();
-        injected.add(new TypeInsnNode(Opcodes.NEW, CALLBACK_INFO_TYPE));
+        injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_NAME));
         injected.add(new InsnNode(Opcodes.DUP));
         injected.add(new LdcInsnNode(method.name));
         injected.add(new InsnNode(cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
-        injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, CALLBACK_INFO_TYPE, "<init>", "(Ljava/lang/String;Z)V"));
+        injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_NAME, "<init>", "(Ljava/lang/String;Z)V"));
         injected.add(new VarInsnNode(Opcodes.ASTORE, index));
         method.instructions.insert(injected);
         return index;
@@ -572,9 +568,9 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
         while (handlerDesc.hasNext() && targetDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
-            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(CALLBACK_INFO_RETURNABLE_DESC)) {
+            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
                 if (this.injectSource.desc.startsWith("(" + CALLBACK_INFO_DESC + ")")
-                        || this.injectSource.desc.startsWith("(" + CALLBACK_INFO_RETURNABLE_DESC + ")")) {
+                        || this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC + ")")) {
                     // Not capturing any argument is supported even in the case of an argument underflow.
                     return;
                 }
@@ -605,7 +601,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     + "the target method has more arguments than the source method is capturing.");
         } else if (handlerDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
-            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(CALLBACK_INFO_RETURNABLE_DESC)) {
+            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
                 return;
             }
             // handler wishes to capture more arguments than it should.
