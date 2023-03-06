@@ -61,7 +61,7 @@ public class LocalCaptureResult {
         table.addRow("", "LOCAL", "TYPE", "NAME");
         int maxLocals = frame.getLocals();
         int prettyPrintMax = Math.max(100, maxLocals);
-        int initialFrameSize = ASMUtil.getInitialFrameSize(sourceMethod);
+        int initialFrameSize = ASMUtil.getInitialFrameSize(this.sourceMethod);
         int reducedIndex = 0;
         for (int i = 0; i < maxLocals; i++) {
             BasicValue local = frame.getLocal(i);
@@ -78,7 +78,7 @@ public class LocalCaptureResult {
             String capture = noCapture ? "" : "<capture>";
             if (i == 0
                     && (sourceMethod.access & Opcodes.ACC_STATIC) == 0
-                    && localType.getInternalName().equals(sourceOwner.name)) {
+                    && localType.getInternalName().equals(this.sourceOwner.name)) {
                 name = "this";
             } else {
                 if (noCapture) {

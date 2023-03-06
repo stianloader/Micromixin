@@ -17,25 +17,44 @@ public class LocalsPrintingIO {
     @NotNull
     private static final String FALLBACK_STRING = "<error: unspecified>";
 
-    public static boolean compareMethodNames(@NotNull String methodA, @NotNull String methodB) {
-        int abracket = methodA.indexOf('(');
-        int bbracket = methodB.indexOf('(');
-        if (abracket != bbracket || !methodA.regionMatches(false, 0, methodB, 0, abracket)) {
-            return false;
-        }
-        int aidx, bidx;
-        aidx = bidx = abracket + 1;
-        while (aidx != -1 && bidx != -1) {
-            int aspace = methodA.indexOf(' ', aidx);
-            int bspace = methodB.indexOf(' ', bidx);
-            int typeLength = aspace - aidx;
-            if (bidx + typeLength != bspace || !methodA.regionMatches(false, aidx, methodB, bidx, typeLength)) {
-                return false;
+    public static void assertEqualMethodSignature(String[] test, String[] witness) {
+        StringBuilder fullTest = new StringBuilder();
+        StringBuilder fullWitness = new StringBuilder();
+        boolean startAppending = false;
+        for (String s : test) {
+            if (!startAppending) {
+                if (s.endsWith(" * /")) {
+                    startAppending = true;
+                }
+                continue;
             }
-            aidx = methodA.indexOf(',', aspace);
-            bidx = methodB.indexOf(',', bspace);
+            fullTest.append(s);
         }
-        return aidx == -1 && bidx == -1; // Compare argument count
+        if (!startAppending) {
+            throw new AssertionError("Invalid method signature block: Comment block not ended.");
+        }
+        startAppending = false;
+        for (String s : witness) {
+            if (!startAppending) {
+                if (s.endsWith(" * /")) {
+                    startAppending = true;
+                }
+                continue;
+            }
+            fullWitness.append(s);
+        }
+        if (!startAppending) {
+            throw new AssertionError("Invalid method signature block: Comment block not ended.");
+        }
+
+        String testHead = fullTest.toString();
+        String witnessHead = fullWitness.toString();
+        testHead = testHead.substring(0, testHead.indexOf(')') + 1);
+        witnessHead = witnessHead.substring(0, witnessHead.indexOf(')') + 1);
+
+        if (!LocalsPrintingIO.compareMethodNames(testHead, witnessHead)) {
+            throw new AssertionError("Expected method signature of " + witnessHead + ", but got " + testHead);
+        }
     }
 
     public static void assertEquals(@NotNull LocalPrintingContext test, @NotNull LocalPrintingContext witness) {
@@ -59,8 +78,8 @@ public class LocalsPrintingIO {
         if (!LocalsPrintingIO.compareMethodNames(test.targetMethod, witness.targetMethod)) {
             throw new AssertionError("Expected target method of \"" + witness.targetMethod + "\", but got \"" + test.targetMethod + "\" instead.");
         }
-        assertLocalTableLenientlyEquals(test.localsTable, witness.localsTable);
-        // We cannot compare the expected callback signature as of now - but it is something I might look into in the future
+        LocalsPrintingIO.assertLocalTableLenientlyEquals(test.localsTable, witness.localsTable);
+        LocalsPrintingIO.assertEqualMethodSignature(test.expectedCallbackSignature, witness.expectedCallbackSignature);
     }
 
     public static void assertEquals(LocalPrintingContext[] tests, LocalPrintingContext[] witnesses) {
@@ -105,6 +124,27 @@ public class LocalsPrintingIO {
                 throw new AssertionError("Expected a capture flag of \"" + witness[row][4] + "\" at row " + row + ", but instead got " + test[row][4] + ".");
             }
         }
+    }
+
+    public static boolean compareMethodNames(String methodA, String methodB) {
+        int abracket = methodA.indexOf('(');
+        int bbracket = methodB.indexOf('(');
+        if (abracket != bbracket || !methodA.regionMatches(false, 0, methodB, 0, abracket)) {
+            return false;
+        }
+        int aidx, bidx;
+        aidx = bidx = abracket + 1;
+        while (aidx != -1 && bidx != -1) {
+            int aspace = methodA.indexOf(' ', aidx);
+            int bspace = methodB.indexOf(' ', bidx);
+            int typeLength = aspace - aidx;
+            if (bidx + typeLength != bspace || !methodA.regionMatches(false, aidx, methodB, bidx, typeLength)) {
+                return false;
+            }
+            aidx = methodA.indexOf(',', aspace);
+            bidx = methodB.indexOf(',', bspace);
+        }
+        return aidx == -1 && bidx == -1; // Compare argument count
     }
 
     public static synchronized LocalPrintingContext[] guardedRead(@NotNull Runnable action) {
@@ -155,6 +195,7 @@ public class LocalsPrintingIO {
         boolean alreadyCaptured = false;
         int block = 0;
         List<String[]> locals = new ArrayList<>();
+        List<String> expectedSignatureLines = new ArrayList<>();
         for (int lineIndex = start; lineIndex < end; lineIndex++) {
             String line = lines[lineIndex];
             if (!line.startsWith("/*") || !line.endsWith("*/")) {
@@ -164,7 +205,17 @@ public class LocalsPrintingIO {
                 block++;
                 continue;
             }
-            if (block == 2) {
+            if (block == 3) {
+                // Expected callback signature
+                // (The repeated #substring calls are not great for performance, but this shouldn't matter too much)
+                int lineLength = line.length() - 2;
+                line = line.substring(3, lineLength);
+                lineLength -= 3;
+                while (lineLength != 0 && line.codePointBefore(lineLength) == ' ') {
+                    line = line.substring(0, --lineLength);
+                }
+                expectedSignatureLines.add(line);
+            } else if (block == 2) {
                 // Local table
                 line = line.substring(2, line.length() - 2).trim();
                 String[] parts = line.split("\\s+");
@@ -254,11 +305,13 @@ public class LocalsPrintingIO {
                 // Ignore other blocks - for now
                 if (block == 0) {
                     throw new IllegalArgumentException("Error: Read ahead of block. The given \"lines\" argument does not specify a valid LocalCapture.PRINT unit.");
+                } else {
+                    throw new IllegalArgumentException("Error: Read behind of block. The given \"lines\" argument does not specify a valid LocalCapture.PRINT unit (did you accidentally give this method too many lines?). Erroneous line: " + lineIndex + ", block = " + block);
                 }
             }
         }
         String[][] table = locals.toArray(new String[0][]);
-        LocalPrintingContext ctx = new LocalPrintingContext(tClass, method, maxLocals, frameSize, callback, instructions, table);
+        LocalPrintingContext ctx = new LocalPrintingContext(tClass, method, maxLocals, frameSize, callback, instructions, table, expectedSignatureLines.toArray(new String[0]));
         return ctx;
     }
 }

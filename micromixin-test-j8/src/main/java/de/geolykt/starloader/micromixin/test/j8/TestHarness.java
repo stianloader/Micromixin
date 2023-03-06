@@ -32,8 +32,8 @@ public class TestHarness {
             de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest.class.toString();
         });/**/
         set.addUnitAssertLocalPrinting("de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest",
-                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_LOCAL_INSTANCE_0,
-                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_LOCAL_STATIC_0,
+                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_INSTANCE_0,
+                LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_STATIC_0,
                 LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_0_A,
                 LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_0_B,
                 LocalPrintingWitnesses.LOCAL_PRINTING_TEST_RETURN_INSTANCE_ARG_1_A,

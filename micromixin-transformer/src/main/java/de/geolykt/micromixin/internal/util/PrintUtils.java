@@ -233,21 +233,49 @@ public class PrintUtils {
         lines.add(" * Expected callback signature");
         lines.add(" * /");
         sharedBuilder.setLength(0);
-        PrintUtils.stringifyAccessMethod(currentHandler.access, sharedBuilder).append(" void ").append(currentHandler.name);
+        int access = currentHandler.access;
+        access &= ~Opcodes.ACC_STATIC; // SPONGE! STOP! This is invalid code!
+        PrintUtils.stringifyAccessMethod(access, sharedBuilder).append(" void ").append(currentHandler.name);
         sharedBuilder.append('(');
+        int maxLocals = frame.getLocals();
+        int initialFrameSize = ASMUtil.getInitialFrameSize(target);
+        int reducedIndex = 0;
+
+        for (int i = 0; i < initialFrameSize; i++) {
+            if ((target.access & Opcodes.ACC_STATIC) == 0 && i == 0) {
+                continue;
+            }
+            String localDesc = frame.getLocal(i).getType().getDescriptor();
+            PrintUtils.fastPrettySingleDesc(localDesc, 0, sharedBuilder);
+            sharedBuilder.append(" arg").append(reducedIndex++);
+            if (ASMUtil.isCategory2(localDesc.codePointAt(0))) {
+                i++; // Skip the second double/long part
+            }
+            sharedBuilder.append(", ");
+        }
+
         PrintUtils.fastPrettyPrintCallbackInfo(target, sharedBuilder);
         sharedBuilder.append(" ci");
-        int maxLocals = frame.getLocals();
-        int reducedIndex = 0;
-        for (int i = 0; i < maxLocals; i++) {
+
+        reducedIndex = 0;
+        for (int i = initialFrameSize; i < maxLocals; i++) {
             String localDesc = frame.getLocal(i).getType().getDescriptor();
             sharedBuilder.append(", ");
             PrintUtils.fastPrettySingleDesc(localDesc, 0, sharedBuilder);
-            sharedBuilder.append(" local").append(reducedIndex++);
+            if (i < initialFrameSize) {
+                sharedBuilder.append(" arg");
+            } else {
+                if (i == initialFrameSize) {
+                    reducedIndex = 0;
+                }
+                sharedBuilder.append(" local");
+            }
+            sharedBuilder.append(reducedIndex++);
             if (ASMUtil.isCategory2(localDesc.codePointAt(0))) {
                 i++; // Skip the second double/long part
             }
         }
+
         sharedBuilder.append(") {");
         lines.add(sharedBuilder.toString());
         lines.add("    // Method body");

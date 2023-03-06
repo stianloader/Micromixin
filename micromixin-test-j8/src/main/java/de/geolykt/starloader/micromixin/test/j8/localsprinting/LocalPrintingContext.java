@@ -26,9 +26,11 @@ public class LocalPrintingContext {
 
     public final String[][] localsTable;
 
+    public final String[] expectedCallbackSignature;
+
     public LocalPrintingContext(@NotNull String targetClass, @NotNull String targetMethod, @NotNull String targetMaxLocals,
             @NotNull String initialFrameSize, @NotNull String callbackName, @NotNull String instruction,
-            String[][] localsTable) {
+            String[][] localsTable, String[] expectedCallbackSignature) {
         this.targetClass = targetClass;
         this.targetMethod = targetMethod;
         this.targetMaxLocals = targetMaxLocals;
@@ -36,6 +38,7 @@ public class LocalPrintingContext {
         this.callbackName = callbackName;
         this.instruction = instruction;
         this.localsTable = localsTable;
+        this.expectedCallbackSignature = expectedCallbackSignature;
     }
 
     @Override
