@@ -3,6 +3,12 @@ package org.spongepowered.asm.mixin.injection.callback;
 public enum LocalCapture {
 
     /**
+     * Throws an {@link Error} during transformation if local capture couldn't occur.
+     * Otherwise locals are captured as per standard capture behaviour.
+     */
+    CAPTURE_FAILHARD,
+
+    /**
      * The default state of the {@link LocalCapture} flag:
      * no locals are captured (however, argument capture can still occur).
      */

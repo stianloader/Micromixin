@@ -12,6 +12,7 @@ import de.geolykt.micromixin.internal.MixinParseException;
 public class ASMUtil {
 
     public static final String CALLBACK_INFO_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
+    public static final String CALLBACK_INFO_DESC = "L" + CALLBACK_INFO_NAME + ";";
     public static final String CALLBACK_INFO_RETURNABLE_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
     public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_NAME + ";";
     public static final int CI_LEN = CALLBACK_INFO_NAME.length();
@@ -131,21 +132,24 @@ public class ASMUtil {
     }
 
     @NotNull
-    public static String getTargetDesc(@NotNull MethodNode method) {
-        String desc = method.desc;
-        DescString dstring = new DescString(desc);
-        String last = null;
+    public static String getTargetDesc(@NotNull MethodNode method, @NotNull StringBuilder sharedBuilder) {
+        // To be fair, I am not really honest if argument capture has any effect on the selected method.
+        sharedBuilder.setLength(0);
+        sharedBuilder.append('(');
+        DescString dstring = new DescString(method.desc);
+        boolean ciPresent = false;
         while (dstring.hasNext()) {
-            last = dstring.nextType();
+            String selected = dstring.nextType();
+            if (selected.equals(CALLBACK_INFO_RETURNABLE_DESC) || selected.equals(CALLBACK_INFO_DESC)) {
+                ciPresent = true;
+                break;
+            }
         }
-        int idx0 = desc.lastIndexOf(')');
-        if (("L" + CALLBACK_INFO_NAME + ";").equals(last)) {
-            return desc.substring(0, idx0 - 2 - CI_LEN) + ")V"; // Void methods are targeted unless otherwise specified
-        } else if (("L" + CALLBACK_INFO_RETURNABLE_NAME + ";").equals(last)) {
-            return desc.substring(0, idx0 - 2 - CIR_LEN) + ")V";
-        } else {
-            throw new MixinParseException("Method " + method.name + desc + " should have a CallbackInfo or a CallbackInfoReturnable as it's last argument. But it does not.");
+        sharedBuilder.append(")V"); // Void methods are targeted unless otherwise specified
+        if (!ciPresent) {
+            throw new MixinParseException("Method " + method.name + method.desc + " should have a CallbackInfo or a CallbackInfoReturnable as one of it's arguments. But it does not.");
         }
+        return sharedBuilder.toString();
     }
 
     public static boolean hasField(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {

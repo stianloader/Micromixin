@@ -59,28 +59,29 @@ public class MixinTransformer<M> {
         if (isMixin(attachment, config.mixinPackage)) { // FIXME: also validate other configs inserted previously.
             throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") target the same package (" + config.mixinPackage + ").");
         }
-        packageDeclarations.put(new ModularityAttached<M, String>(attachment, config.mixinPackage), config);
+        this.packageDeclarations.put(new ModularityAttached<M, String>(attachment, config.mixinPackage), config);
+        StringBuilder sharedBuilder = new StringBuilder();
         // FIXME unregister registered stuff if it fails
         for (String mixin : config.mixins) {
             ModularityAttached<M, String> mixinRef = new ModularityAttached<M, String>(attachment, config.mixinPackage + "/" + mixin);
-            if (mixins.containsKey(mixinRef)) {
+            if (this.mixins.containsKey(mixinRef)) {
                 throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") use the same class (" + mixinRef.value + ").");
             }
-            mixins.put(mixinRef, config);
+            this.mixins.put(mixinRef, config);
             try {
                 ClassNode node = bytecodeProvider.getClassNode(attachment, mixinRef.value);
-                MixinStub stub = MixinStub.parse(config.priority, node, this.pool);
-                mixinNodes.put(mixinRef, node);
-                mixinStubs.put(mixinRef, stub);
+                MixinStub stub = MixinStub.parse(config.priority, node, this.pool, sharedBuilder);
+                this.mixinNodes.put(mixinRef, node);
+                this.mixinStubs.put(mixinRef, stub);
                 Set<String> targets = new HashSet<String>();
                 for (String desc : stub.header.targets) {
                     if (!targets.add(desc)) {
                         continue;
                     }
-                    TreeSet<MixinStub> val = mixinTargets.get(desc);
+                    TreeSet<MixinStub> val = this.mixinTargets.get(desc);
                     if (val == null) {
                         val = new TreeSet<MixinStub>();
-                        mixinTargets.put(desc, val);
+                        this.mixinTargets.put(desc, val);
                     }
                     val.add(stub);
                 }

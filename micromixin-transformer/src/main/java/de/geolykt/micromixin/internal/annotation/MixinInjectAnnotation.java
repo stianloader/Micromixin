@@ -81,14 +81,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     }
 
     @NotNull
-    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull ClassWrapperPool pool) throws MixinParseException {
+    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull ClassWrapperPool pool, @NotNull StringBuilder sharedBuilder) throws MixinParseException {
         if ((method.access & Opcodes.ACC_STATIC) != 0 && (method.access & Opcodes.ACC_PRIVATE) == 0) {
             throw new MixinParseException("The injector handler method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;
-        String fallbackMethodDesc = ASMUtil.getTargetDesc(method);
+        String fallbackMethodDesc = ASMUtil.getTargetDesc(method, sharedBuilder);
         int require = -1;
         int expect = -1;
         boolean cancellable = false;
@@ -213,7 +213,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
             boolean category2 = ASMUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
-            if (handleCapture(sourceStub.sourceNode, to, method, injected, label, sharedBuilder)) {
+            if (captureLocalsEarly(sourceStub.sourceNode, to, method, label, sharedBuilder)) {
                 continue;
             }
             if (returnType != 'V' && category2) {
@@ -253,12 +253,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(Opcodes.DUP));
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
                     this.captureArguments(sourceStub, injected, to, method);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -318,12 +320,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Now RET, CIR, CIR
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
                     this.captureArguments(sourceStub, injected, to, method);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -359,6 +363,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_NAME, "<init>", "(Ljava/lang/String;Z)V"));
                 this.captureArguments(sourceStub, injected, to, method);
+                this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
@@ -374,6 +379,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 this.captureArguments(sourceStub, injected, to, method);
+                this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (cancellable) {
@@ -398,11 +404,95 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
      * @param out Instructions generated through the local capture that should be prefixed before the actual injection handling. Intended to load the local variables.
      * @param label The label which is targeted by the injection.
      * @param sharedBuilder A shared {@link StringBuilder} instance used to reduce duplicate allocations
-     * @return True to abort injection (for example with PRINT), false otherwise.
      */
-    private boolean handleCapture(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target,
+    private void captureLocals(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target,
             @NotNull InsnList out, LabelNode label, @NotNull StringBuilder sharedBuilder) {
         if (this.locals.equals("NO_CAPTURE")) {
+            // Nothing to do
+            return;
+        }
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.pool);
+
+        int initialFrameSize = ASMUtil.getInitialFrameSize(target);
+        Frame<BasicValue> frame = result.frame;
+        List<String> requestedLocals = new ArrayList<String>();
+
+        String errorMessage = null;
+
+        errorFailfast:
+        if (frame == null) {
+            errorMessage = "Handler " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + " targets an unreachable instruction in " + targetClass.name + "." + target.name + target.desc;
+        } else {
+            int maxLocals = frame.getLocals();
+            DescString requesterDesc = new DescString(this.injectSource.desc);
+            while (requesterDesc.hasNext()) {
+                String desc = requesterDesc.nextType();
+                if (ASMUtil.CALLBACK_INFO_DESC.equals(desc) || ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(desc)) {
+                    break;
+                }
+            }
+            while (requesterDesc.hasNext()) {
+                requestedLocals.add(requesterDesc.nextType());
+            }
+
+            List<String> providedLocals = new ArrayList<String>();
+
+            for (int i = initialFrameSize; i < maxLocals; i++) {
+                String desc = frame.getLocal(i).getType().getDescriptor();
+                providedLocals.add(desc);
+                if (ASMUtil.isCategory2(desc.codePointAt(0))) {
+                    i++;
+                }
+            }
+
+            int requestedCount = requestedLocals.size();
+            if (requestedCount < providedLocals.size()) {
+                errorMessage = "Handler " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + " whishes to capture more locals than " + targetClass.name + "." + target.name + target.desc + " can provide. Provided: " + providedLocals + ", Requested: " + requestedLocals + ".";
+                break errorFailfast;
+            }
+
+            int localIndex = initialFrameSize;
+            for (int i = 0; i < requestedCount; i++) {
+                String desc = requestedLocals.get(i);
+                if (!desc.equals(providedLocals.get(i))) {
+                    // TODO Inheritance? No idea if the spongeian implementation is smart enough there (or whether it makes any sense to do so)
+                    errorMessage = "Handler " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + " attempts to capture different locals than those supplied by " + targetClass.name + "." + target.name + target.desc + ". Provided: " + providedLocals + ", Requested: " + requestedLocals + ".";
+                    break errorFailfast;
+                }
+                int type = desc.codePointAt(0);
+                out.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), localIndex));
+                if (ASMUtil.isCategory2(type)) {
+                    localIndex += 2;
+                } else {
+                    localIndex++;
+                }
+            }
+        }
+
+        if (this.locals.equals("CAPTURE_FAILHARD")) {
+            if (errorMessage != null) {
+                throw new Error(errorMessage);
+            }
+        } else {
+            throw new IllegalStateException("Unsupported local capture flag: \"" + this.locals + "\"");
+        }
+    }
+
+    /**
+     * Handles local capture.
+     * This method primarily deals with injectors that ordinarily skip the method to inject very early (such as it is the case
+     * with LocalCapture#PRINT)
+     *
+     * @param handlerOwner The owner class of the injector source.
+     * @param targetClass The ASM {@link ClassNode} representation of the class that is targeted by the mixin
+     * @param target The ASM {@link MethodNode} representation of the method that should be transformed by the inject.
+     * @param label The label which is targeted by the injection.
+     * @param sharedBuilder A shared {@link StringBuilder} instance used to reduce duplicate allocations
+     * @return True to abort injection (for example with PRINT), false otherwise.
+     */
+    private boolean captureLocalsEarly(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target, LabelNode label, @NotNull StringBuilder sharedBuilder) {
+        if (this.locals.equals("NO_CAPTURE") || this.locals.equals("CAPTURE_FAILHARD")) {
+            // Nothing to do, for now
             return false;
         }
         LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.pool);
