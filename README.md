@@ -2,6 +2,14 @@
 
 Micromixin is a lightweight reimplementation of Spongepowered's Mixin framework.
 
+## Building
+
+When providing source code freely on the internet I usually want to provide it in a
+way that it can be compiled far into the future (well in more interconnected projects
+it gets a bit more complicated but still not too much of an issue), however in order to
+support Java 6 (this functionality was requested by someone interested in this project),
+<b>one needs to compile with Java 11 at most. Building with newer JDKs won't work.</b>
+
 ## Why reimplement?
 
 The astute among you may be painfully aware that reimplementing any large framework is
@@ -30,11 +38,15 @@ Painpoints of the official Mixin implementation that this implementation seeks t
 
 The Micromixin framework comes in three modules. "micromixin-annotations" includes
 all the traditional mixin annotations that are implemented by Micromixin - nothing more.
-"micromixin-transformer" includes the transformer and all other parts required to
-run micromixin. "micromixin-test-j8" includes tests for Micromxin and is the least
-interesting part of the project.
+"micromixin-transformer" includes the transformer - i.e. it is the heart of the project.
+"micromixin-runtime" includes everything needed to run transformed classes (such as the
+CallbackInfo classes).
+"micromixin-test-j8" includes tests for Micromxin and is the least interesting part of
+the project.
 
-Warning: <b>Do not use micromixin-annotations and micromixin-transformer at the same
-time!</b> They provide overlapping classes which can cause havoc at runtime.
-Micromixin-annotations should strictly be used for compilation and
-micromixin-transformer should strictly be used for runtime transformation.
+<b>Warning: In 90% of cases you'll want to bundle micromixin-transformer alongside
+micromixin-runtime. Due to there being no strict dependencies between the classes,
+the dependency is not resolved by default.</b>
+micromixin-annotations should strictly be used for compilation only,
+micromixin-transformer should strictly be used for runtime transformation only,
+micromixin-runtime should most likely always be used.

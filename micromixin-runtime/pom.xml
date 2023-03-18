@@ -1,26 +1,21 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>de.geolykt.starloader</groupId>
         <artifactId>micromixin</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>micromixin-annotations</artifactId>
+    <artifactId>micromixin-runtime</artifactId>
+    <description>Classes strictly necessary for running transformed classes</description>
 
     <dependencies>
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations-java5</artifactId>
             <version>${annotations-version}</version>
-            <scope>provided</scope> <!-- Annotations the JVM doesn't know about are discarded. Good for us. -->
-        </dependency>
-        <!-- While this dependency is not strictly necessary, I have come to the conclusion that in most cases you'll
-             want the CallbackInfo/CallbackInfoReturnable at compile-time too -->
-        <dependency>
-            <groupId>de.geolykt.starloader</groupId>
-            <artifactId>micromixin-runtime</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope> <!-- If the annotations are shaded (how dare you?), we'll probably want to shade the rest too. If not it is possible to exclude the CI/CIR manually anyways. -->
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

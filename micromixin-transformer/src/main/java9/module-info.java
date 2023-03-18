@@ -1,4 +1,4 @@
-module de.geolykt.starloader.micromixin {
+module de.geolykt.starloader.micromixin.transform {
     requires org.objectweb.asm;
     requires org.objectweb.asm.commons;
     requires org.objectweb.asm.tree;
@@ -8,5 +8,4 @@ module de.geolykt.starloader.micromixin {
 
     exports de.geolykt.micromixin;
     exports de.geolykt.micromixin.supertypes;
-    exports org.spongepowered.asm.mixin.injection.callback;
 }

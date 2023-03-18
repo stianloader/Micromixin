@@ -1,4 +1,4 @@
-module de.geolykt.starloader.micromixin {
+module de.geolykt.starloader.micromixin.annotations {
     requires org.jetbrains.annotations;
 
     exports org.spongepowered.asm.mixin.injection.callback;
