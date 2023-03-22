@@ -113,7 +113,7 @@ public class ClassWrapperPool {
 
     @Nullable
     public ClassWrapper optGet(@NotNull String className) {
-        ClassWrapper wrapper = wrappers.get(className);
+        ClassWrapper wrapper = this.wrappers.get(className);
         if (wrapper != null) {
             return wrapper;
         }

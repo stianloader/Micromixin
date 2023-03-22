@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.jetbrains.annotations.NotNull;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 
@@ -45,6 +46,7 @@ public class MixinTransformer<M> {
     private final Map<String, TreeSet<MixinStub>> mixinTargets = new HashMap<String, TreeSet<MixinStub>>();
     @NotNull
     private final BytecodeProvider<M> bytecodeProvider;
+    private boolean mergeClassFileVersions = true;
     @NotNull
     private final ClassWrapperPool pool;
     private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
@@ -93,6 +95,10 @@ public class MixinTransformer<M> {
         }
     }
 
+    public boolean isMergeingClassFileVersions() {
+        return this.mergeClassFileVersions;
+    }
+
     /**
      * Returns whether a package or a class is within a mixin.
      * Such classes or packages should not be loaded by the classloader.
@@ -121,6 +127,10 @@ public class MixinTransformer<M> {
         return this.mixinTargets.containsKey(name);
     }
 
+    public void setMergeClassFileVersions(boolean mergeClassFileVersions) {
+        this.mergeClassFileVersions = mergeClassFileVersions;
+    }
+
     public void transform(@NotNull ClassNode in) {
         Iterable<MixinStub> mixins = mixinTargets.get(in.name);
         if (mixins == null) {
@@ -129,6 +139,19 @@ public class MixinTransformer<M> {
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
         for (MixinStub stub : mixins) {
             stub.applyTo(in, hctx);
+            if (this.isMergeingClassFileVersions()) {
+                int adjustOrigin = in.version & ~Opcodes.V_PREVIEW;
+                int adjustSource = stub.sourceNode.version & ~Opcodes.V_PREVIEW;
+                if (adjustOrigin < adjustSource) {
+                    in.version = stub.sourceNode.version;
+                } else if (adjustOrigin == adjustSource) {
+                    boolean previewOrigin = (in.version & Opcodes.V_PREVIEW) == Opcodes.V_PREVIEW;
+                    boolean previewSource = (stub.sourceNode.version & Opcodes.V_PREVIEW) == Opcodes.V_PREVIEW;
+                    if (previewOrigin | previewSource) {
+                        in.version |= Opcodes.V_PREVIEW;
+                    }
+                }
+            }
         }
         if (DEBUG) {
             try {

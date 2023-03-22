@@ -1,5 +1,8 @@
 package de.geolykt.micromixin.internal.annotation;
 
+import java.io.PrintStream;
+import java.io.PrintWriter;
+
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -7,6 +10,9 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.util.ASMifier;
+import org.objectweb.asm.util.TraceClassVisitor;
+import org.objectweb.asm.util.TraceMethodVisitor;
 
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
@@ -19,6 +25,11 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     @NotNull
     private static MethodInsnNode getConstructorInvokeInsn(@NotNull ClassNode node, @NotNull MethodNode source) {
         AbstractInsnNode insn = source.instructions.getFirst();
+
+        if (insn == null) {
+            throw new IllegalStateException("Constructor " + node.name + "." + source.name + source.desc + " is empty. Did you accidentally use ClassReader.SKIP_CODE?");
+        }
+
         int newDepth = 0;
         while (insn != null) {
             if (insn.getOpcode() != Opcodes.INVOKESPECIAL) {
@@ -46,8 +57,14 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
             }
             insn = insn.getNext();
         }
+
         if (insn == null) {
-            throw new NullPointerException("Instructions exhausted");
+            if (Boolean.getBoolean("de.geolykt.starloader.micromixin.debug")) {
+                node.accept(new TraceClassVisitor(new PrintWriter(new PrintStream(System.err))));
+                System.err.println("---");
+                source.accept(new TraceMethodVisitor(new ASMifier()));
+            }
+            throw new NullPointerException("Instructions exhausted for " + node.name + "." + source.name + source.desc + ", depth: " + newDepth + "; Overall instructions count: " + source.instructions.size());
         } else {
             return (MethodInsnNode) insn;
         }
