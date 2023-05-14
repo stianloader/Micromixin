@@ -4,14 +4,19 @@ import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.internal.util.smap.MultiplexLineNumberAllocator;
+
 public class HandlerContextHelper {
 
     @NotNull
     public final String handlerPrefix;
+    @NotNull
+    public final MultiplexLineNumberAllocator lineAllocator;
     public int handlerCounter = 0;
 
-    public HandlerContextHelper(@NotNull String handlerPrefix) {
+    public HandlerContextHelper(@NotNull String handlerPrefix, @NotNull MultiplexLineNumberAllocator lineAllocator) {
         this.handlerPrefix = handlerPrefix;
+        this.lineAllocator = lineAllocator;
     }
 
     @SuppressWarnings("null")
@@ -36,9 +41,9 @@ public class HandlerContextHelper {
                     }
                     break;
                 }
-                return new HandlerContextHelper(prefix);
+                return new HandlerContextHelper(prefix, new MultiplexLineNumberAllocator(node));
             }
         }
-        return new HandlerContextHelper("$handler$");
+        return new HandlerContextHelper("$handler$", new MultiplexLineNumberAllocator(node));
     }
 }

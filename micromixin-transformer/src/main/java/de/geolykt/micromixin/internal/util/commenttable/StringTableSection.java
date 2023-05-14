@@ -12,6 +12,7 @@ public class StringTableSection implements CommentTableSection {
     private final List<String> lines;
     private final int maxWidth;
 
+    @SuppressWarnings("null")
     public StringTableSection(@NotNull List<String> lines) {
         this.lines = Collections.unmodifiableList(new ArrayList<String>(lines));
         int maxWidth = 0;

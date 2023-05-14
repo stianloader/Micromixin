@@ -17,6 +17,8 @@ import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.Remapper;
+import de.geolykt.micromixin.internal.util.smap.MultiplexLineNumberAllocator;
+import de.geolykt.micromixin.internal.util.smap.NOPMultiplexLineNumberAllocator;
 
 public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
 
@@ -24,7 +26,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,
             @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
-            applyMethod(source, null, target, remapper, sharedBuilder, true);
+            applyMethod(source, null, target, remapper, sharedBuilder, NOPMultiplexLineNumberAllocator.INSTANCE, true);
         } else if (source instanceof MixinFieldStub) {
             applyField(source, target, remapper, sharedBuilder, true);
         } else {
@@ -61,10 +63,10 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         target.fields.add(overlaid);
     }
 
-    @Contract(pure = false, mutates = "param3,param4",
-            value = "_, null, _, _, _, false -> fail; _, _, _, _, _, true -> ")
+    @Contract(pure = false, mutates = "param3,param4,param6",
+            value = "_, null, _, _, _, _, false -> fail; _, _, _, _, _, _, true -> ")
     private void applyMethod(@NotNull T source, MixinStub sourceStub, @NotNull ClassNode target, @NotNull Remapper remapper,
-            @NotNull StringBuilder sharedBuilder, boolean pre) {
+            @NotNull StringBuilder sharedBuilder, @NotNull MultiplexLineNumberAllocator lineAllocator, boolean pre) {
         MixinMethodStub stub = (MixinMethodStub) source;
         String desiredName = getDesiredName(source, target, remapper, sharedBuilder);
         String desiredDescMapped = remapper.getRemappedMethodDescriptor(source.getDesc(), sharedBuilder);
@@ -100,7 +102,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         if (endInInsn != null && startInInsn != null) {
             AbstractInsnNode previousOutInsn = new LabelNode();
             overlaidMethod.instructions.add(previousOutInsn);
-            CodeCopyUtil.copyTo(stub.method, startInInsn, endInInsn, sourceStub, overlaidMethod, previousOutInsn, target, remapper);
+            CodeCopyUtil.copyTo(stub.method, startInInsn, endInInsn, sourceStub, overlaidMethod, previousOutInsn, target, remapper, lineAllocator);
         }
         target.methods.add(overlaidMethod);
     }
@@ -110,7 +112,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
             @NotNull MixinStub sourceStub, @NotNull T source, @NotNull Remapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
-            applyMethod(source, sourceStub, to, remapper, sharedBuilder, false);
+            applyMethod(source, sourceStub, to, remapper, sharedBuilder, hctx.lineAllocator, false);
         } else if (source instanceof MixinFieldStub) {
             applyField(source, to, remapper, sharedBuilder, false);
         } else {

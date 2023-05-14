@@ -56,14 +56,13 @@ public class MixinStub implements Comparable<MixinStub> {
         return this.header.priority - o.header.priority; // TODO is this correct?
     }
 
-    public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx) {
+    public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
         // Perform basic validation
         for (MixinMethodStub methodStub : this.methods) {
             if (methodStub.method.name.startsWith(hctx.handlerPrefix)) {
                 throw new IllegalStateException("Names of Mixin methods may not start with the handler prefix (which is " + hctx.handlerPrefix + ")");
             }
         }
-        StringBuilder sharedBuilder = new StringBuilder();
         Remapper remapper = getRemapper(target, hctx, sharedBuilder);
         for (MixinFieldStub stub : this.fields) {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);

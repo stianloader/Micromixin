@@ -34,6 +34,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import de.geolykt.micromixin.internal.MixinStub;
+import de.geolykt.micromixin.internal.util.smap.MultiplexLineNumberAllocator;
 
 public class CodeCopyUtil {
 
@@ -43,7 +44,8 @@ public class CodeCopyUtil {
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull MixinStub sourceStub, @NotNull MethodNode copyTarget,
-            @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper) {
+            @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper,
+            @NotNull MultiplexLineNumberAllocator lineAllocator) {
         AbstractInsnNode copySourceStart = source.instructions.getFirst();
         if (copySourceStart == null) {
             throw new IllegalStateException("Source instruction list is empty!");
@@ -63,12 +65,13 @@ public class CodeCopyUtil {
                 && copyTargetStart.getOpcode() != Opcodes.RETURN) {
             throw new IllegalStateException("Invalid copy target: " + targetOwner.name + "." + copyTarget.name + copyTarget.desc + ": Last instruction should be a XRETURN opcode.");
         }
-        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, copyTargetStart, targetOwner, remapper, true, false);
+        copyTo(source, copySourceStart, endInInsn, sourceStub, copyTarget, copyTargetStart, targetOwner, remapper, lineAllocator, true, false);
     }
 
     @NotNull
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
-            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull Remapper remapper) {
+            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull Remapper remapper,
+            @NotNull MultiplexLineNumberAllocator lineAllocator) {
         // WARNING: This method is what many would call to be "bugged". That is intended!
         // To those wondering, this method does not properly remap INVOKESTATIC methods because
         // the official (Sponge) mixin implementation does not properly remap them either.
@@ -88,7 +91,7 @@ public class CodeCopyUtil {
         }
         AbstractInsnNode prevOutInsn = new LabelNode();
         handler.instructions.add(prevOutInsn);
-        copyTo(source, sourceStartInsn, sourceEndInsn, sourceStub, handler, prevOutInsn, target, remapper, false, true);
+        copyTo(source, sourceStartInsn, sourceEndInsn, sourceStub, handler, prevOutInsn, target, remapper, lineAllocator, false, true);
         target.methods.add(handler);
         return handler;
     }
@@ -236,6 +239,7 @@ public class CodeCopyUtil {
             // Not strictly needed
             return null;
         case AbstractInsnNode.LINE:
+            // Note: Generally the MultiplexLineNumberAllocator#reserve method is more appropriate
             LineNumberNode lnn = (LineNumberNode) in;
             return new LineNumberNode(lnn.line, labelNodeMapper.apply(lnn.start));
         default:
@@ -244,13 +248,14 @@ public class CodeCopyUtil {
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
-            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper) {
-        copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, false, false);
+            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper,
+            @NotNull MultiplexLineNumberAllocator lineAllocator) {
+        copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, lineAllocator, false, false);
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
             @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper,
-            boolean transformReturnToJump, boolean invalidInvokestaticRemapping) {
+            @NotNull MultiplexLineNumberAllocator lineAllocator, boolean transformReturnToJump, boolean invalidInvokestaticRemapping) {
         AbstractInsnNode inInsn = startInInsn.getPrevious();
         Objects.requireNonNull(endInInsn, "endInInsn must not be null");
         InsnList copiedInstructions = new InsnList();
@@ -285,6 +290,10 @@ public class CodeCopyUtil {
                 continue;
             } else if (inInsn instanceof LabelNode) {
                 declaredLabels.add((LabelNode) inInsn);
+            } else if (inInsn instanceof LineNumberNode) {
+                LineNumberNode inLineNumberNode = (LineNumberNode) inInsn;
+                copiedInstructions.add(lineAllocator.reserve(sourceStub.sourceNode, inLineNumberNode, labelMapper.apply(inLineNumberNode.start)));
+                continue;
             }
             AbstractInsnNode insn = duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder, invalidInvokestaticRemapping);
             if (insn != null) {

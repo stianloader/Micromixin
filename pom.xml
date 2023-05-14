@@ -13,8 +13,8 @@
         <module>micromixin-annotations</module>
     </modules>
     <properties>
-        <asm-version>9.4</asm-version> <!-- https://mvnrepository.com/artifact/org.ow2.asm/asm -->
-        <annotations-version>24.0.0</annotations-version> <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
-        <json-version>20220924</json-version> <!-- https://mvnrepository.com/artifact/org.json/json -->
+        <asm-version>9.5</asm-version> <!-- https://mvnrepository.com/artifact/org.ow2.asm/asm -->
+        <annotations-version>24.0.1</annotations-version> <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
+        <json-version>20230227</json-version> <!-- https://mvnrepository.com/artifact/org.json/json -->
     </properties>
 </project>

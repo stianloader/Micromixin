@@ -137,8 +137,9 @@ public class MixinTransformer<M> {
             return;
         }
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
+        StringBuilder sharedBuilder = new StringBuilder();
         for (MixinStub stub : mixins) {
-            stub.applyTo(in, hctx);
+            stub.applyTo(in, hctx, sharedBuilder);
             if (this.isMergeingClassFileVersions()) {
                 int adjustOrigin = in.version & ~Opcodes.V_PREVIEW;
                 int adjustSource = stub.sourceNode.version & ~Opcodes.V_PREVIEW;
@@ -153,7 +154,9 @@ public class MixinTransformer<M> {
                 }
             }
         }
+        hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder);
         if (DEBUG) {
+            System.out.println("Generated SMAP: \n" + in.sourceDebug.replace('\r', '\n'));
             try {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
                 in.accept(cca);
