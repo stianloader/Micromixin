@@ -174,12 +174,14 @@ public class CodeCopyUtil {
                 return new MethodInsnNode(methodInsn.getOpcode(),
                         remapper.remapInternalName(methodInsn.owner, sharedBuilder),
                         methodInsn.name,
-                        remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder));
+                        remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder),
+                        methodInsn.itf);
             }
             return new MethodInsnNode(methodInsn.getOpcode(),
                     remapper.remapInternalName(methodInsn.owner, sharedBuilder),
                     remapper.methodRenames.optGet(methodInsn.owner, methodInsn.desc, methodInsn.name),
-                    remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder));
+                    remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder),
+                    methodInsn.itf);
         }
         case AbstractInsnNode.INVOKE_DYNAMIC_INSN: {
             InvokeDynamicInsnNode indyInsn = (InvokeDynamicInsnNode) in;

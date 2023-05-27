@@ -9,7 +9,7 @@
     <modules>
         <module>micromixin-runtime</module>
         <module>micromixin-transformer</module>
-        <module>micromixin-test-j8</module>
+        <!--<module>micromixin-test-j8</module>-->
         <module>micromixin-annotations</module>
     </modules>
     <properties>

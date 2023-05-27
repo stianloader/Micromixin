@@ -156,7 +156,6 @@ public class MixinTransformer<M> {
         }
         hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder);
         if (DEBUG) {
-            System.out.println("Generated SMAP: \n" + in.sourceDebug.replace('\r', '\n'));
             try {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
                 in.accept(cca);
