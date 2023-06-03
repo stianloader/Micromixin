@@ -1,5 +1,6 @@
 package de.geolykt.starloader.micromixin.test.j8;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 
@@ -10,6 +11,7 @@ import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.LocalCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.redirect.GenericInvoker;
 
 public class TestHarness {
 
@@ -23,10 +25,28 @@ public class TestHarness {
         runLocalCaputureTest(report);
         runArgumentCaptureTest(report);
         runLocalPrintingTest(report);
+        runRedirectTest(report);
         return report;
     }
 
-    private static void runLocalPrintingTest(TestReport report) {
+    public static void runRedirectTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnit("RedirectTests.callForeignInstanced", new GenericInvoker()::callForeignInstanced);
+        set.addUnit("RedirectTests.callForeignStatically", GenericInvoker::callForeignStatically);
+        set.addUnitAssertEquals("RedirectTests.getIntStatic", new GenericInvoker()::getIntStatic, 1);
+        set.addUnitAssertEquals("RedirectTests.getIntInstanced", new GenericInvoker()::getIntInstanced, 1);
+        set.addUnitAssertEquals("RedirectTests.getObjectStatic0", new GenericInvoker()::getObjectStatic0, 1);
+        set.addUnitAssertNotEquals("RedirectTests.getObjectStatic1", new GenericInvoker()::getObjectStatic1, null);
+        set.addUnitAssertEquals("RedirectTests.getObjectInstanced0", new GenericInvoker()::getObjectInstanced0, 1);
+        set.addUnitAssertNotEquals("RedirectTests.getObjectInstanced1", new GenericInvoker()::getObjectInstanced1, null);
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.redirect.ErroneousInstructionTargetInvoker");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.redirect.ErroneousPublicRedirectInvoker");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.redirect.ErroneousMissingInstanceInvoker");
+        LoggerFactory.getLogger(TestHarness.class).info("RedirectTests:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
+    }
+
+    public static void runLocalPrintingTest(TestReport report) {
         TestSet set = new TestSet();
         /*set.addUnit("test - do not use in production", () -> {
             de.geolykt.starloader.micromixin.test.j8.targets.LocalPrintingTest.class.toString();
