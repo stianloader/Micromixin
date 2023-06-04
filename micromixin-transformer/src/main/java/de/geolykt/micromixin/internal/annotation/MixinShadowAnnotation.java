@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.ClassMemberStub;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinFieldStub;
@@ -16,7 +17,6 @@ import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.Objects;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
 
@@ -56,7 +56,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         return new MixinShadowAnnotation<T0>(prefix, aliases);
     }
 
-    private void apply(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull Remapper out, @NotNull StringBuilder sharedBuilder) {
+    private void apply(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull SimpleRemapper out, @NotNull StringBuilder sharedBuilder) {
         String desc = out.getRemappedMethodDescriptor(source.method.desc, sharedBuilder);
         String name = source.method.name;
         if (name.startsWith(this.prefix)) {
@@ -81,7 +81,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         throw new IllegalStateException("Unresolved @Shadow-annotated method: " + source.owner.name + "." + source.method.name + source.method.desc);
     }
 
-    private void apply(@NotNull MixinFieldStub source, @NotNull ClassNode target, @NotNull Remapper out, @NotNull StringBuilder sharedBuilder) {
+    private void apply(@NotNull MixinFieldStub source, @NotNull ClassNode target, @NotNull SimpleRemapper out, @NotNull StringBuilder sharedBuilder) {
         String desc = out.getRemappedFieldDescriptor(source.field.desc, sharedBuilder);
         String name = source.field.name;
         if (name.startsWith(this.prefix)) {
@@ -108,14 +108,14 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull Remapper remapper,
+            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
 
     @Override
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
             apply((MixinMethodStub) source, target, remapper, sharedBuilder);
         } else if (source instanceof MixinFieldStub) {

@@ -8,11 +8,11 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.ClassMemberStub;
 import de.geolykt.micromixin.internal.MixinFieldStub;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.util.ASMUtil;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOverlayAnnotation<T> {
 
@@ -46,7 +46,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
 
     @Override
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinFieldStub && (((MixinFieldStub) source).field.access & Opcodes.ACC_PUBLIC) != 0) {
             return; // @Unique does nothing on public fields
         }
@@ -69,7 +69,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     @Override
     @NotNull
     public String getDesiredName(@NotNull T source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         String name = source.getName();
         String desc = source.getDesc();
         if (desc.charAt(0) == '(') {

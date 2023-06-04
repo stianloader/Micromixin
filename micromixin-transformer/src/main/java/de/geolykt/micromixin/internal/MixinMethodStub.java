@@ -10,15 +10,16 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.MixinTransformer;
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinInjectAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinOverwriteAnnotation;
+import de.geolykt.micromixin.internal.annotation.MixinRedirectAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualClInitMergeAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualConstructorMergeAnnotation;
-import de.geolykt.micromixin.internal.util.Remapper;
-import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public class MixinMethodStub implements ClassMemberStub {
 
@@ -36,19 +37,21 @@ public class MixinMethodStub implements ClassMemberStub {
     }
 
     @NotNull
-    public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull ClassWrapperPool pool, @NotNull StringBuilder sharedBuilder) {
+    public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
         List<MixinAnnotation<MixinMethodStub>> annotations = new ArrayList<MixinAnnotation<MixinMethodStub>>();
         if (method.visibleAnnotations != null) {
             for (AnnotationNode annot : method.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Inject;")) {
-                        annotations.add(MixinInjectAnnotation.parse(node, method, annot, pool, sharedBuilder));
+                        annotations.add(MixinInjectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;")) {
                         annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
                         annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot));
+                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Redirect;")) {
+                        annotations.add(MixinRedirectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }
@@ -67,7 +70,7 @@ public class MixinMethodStub implements ClassMemberStub {
         return new MixinMethodStub(node, method, Collections.unmodifiableCollection(annotations));
     }
 
-    public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub stub, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub stub, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinMethodStub> a : this.annotations) {
             a.apply(target, hctx, stub, this, remapper, sharedBuilder);
         }
@@ -93,7 +96,7 @@ public class MixinMethodStub implements ClassMemberStub {
 
     @Override
     public void collectMappings(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub stub, @NotNull Remapper out,
+            @NotNull MixinStub stub, @NotNull SimpleRemapper out,
             @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinMethodStub> annotation : this.annotations) {
             annotation.collectMappings(this, target, out, sharedBuilder);

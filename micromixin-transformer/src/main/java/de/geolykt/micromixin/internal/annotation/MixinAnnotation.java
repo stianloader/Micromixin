@@ -5,12 +5,12 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinStub;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T>> {
-    public abstract void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub, @NotNull T source, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder);
+    public abstract void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 
     @Override
     public int compareTo(MixinAnnotation<T> o) {
@@ -21,5 +21,5 @@ public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T
         return true;
     }
 
-    public abstract void collectMappings(@NotNull T source, @NotNull ClassNode target, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder);
+    public abstract void collectMappings(@NotNull T source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 }

@@ -10,11 +10,11 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualFieldOverlayAnnotation;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public class MixinFieldStub implements ClassMemberStub {
 
@@ -74,7 +74,7 @@ public class MixinFieldStub implements ClassMemberStub {
 
     @Override
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub source,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinFieldStub> a : this.annotations) {
             a.apply(target, hctx, source, this, remapper, sharedBuilder);
         }
@@ -82,7 +82,7 @@ public class MixinFieldStub implements ClassMemberStub {
 
     @Override
     public void collectMappings(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub stub, @NotNull Remapper out,
+            @NotNull MixinStub stub, @NotNull SimpleRemapper out,
             @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinFieldStub> annotation : this.annotations) {
             annotation.collectMappings(this, target, out, sharedBuilder);

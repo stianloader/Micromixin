@@ -3,11 +3,20 @@ package de.geolykt.micromixin.internal.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.analysis.BasicValue;
+import org.objectweb.asm.tree.analysis.Frame;
 
 import de.geolykt.micromixin.internal.MixinParseException;
+import de.geolykt.micromixin.internal.util.locals.LocalsCapture;
+import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public class ASMUtil {
 
@@ -41,6 +50,26 @@ public class ASMUtil {
             }
         }
         return initialFrameSize;
+    }
+
+    @NotNull
+    public static LabelNode getLabelNodeBefore(@NotNull AbstractInsnNode insn, @NotNull InsnList merge) {
+        AbstractInsnNode lookbehind = insn.getPrevious();
+        while (lookbehind.getOpcode() == -1 && !(lookbehind instanceof LabelNode)) {
+            lookbehind = lookbehind.getPrevious();
+            if (lookbehind == null) {
+                // reached beginning of list (insn was first instruction - unlikely but possible with stuff like constants being used in an INVOKESTATIC context)
+                LabelNode l = new LabelNode();
+                merge.insert(l);
+                return l;
+            }
+        }
+        if (lookbehind instanceof LabelNode) {
+            return (LabelNode) lookbehind;
+        }
+        LabelNode l = new LabelNode();
+        merge.insertBefore(insn, l);
+        return l;
     }
 
     @Nullable
@@ -197,5 +226,82 @@ public class ASMUtil {
         default:
             throw new IllegalStateException("Unable to infer the required pop opcode corresponding to the return type of method descriptor: " + methodDesc);
         }
+    }
+
+    public static void shiftDownByDesc(@NotNull String desc, boolean category2, @NotNull ClassNode owner, @NotNull MethodNode target, @NotNull AbstractInsnNode previousInsn, @NotNull ClassWrapperPool cwPool) {
+        InsnList inject = new InsnList();
+        Frame<BasicValue> frame = LocalsCapture.captureLocals(owner, target, previousInsn, cwPool).frame;
+        int startIndex;
+        if (frame == null) {
+            AbstractInsnNode insn = target.instructions.getFirst();
+            startIndex = ASMUtil.getInitialFrameSize(target);
+            while (insn != null) {
+                if (insn instanceof VarInsnNode) {
+                    int var = ((VarInsnNode) insn).var;
+                    if (insn.getOpcode() == Opcodes.DSTORE
+                            || insn.getOpcode() == Opcodes.LSTORE
+                            || insn.getOpcode() == Opcodes.DLOAD
+                            || insn.getOpcode() == Opcodes.LLOAD) {
+                        var++;
+                    }
+                    startIndex = Math.max(var, startIndex);
+                }
+                insn = insn.getNext();
+            }
+        } else {
+            startIndex = frame.getLocals();
+        }
+
+        int[] typesReverse;
+
+        {
+            int i = 0;
+            DescString dString = new DescString(desc);
+            while (dString.hasNext()) {
+                i++;
+                dString.nextReferenceType();
+            }
+            typesReverse = new int[i];
+            dString.reset();
+            while (dString.hasNext()) {
+                typesReverse[--i] = dString.nextReferenceType();
+            }
+        }
+
+        int storeIndex = startIndex;
+        for (int type : typesReverse) {
+            if (ASMUtil.isCategory2(type)) {
+                if (category2) {
+                    inject.add(new InsnNode(Opcodes.DUP2_X2));
+                    inject.add(new InsnNode(Opcodes.POP2));
+                } else {
+                    inject.add(new InsnNode(Opcodes.DUP_X2));
+                    inject.add(new InsnNode(Opcodes.POP));
+                }
+                storeIndex += 2;
+            } else {
+                if (category2) {
+                    inject.add(new InsnNode(Opcodes.DUP2_X1));
+                    inject.add(new InsnNode(Opcodes.POP2));
+                } else {
+                    inject.add(new InsnNode(Opcodes.DUP_X1));
+                    inject.add(new InsnNode(Opcodes.POP));
+                }
+                storeIndex++;
+            }
+            inject.add(new VarInsnNode(ASMUtil.getStoreOpcode(type), storeIndex));
+        }
+        target.maxLocals = Math.max(target.maxLocals, storeIndex);
+        target.maxStack = Math.max(target.maxStack, storeIndex - startIndex + (category2 ? 2 : 1));
+        for (int i = typesReverse.length; i > 0;) {
+            int type = typesReverse[--i];
+            inject.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), storeIndex));
+            if (ASMUtil.isCategory2(type)) {
+                storeIndex -= 2;
+            } else {
+                storeIndex--;
+            }
+        }
+        target.instructions.insert(previousInsn, inject);
     }
 }

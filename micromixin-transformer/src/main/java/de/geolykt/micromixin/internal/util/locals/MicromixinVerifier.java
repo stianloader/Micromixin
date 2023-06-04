@@ -3,6 +3,8 @@ package de.geolykt.micromixin.internal.util.locals;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.analysis.BasicInterpreter;
+import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.SimpleVerifier;
 
 import de.geolykt.micromixin.supertypes.ClassWrapper;
@@ -42,5 +44,25 @@ class MicromixinVerifier extends SimpleVerifier {
     @Override
     protected Type getSuperClass(Type type) {
         return Type.getType(this.pool.get(type.getInternalName()).getSuper());
+    }
+
+    @Override
+    protected boolean isSubTypeOf(BasicValue value, BasicValue expected) {
+        Type expectedType = expected.getType();
+        Type type = value.getType();
+        if (expectedType.getSort() == Type.ARRAY || expectedType.getSort() == Type.OBJECT) {
+            if (type.equals(BasicInterpreter.NULL_TYPE)) {
+                return true;
+            }
+            if (expectedType.getSort() == Type.ARRAY || expectedType.getSort() == Type.OBJECT) {
+                return this.isAssignableFrom(expectedType, type)
+                        || (this.pool.get(expectedType.getInternalName()).isInterface()
+                                && this.pool.canAssign(this.pool.get("java/lang/Object"), this.pool.get(type.getInternalName())));
+            } else {
+                return false;
+            }
+        } else {
+            return type.equals(expectedType);
+        }
     }
 }

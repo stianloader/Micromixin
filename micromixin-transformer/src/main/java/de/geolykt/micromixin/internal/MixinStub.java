@@ -10,8 +10,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import de.geolykt.micromixin.internal.util.Remapper;
-import de.geolykt.micromixin.supertypes.ClassWrapperPool;
+import de.geolykt.micromixin.MixinTransformer;
+import de.geolykt.micromixin.SimpleRemapper;
 
 public class MixinStub implements Comparable<MixinStub> {
 
@@ -32,14 +32,14 @@ public class MixinStub implements Comparable<MixinStub> {
     }
 
     @NotNull
-    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull ClassWrapperPool pool, @NotNull StringBuilder sharedBuilder) {
+    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
         List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
         List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
         for (MethodNode method : node.methods) {
             if (method == null) {
                 throw new NullPointerException();
             }
-            MixinMethodStub methodStub = MixinMethodStub.parse(node, method, pool, sharedBuilder);
+            MixinMethodStub methodStub = MixinMethodStub.parse(node, method, transformer, sharedBuilder);
             methods.add(methodStub);
         }
         for (FieldNode field : node.fields) {
@@ -63,7 +63,7 @@ public class MixinStub implements Comparable<MixinStub> {
                 throw new IllegalStateException("Names of Mixin methods may not start with the handler prefix (which is " + hctx.handlerPrefix + ")");
             }
         }
-        Remapper remapper = getRemapper(target, hctx, sharedBuilder);
+        SimpleRemapper remapper = getRemapper(target, hctx, sharedBuilder);
         for (MixinFieldStub stub : this.fields) {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);
         }
@@ -79,8 +79,8 @@ public class MixinStub implements Comparable<MixinStub> {
     }
 
     @NotNull
-    public Remapper getRemapper(@NotNull ClassNode targetClass, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
-        Remapper r = new Remapper();
+    public SimpleRemapper getRemapper(@NotNull ClassNode targetClass, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
+        SimpleRemapper r = new SimpleRemapper();
         // TODO That probably doesn't work when the source class is an interface.
         // We may need to analyse the proper behaviour there
         r.remapClassName(this.sourceNode.name, targetClass.name);

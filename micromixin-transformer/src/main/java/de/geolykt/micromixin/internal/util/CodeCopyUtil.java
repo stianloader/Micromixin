@@ -33,6 +33,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.smap.MultiplexLineNumberAllocator;
 
@@ -44,7 +45,7 @@ public class CodeCopyUtil {
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull MixinStub sourceStub, @NotNull MethodNode copyTarget,
-            @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull Remapper remapper,
+            @NotNull AbstractInsnNode endInInsn, @NotNull ClassNode targetOwner, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator) {
         AbstractInsnNode copySourceStart = source.instructions.getFirst();
         if (copySourceStart == null) {
@@ -70,7 +71,7 @@ public class CodeCopyUtil {
 
     @NotNull
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
-            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull Remapper remapper,
+            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator) {
         // WARNING: This method is what many would call to be "bugged". That is intended!
         // To those wondering, this method does not properly remap INVOKESTATIC methods because
@@ -97,7 +98,7 @@ public class CodeCopyUtil {
     }
 
     private static Object duplicateRemapBSMArg(final Object[] bsmArgs, final int index, final @NotNull StringBuilder sharedStringBuilder,
-            final @NotNull Remapper remapper) {
+            final @NotNull SimpleRemapper remapper) {
         Object bsmArg = bsmArgs[index];
         if (bsmArg instanceof Type) {
             Type type = (Type) bsmArg;
@@ -147,7 +148,7 @@ public class CodeCopyUtil {
 
     @Nullable
     private static AbstractInsnNode duplicateRemap(@NotNull AbstractInsnNode in,
-            @NotNull Remapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder,
+            @NotNull SimpleRemapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder,
             boolean invalidInvokestaticRemapping) {
         switch (in.getType()) {
         case AbstractInsnNode.INSN:
@@ -250,13 +251,13 @@ public class CodeCopyUtil {
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
-            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper,
+            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator) {
         copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, lineAllocator, false, false);
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
-            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull Remapper remapper,
+            @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator, boolean transformReturnToJump, boolean invalidInvokestaticRemapping) {
         AbstractInsnNode inInsn = startInInsn.getPrevious();
         Objects.requireNonNull(endInInsn, "endInInsn must not be null");

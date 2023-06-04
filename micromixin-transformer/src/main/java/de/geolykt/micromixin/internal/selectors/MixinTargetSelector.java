@@ -8,7 +8,6 @@ import org.objectweb.asm.tree.MethodNode;
 import de.geolykt.micromixin.internal.MixinStub;
 
 public interface MixinTargetSelector {
-
     @Nullable
     MethodNode selectMethod(@NotNull ClassNode within, @NotNull MixinStub source);
 }

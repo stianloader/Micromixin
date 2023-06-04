@@ -50,3 +50,22 @@ the dependency is not resolved by default.</b>
 micromixin-annotations should strictly be used for compilation only,
 micromixin-transformer should strictly be used for runtime transformation only,
 micromixin-runtime should most likely always be used.
+
+## Supported features
+
+ - `@Inject`
+ - `@Shadow`
+ - `@Overwrite`
+ - `@Redirect`
+
+## Notable unsupported features
+
+Note that we are steadily working towards adding new features and to stablish throughout
+feature compatibility with the spongeian mixin implementation.
+
+ - `@Coerce`
+ - `@ModifyArgs`
+ - `@ModifyVariable`
+ - `@ModifyConstant`
+ - `@Inject` usage in constructors before `super()` call
+ - Regex support in `Inject.target`, `Redirect.target` and `At.target`

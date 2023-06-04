@@ -1,19 +1,28 @@
 package de.geolykt.micromixin;
 
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.TraceClassVisitor;
 
+import de.geolykt.micromixin.api.InjectionPointSelectorFactory;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
+import de.geolykt.micromixin.internal.selectors.inject.ConstantInjectionPointSelector;
+import de.geolykt.micromixin.internal.selectors.inject.HeadInjectionPointSelector;
+import de.geolykt.micromixin.internal.selectors.inject.InvokeInjectionPointSelector;
+import de.geolykt.micromixin.internal.selectors.inject.ReturnInjectionPointSelector;
+import de.geolykt.micromixin.internal.selectors.inject.TailInjectionPointSelector;
 import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
@@ -49,11 +58,18 @@ public class MixinTransformer<M> {
     private boolean mergeClassFileVersions = true;
     @NotNull
     private final ClassWrapperPool pool;
+    @NotNull
+    private final InjectionPointSelectorFactory injectionPointSelectors = new InjectionPointSelectorFactory();
     private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
 
     public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
         this.pool = pool;
+        this.injectionPointSelectors.register(ConstantInjectionPointSelector.PROVIDER);
+        this.injectionPointSelectors.register(HeadInjectionPointSelector.INSTANCE);
+        this.injectionPointSelectors.register(InvokeInjectionPointSelector.PROVIDER);
+        this.injectionPointSelectors.register(ReturnInjectionPointSelector.INSTANCE);
+        this.injectionPointSelectors.register(TailInjectionPointSelector.INSTANCE);
     }
 
     public void addMixin(M attachment, @NotNull MixinConfig config) {
@@ -72,7 +88,7 @@ public class MixinTransformer<M> {
             this.mixins.put(mixinRef, config);
             try {
                 ClassNode node = bytecodeProvider.getClassNode(attachment, mixinRef.value);
-                MixinStub stub = MixinStub.parse(config.priority, node, this.pool, sharedBuilder);
+                MixinStub stub = MixinStub.parse(config.priority, node, this, sharedBuilder);
                 this.mixinNodes.put(mixinRef, node);
                 this.mixinStubs.put(mixinRef, stub);
                 Set<String> targets = new HashSet<String>();
@@ -93,6 +109,25 @@ public class MixinTransformer<M> {
                 throw new IllegalStateException("Broken mixin: " + mixinRef.value + " (attached via " + attachment + ")", e);
             }
         }
+    }
+
+    /**
+     * Obtains the {@link InjectionPointSelectorFactory} that can be used to register custom injection point selectors.
+     *
+     * <p>The instance is specific to this specific {@link MixinTransformer}. Registering an injection point selector to
+     * the factory of this instance will not have an effect of any mixins registered via any other transformers.
+     *
+     * @return The active {@link InjectionPointSelectorFactory} instance.
+     */
+    @NotNull
+    @Contract(pure = true)
+    public InjectionPointSelectorFactory getInjectionPointSelectors() {
+        return this.injectionPointSelectors;
+    }
+
+    @NotNull
+    public ClassWrapperPool getPool() {
+        return this.pool;
     }
 
     public boolean isMergeingClassFileVersions() {
@@ -162,6 +197,8 @@ public class MixinTransformer<M> {
             } catch (Throwable t) {
                 System.err.println("Invalidly transformed class: " + in.name);
                 t.printStackTrace();
+                TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.err));
+                in.accept(tcv);
             }
         }
     }

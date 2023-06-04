@@ -9,10 +9,10 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.util.ASMUtil;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<MixinMethodStub> {
 
@@ -80,7 +80,7 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
 
     @Override
     @NotNull
-    public String getDesiredName(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public String getDesiredName(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         List<String> aliases = this.aliases;
         if (aliases == null) {
             return source.getName();

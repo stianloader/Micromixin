@@ -1,4 +1,4 @@
-package de.geolykt.micromixin.internal.util;
+package de.geolykt.micromixin;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,7 +10,10 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 
-public class Remapper {
+import de.geolykt.micromixin.internal.util.MemberRenameMap;
+import de.geolykt.micromixin.internal.util.Objects;
+
+public final class SimpleRemapper {
     public final MemberRenameMap fieldRenames = new MemberRenameMap();
     public final MemberRenameMap methodRenames = new MemberRenameMap();
     public final Map<String, String> oldToNewClassName = new HashMap<String, String>();

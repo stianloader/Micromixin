@@ -8,11 +8,11 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -26,7 +26,7 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode target = null;
         for (MethodNode method : to.methods) {
             if (method.name.equals("<clinit>") && method.desc.equals("()V")) {
@@ -60,7 +60,7 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
 
     @Override
     public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
 }

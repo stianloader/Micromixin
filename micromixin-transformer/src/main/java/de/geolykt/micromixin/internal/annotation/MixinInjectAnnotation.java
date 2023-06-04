@@ -26,6 +26,8 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 
+import de.geolykt.micromixin.MixinTransformer;
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
@@ -38,7 +40,6 @@ import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.DescString;
 import de.geolykt.micromixin.internal.util.Objects;
 import de.geolykt.micromixin.internal.util.PrintUtils;
-import de.geolykt.micromixin.internal.util.Remapper;
 import de.geolykt.micromixin.internal.util.commenttable.CommentTable;
 import de.geolykt.micromixin.internal.util.commenttable.KeyValueTableSection;
 import de.geolykt.micromixin.internal.util.commenttable.StringTableSection;
@@ -81,7 +82,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     }
 
     @NotNull
-    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull ClassWrapperPool pool, @NotNull StringBuilder sharedBuilder) throws MixinParseException {
+    public static MixinInjectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) throws MixinParseException {
         if ((method.access & Opcodes.ACC_STATIC) != 0 && (method.access & Opcodes.ACC_PRIVATE) == 0) {
             throw new MixinParseException("The injector handler method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
@@ -105,7 +106,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                         throw new NullPointerException();
                     }
                     try {
-                        at.add(MixinAtAnnotation.parse(atValue));
+                        at.add(MixinAtAnnotation.parse(node, atValue, transformer.getInjectionPointSelectors()));
                     } catch (MixinParseException mpe) {
                         throw new MixinParseException("Unable to parse @At annotation defined by " + node.name + "." + method.name + method.desc, mpe);
                     }
@@ -138,8 +139,6 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 expect = ((Integer) val).intValue();
             } else if (name.equals("cancellable")) {
                 cancellable = (Boolean) val;
-            } else if (name.equals("cancellable")) {
-                cancellable = (Boolean) val;
             } else if (name.equals("locals")) {
                 locals = ((String[]) val)[1];
             } else {
@@ -164,13 +163,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         if (locals == null) {
             locals = "NO_CAPTURE";
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, pool);
+        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer.getPool());
     }
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
@@ -193,7 +192,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                         // Technically that one could be doable, but it'd be nasty.
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
-                    for (LabelNode label : at.getLabels(targetMethod)) {
+                    for (LabelNode label : at.getLabels(targetMethod, remapper, sharedBuilder)) {
                         labels.put(label, targetMethod);
                     }
                 }
@@ -642,7 +641,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
     @Override
     public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull Remapper remapper,
+            @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
@@ -670,7 +669,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
             String targetType = targetDesc.nextType();
             if (!handlerType.equals(targetType)) {
-                // TODO Can it also be subtypes?
+                // TODO Can it also be subtypes? Answer: @Coerce would do that
                 throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
                         + "the target method defines different arguments than the source method is capturing. The first mismatched argument: \"" + handlerType + "\" defined by the handler where as \"" + targetType + "\" is defined by the target.");
             }

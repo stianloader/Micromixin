@@ -8,6 +8,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.ClassMemberStub;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinFieldStub;
@@ -16,7 +17,6 @@ import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.Objects;
-import de.geolykt.micromixin.internal.util.Remapper;
 import de.geolykt.micromixin.internal.util.smap.MultiplexLineNumberAllocator;
 import de.geolykt.micromixin.internal.util.smap.NOPMultiplexLineNumberAllocator;
 
@@ -24,7 +24,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
     @Override
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
             applyMethod(source, null, target, remapper, sharedBuilder, NOPMultiplexLineNumberAllocator.INSTANCE, true);
         } else if (source instanceof MixinFieldStub) {
@@ -34,7 +34,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
         }
     }
 
-    private void applyField(@NotNull T source, @NotNull ClassNode target, @NotNull Remapper remapper,
+    private void applyField(@NotNull T source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder, boolean pre) {
         MixinFieldStub stub = (MixinFieldStub) source;
         String desiredName = getDesiredName(source, target, remapper, sharedBuilder);
@@ -65,7 +65,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
     @Contract(pure = false, mutates = "param3,param4,param6",
             value = "_, null, _, _, _, _, false -> fail; _, _, _, _, _, _, true -> ")
-    private void applyMethod(@NotNull T source, MixinStub sourceStub, @NotNull ClassNode target, @NotNull Remapper remapper,
+    private void applyMethod(@NotNull T source, MixinStub sourceStub, @NotNull ClassNode target, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder, @NotNull MultiplexLineNumberAllocator lineAllocator, boolean pre) {
         MixinMethodStub stub = (MixinMethodStub) source;
         String desiredName = getDesiredName(source, target, remapper, sharedBuilder);
@@ -109,7 +109,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull Remapper remapper,
+            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
             applyMethod(source, sourceStub, to, remapper, sharedBuilder, hctx.lineAllocator, false);
@@ -121,7 +121,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
     }
 
     @NotNull
-    public abstract String getDesiredName(@NotNull T source, @NotNull ClassNode target, @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder);
+    public abstract String getDesiredName(@NotNull T source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 
     /**
      * Method that is called if the source collides with an already existing member.

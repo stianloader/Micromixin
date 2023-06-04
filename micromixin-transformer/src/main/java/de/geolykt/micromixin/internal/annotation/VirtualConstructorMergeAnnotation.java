@@ -14,11 +14,11 @@ import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
+import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinStub;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
-import de.geolykt.micromixin.internal.util.Remapper;
 
 public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -73,7 +73,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (!source.method.desc.equals("()V")) {
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + source.method.name + source.method.desc + ". Expected no-args constructor!");
         }
@@ -97,7 +97,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
 
     @Override
     public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull Remapper remapper, @NotNull StringBuilder sharedBuilder) {
+            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
 }

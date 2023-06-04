@@ -7,5 +7,6 @@ module de.geolykt.starloader.micromixin.transform {
     requires org.jetbrains.annotations;
 
     exports de.geolykt.micromixin;
+    exports de.geolykt.micromixin.api;
     exports de.geolykt.micromixin.supertypes;
 }

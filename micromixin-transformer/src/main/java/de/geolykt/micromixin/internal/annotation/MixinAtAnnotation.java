@@ -1,42 +1,44 @@
 package de.geolykt.micromixin.internal.annotation;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import de.geolykt.micromixin.SimpleRemapper;
+import de.geolykt.micromixin.api.InjectionPointSelector;
+import de.geolykt.micromixin.api.InjectionPointSelectorFactory;
+import de.geolykt.micromixin.api.InjectionPointTargetConstraint;
 import de.geolykt.micromixin.internal.MixinParseException;
+import de.geolykt.micromixin.internal.selectors.DescSelector;
+import de.geolykt.micromixin.internal.selectors.StringSelector;
+import de.geolykt.micromixin.internal.selectors.inject.TailInjectionPointSelector;
+import de.geolykt.micromixin.internal.util.Objects;
 
 public class MixinAtAnnotation {
 
     @NotNull
     public final String value;
-    @Nullable
-    public final List<String> args;
-    @Nullable
-    public final ConstantSelector constantSelector;
+    @NotNull
+    public final InjectionPointSelector injectionPointSelector;
 
-    public MixinAtAnnotation(@NotNull String value, @Nullable List<String> args, @Nullable ConstantSelector constantSelector) {
+    public MixinAtAnnotation(@NotNull String value, @NotNull InjectionPointSelector selector) {
         this.value = value;
-        this.args = args;
-        this.constantSelector = constantSelector;
+        this.injectionPointSelector = selector;
     }
 
     @NotNull
-    public static MixinAtAnnotation parse(@NotNull AnnotationNode atValue) throws MixinParseException {
+    public static MixinAtAnnotation parse(@NotNull ClassNode mixinSource, @NotNull AnnotationNode atValue, @NotNull InjectionPointSelectorFactory factory) throws MixinParseException {
         String value = null;
         List<String> args = null;
-        ConstantSelector constantSelector = null;
+        InjectionPointTargetConstraint constraint = null;
         for (int i = 0; i < atValue.values.size(); i += 2) {
             String name = (String) atValue.values.get(i);
             Object val = atValue.values.get(i + 1);
@@ -46,6 +48,10 @@ public class MixinAtAnnotation {
                 @SuppressWarnings("all")
                 List<String> temp = (List<String>) val; // Temporary variable required to suppress all warnings caused by this "dangerous" cast
                 args = temp;
+            } else if (name.equals("target")) {
+                constraint = new StringSelector(((String) Objects.requireNonNull(val)));
+            } else if (name.equals("desc")) {
+                constraint = new DescSelector(MixinDescAnnotation.parse(mixinSource, "()V", Objects.requireNonNull((AnnotationNode) val)));
             } else {
                 throw new MixinParseException("Unimplemented key in @At: " + name);
             }
@@ -53,107 +59,36 @@ public class MixinAtAnnotation {
         if (value == null) {
             throw new MixinParseException("The required field \"value\" is missing.");
         }
-        // IMPLEMENT Rename FQN values to aliases (since the other way around would be ugly)
-        if (args != null) {
-            if (value.equals("CONSTANT")) {
-                constantSelector = ConstantSelector.parse(args);
-            }
-            args = Collections.unmodifiableList(args);
-        } else {
-            // Verify that at-values that require arguments have arguments
-            if (value.equals("CONSTANT")) {
-                throw new MixinParseException("Broken mixin: No constant discriminator could be found in @At(\"" + value + "\") args");
-            }
-        }
-        return new MixinAtAnnotation(value, args, constantSelector);
+        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint));
     }
 
+    /**
+     * Obtains the {@link LabelNode LabelNodes} that are before every applicable entrypoint within
+     * the provided method as defined by this {@link MixinAtAnnotation}.
+     * If no {@link LabelNode} is immediately before the selected instruction(s), the label is created and added
+     * to the method's {@link InsnList}. However, as labels do not exist in JVMS-compliant bytecode (instead
+     * offsets are used), doing so will not create bloat in the resulting class file.
+     *
+     * <p>Only "pseudo"-instructions may be between the selected instruction and the label.
+     * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns {@value -1}.
+     *
+     * @param method The method to find the entrypoints in.
+     * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
+     * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
+     * @return The selected or generated labels that are before the matched instruction(-s).
+     */
     @NotNull
-    private static LabelNode getNodeBefore(@NotNull AbstractInsnNode insn, @NotNull InsnList merge) {
-        AbstractInsnNode lookbehind = insn.getPrevious();
-        while (lookbehind.getOpcode() == -1 && !(lookbehind instanceof LabelNode)) {
-            lookbehind = lookbehind.getPrevious();
-            if (lookbehind == null) {
-                // reached beginning of list (insn was first instruction - unlikely but possible with stuff like constants being used in an INVOKESTATIC context)
-                LabelNode l = new LabelNode();
-                merge.insert(l);
-                return l;
-            }
-        }
-        if (lookbehind instanceof LabelNode) {
-            return (LabelNode) lookbehind;
-        }
-        LabelNode l = new LabelNode();
-        merge.insertBefore(insn, l);
-        return l;
-    }
-
-    @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method) {
+    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // IMPLEMENT Hide mixin injector calls. The main part would be done through annotations (see the comment on CallbackInfo-chaining in MixinInjectAnnotation)
-        InsnList instructions = method.instructions;
-        if (this.value.equals("RETURN")) {
-            List<LabelNode> returns = new ArrayList<LabelNode>();
-            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
-                switch (insn.getOpcode()) {
-                case Opcodes.IRETURN:
-                case Opcodes.LRETURN:
-                case Opcodes.FRETURN:
-                case Opcodes.DRETURN:
-                case Opcodes.ARETURN:
-                case Opcodes.RETURN:
-                    returns.add(getNodeBefore(insn, instructions));
-                }
-            }
-            return returns;
-        } else if (this.value.equals("TAIL")) {// BeforeLastReturn
-            for (AbstractInsnNode insn = instructions.getLast(); insn != null; insn = insn.getPrevious()) {
-                switch (insn.getOpcode()) {
-                case Opcodes.IRETURN:
-                case Opcodes.LRETURN:
-                case Opcodes.FRETURN:
-                case Opcodes.DRETURN:
-                case Opcodes.ARETURN:
-                case Opcodes.RETURN:
-                    return Collections.singletonList(getNodeBefore(insn, instructions));
-                }
-            }
-            throw new IllegalStateException("Instructions exhausted");
-        } else if (this.value.equals("CONSTANT")) {// BeforeConstant
-            ConstantSelector selector = constantSelector;
-            if (selector == null) {
-                throw new InternalError();
-            }
-            // IMPLEMENT fetch ordinal
-            List<LabelNode> labels = new ArrayList<LabelNode>();
-            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
-                if (selector.matchesConstant(insn)) {
-                    labels.add(getNodeBefore(insn, instructions));
-                }
-            }
-            return labels;
-        } else if (this.value.equals("HEAD")) {
-            for (AbstractInsnNode insn = instructions.getFirst(); insn != null; insn = insn.getNext()) {
-                if (insn.getOpcode() != -1) {
-                    LabelNode temp = new LabelNode();
-                    instructions.insertBefore(temp, insn);
-                    return Collections.singletonList(temp);
-                } else if (insn instanceof LabelNode) {
-                    @SuppressWarnings("null")
-                    LabelNode temp = (LabelNode) insn; // I don't quite understand why that hack is necessary, but whatever floats your boat...
-                    return Collections.singletonList(temp);
-                }
-            }
-            // There are no instructions in the list
-            LabelNode temp = new LabelNode();
-            instructions.insert(temp);
-            return Collections.singletonList(temp);
-        } else {
-            throw new MixinParseException("Unimplemented @At-value: " + this.value);
-        }
+        // Also be aware that @At is used in much more than just @Inject, but also @Redirect among others.
+        return this.injectionPointSelector.getLabels(method, remapper, sharedBuilder);
     }
 
     public boolean supportsConstructors() {
-        return value.equals("TAIL");
+        return this.injectionPointSelector == TailInjectionPointSelector.INSTANCE;
+    }
+
+    public boolean supportsRedirect() {
+        return this.injectionPointSelector.supportsRedirect();
     }
 }

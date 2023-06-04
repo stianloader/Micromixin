@@ -18,79 +18,79 @@ public class DescString {
     }
 
     public boolean hasNext() {
-        return desc.length() != startIndex;
+        return this.desc.length() != this.startIndex;
     }
 
     public int nextReferenceType() {
-        int type = desc.codePointAt(startIndex);
+        int type = this.desc.codePointAt(this.startIndex);
         if (type == 'L') {
             // Object-type type
-            startIndex = desc.indexOf(';', startIndex) + 1;
+            this.startIndex = this.desc.indexOf(';', this.startIndex) + 1;
         } else if (type == '[') {
             // array-type type - things will go spicy
-            if (asArray == null) {
-                asArray = desc.toCharArray();
+            if (this.asArray == null) {
+                this.asArray = this.desc.toCharArray();
             }
             int typePosition = -1;
-            for (int i = startIndex + 1; i < asArray.length; i++) {
-                if (asArray[i] != '[') {
+            for (int i = this.startIndex + 1; i < this.asArray.length; i++) {
+                if (this.asArray[i] != '[') {
                     typePosition = i;
                     break;
                 }
             }
             if (asArray[typePosition] == 'L') {
-                startIndex = desc.indexOf(';', startIndex) + 1;
+                this.startIndex = this.desc.indexOf(';', this.startIndex) + 1;
             } else {
-                startIndex = ++typePosition;
+                this.startIndex = ++typePosition;
             }
         } else {
             // Primitive-type type
-            startIndex++; // Increment index by one, since the size of the type is exactly one
+            this.startIndex++; // Increment index by one, since the size of the type is exactly one
         }
         return type;
     }
 
     @NotNull
     public String nextType() {
-        char type = desc.charAt(startIndex);
+        char type = this.desc.charAt(this.startIndex);
         if (type == 'L') {
             // Object-type type
             // the description ends with a semicolon here, which has to be kept
-            int endPos = desc.indexOf(';', startIndex) + 1;
-            String ret = desc.substring(startIndex, endPos);
-            startIndex = endPos;
+            int endPos = this.desc.indexOf(';', this.startIndex) + 1;
+            String ret = this.desc.substring(this.startIndex, endPos);
+            this.startIndex = endPos;
             return ret;
         } else if (type == '[') {
             // array-type type - things will go spicy
-            if (asArray == null) {
-                asArray = desc.toCharArray();
+            if (this.asArray == null) {
+                this.asArray = this.desc.toCharArray();
             }
             int typePosition = -1;
-            for (int i = startIndex + 1; i < asArray.length; i++) {
-                if (asArray[i] != '[') {
+            for (int i = this.startIndex + 1; i < this.asArray.length; i++) {
+                if (this.asArray[i] != '[') {
                     typePosition = i;
                     break;
                 }
             }
             if (asArray[typePosition] == 'L') {
-                int endPos = desc.indexOf(';', startIndex) + 1;
-                String ret = desc.substring(startIndex, endPos);
-                startIndex = endPos;
+                int endPos = this.desc.indexOf(';', this.startIndex) + 1;
+                String ret = this.desc.substring(this.startIndex, endPos);
+                this.startIndex = endPos;
                 return ret;
             } else {
                 typePosition++;
-                String ret = desc.substring(startIndex, typePosition);
-                startIndex = typePosition;
+                String ret = this.desc.substring(this.startIndex, typePosition);
+                this.startIndex = typePosition;
                 return ret;
             }
         } else {
             // Primitive-type type
-            startIndex++; // Increment index by one, since the size of the type is exactly one
+            this.startIndex++; // Increment index by one, since the size of the type is exactly one
             return Character.toString(type);
         }
     }
 
     public void reset() {
-        startIndex = 0;
+        this.startIndex = 0;
     }
 }
