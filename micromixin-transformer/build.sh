@@ -1,1 +1,0 @@
-mvn install && cd ../../Starloader && mvn package && cd ../micromixin/micromixin-transformer/

@@ -1,0 +1,8 @@
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver' version '0.7.0'
+}
+
+rootProject.name = 'micromixin'
+include(':micromixin-runtime')
+include(':micromixin-transformer')
+include(':micromixin-annotations')

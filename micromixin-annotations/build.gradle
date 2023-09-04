@@ -1,0 +1,122 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'de.geolykt.starloader'
+def artifactId = 'micromixin-annotations'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    api project(":micromixin-runtime")
+    compileOnly 'org.jetbrains:annotations-java5:24.0.1'
+}
+
+sourceSets {
+    java9 {
+        java {
+            compileClasspath += main.compileClasspath
+            compileClasspath += main.output
+            java.setSrcDirs(new java.util.ArrayList())
+            java.srcDir(getProjectDir().toPath().resolve('src/main/java9'))
+            java.filter.exclude("module-info.java")
+
+            // !!! More compilation hacks !!!
+            java.filter.exclude("")
+        }
+    }
+    java9module {
+        java {
+            compileClasspath += main.compileClasspath
+            java.setSrcDirs(new java.util.ArrayList())
+            var rootSourceDir = getProjectDir().toPath().resolve('src/main/java9');
+            java.srcDir(rootSourceDir)
+            java.srcDirs(main.allJava.srcDirs())
+            main.allJava.srcDirs().each { dir -> {
+                    // For whatever reason 'dir' represents source files and not source directories at this point
+                    // Can I complain? No, not really...
+                    String path = dir.toString().substring(dir.toString().indexOf("java/") + 5)
+                    if (java.nio.file.Files.exists(rootSourceDir.resolve(path))) {
+                        java.filter.exclude(path)
+                    }
+                }
+            }
+            java.filter.include("module-info.java")
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(6)
+    }
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(9)
+    }
+}
+
+compileJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(6)
+    }
+
+    sourceCompatibility = '1.6'
+    targetCompatibility = '1.6'
+}
+
+compileJava9Java {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(9)
+    }
+    dependsOn compileJava
+
+    sourceCompatibility = '9'
+    targetCompatibility = '9'
+    modularity.inferModulePath.set(false)
+}
+
+compileJava9moduleJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(9)
+    }
+    dependsOn compileJava
+
+    sourceCompatibility = '9'
+    targetCompatibility = '9'
+    modularity.inferModulePath.set(true)
+}
+
+jar {
+    dependsOn compileJava9Java
+    dependsOn compileJava9moduleJava
+
+    into('META-INF/versions/9') {
+        from sourceSets.java9.output
+    }
+
+    into('META-INF/versions/9') {
+        from sourceSets.java9module.output
+        include 'module-info.class'
+    }
+
+    manifest {
+        attributes 'Multi-Release': true
+    }
+
+    exclude '*/callback/CallbackInfo.class'
+    exclude '*/callback/CallbackInfoReturnable.class'
+    exclude '*/callback/CancellationException.class'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
