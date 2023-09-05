@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'eclipse'
 }
 
 group = 'de.geolykt.starloader'
@@ -67,6 +68,7 @@ compileJava {
 
     sourceCompatibility = '1.6'
     targetCompatibility = '1.6'
+    modularity.inferModulePath.set(true)
 }
 
 compileJava9Java {
@@ -117,6 +119,24 @@ publishing {
     publications {
         maven(MavenPublication) {
             from(components.java)
+        }
+    }
+}
+
+eclipse {
+    classpath {
+        containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+        file {
+            whenMerged {
+                entries.each {
+                    if (it.kind == 'con' || it.kind == 'lib') {
+                        it.entryAttributes['module'] = 'true'
+                    } else if (it.kind == 'src' && it.path == 'src/main/java9') {
+                        // Eclipse has a seizure 
+                        it.setIncludes(java.util.Arrays.asList('module-info.java'))
+                    }
+                }
+            }
         }
     }
 }
