@@ -32,9 +32,9 @@ public @interface Unique {
      * If the member that was annotated with {@link Unique} is a public method, a warning is sent to the log.
      * The official Mixin implementation does not seem to follow that logic, but Micromixin does.
      *
-     * <p>Regardless, setting silent to {@value true} will suppress that log. Furthermore it will explicitly avoid discarding
+     * <p>Regardless, setting silent to true will suppress that log. Furthermore it will explicitly avoid discarding
      * the method if it collides with a member. That behaviour is not present if {@link Unique#silent()} is left empty
-     * or {@value false}.
+     * or false.
      *
      * @return True for the annotation to be silent, false otherwise.
      */

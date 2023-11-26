@@ -19,6 +19,7 @@ import java.lang.annotation.Target;
 @Target({ METHOD })
 public @interface Overwrite {
 
+    // TODO Add #prefix() and update the link (see line 32 as of 2023-11-26)
     /**
      * <p><b>The spongeian implementation (and therefore the standard Micromixin implementation) does not remap the name
      * of aliased methods in INVOKESTATIC calls. That is "working as intended" - but be aware that static methods
@@ -28,7 +29,7 @@ public @interface Overwrite {
      * if none match an exception is thrown during transformation. The actual name of the method
      * is discarded and will not play a role once aliases are defined.
      *
-     * <p>Aliases are not affected by {@link #prefix() the prefix}.
+     * <p>Aliases are not affected by (@link #prefix() the prefix).
      *
      * <p>The spongeian Mixin specification advises against the usage of aliases.
      * According to them aliases should only be used if the name of the target

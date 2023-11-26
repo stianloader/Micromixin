@@ -5,8 +5,8 @@ plugins {
 }
 
 group = 'de.geolykt.starloader'
-def artifactId = 'micromixin-runtime'
-version = '0.0.1-SNAPSHOT'
+def archivesBaseName = 'micromixin-runtime'
+version = '0.1.0'
 
 repositories {
     mavenLocal()
@@ -111,10 +111,40 @@ task produceModularitylessJar(type: Jar, dependsOn: compileJava) {
     from sourceSets.main.output
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+
+    from sourceSets.main.allSource
+    into('META-INF/versions/9') {
+        from sourceSets.java9.allSource
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
 publishing {
     publications {
         maven(MavenPublication) {
-            from(components.java)
+            groupId project.group
+            artifactId project.archivesBaseName
+
+            from components['java']
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+
+    repositories {
+        if (System.getProperty('publishRepo') != null) {
+            maven {
+                url System.getProperty('publishRepo')
+                allowInsecureProtocol = true
+            }
+        } else {
+            mavenLocal()
         }
     }
 }

@@ -42,7 +42,7 @@ public abstract class InjectionPointSelector {
      * offsets are used), doing so will not create bloat in the resulting class file.
      *
      * <p>Only "pseudo"-instructions may be between the selected instruction and the label.
-     * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns {@value -1}.
+     * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns -1.
      *
      * @param method The method to find the entrypoints in.
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.

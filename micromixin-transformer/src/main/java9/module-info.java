@@ -1,9 +1,9 @@
 module de.geolykt.starloader.micromixin.transform {
-    requires org.objectweb.asm;
+    requires transitive org.objectweb.asm;
     requires org.objectweb.asm.commons;
-    requires org.objectweb.asm.tree;
+    requires transitive org.objectweb.asm.tree;
     requires org.objectweb.asm.util;
-    requires org.json;
+    requires transitive org.json;
     requires org.jetbrains.annotations;
 
     exports de.geolykt.micromixin;
