@@ -58,7 +58,7 @@ java {
         languageVersion = JavaLanguageVersion.of(6)
     }
     toolchain {
-        languageVersion = JavaLanguageVersion.of(9)
+        languageVersion = JavaLanguageVersion.of(11)
     }
 }
 
@@ -73,7 +73,7 @@ compileJava {
 
 compileJava9Java {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(9)
+        languageVersion = JavaLanguageVersion.of(11)
     }
     dependsOn compileJava
 
@@ -84,7 +84,7 @@ compileJava9Java {
 
 compileJava9moduleJava {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(9)
+        languageVersion = JavaLanguageVersion.of(11)
     }
     dependsOn compileJava
 
