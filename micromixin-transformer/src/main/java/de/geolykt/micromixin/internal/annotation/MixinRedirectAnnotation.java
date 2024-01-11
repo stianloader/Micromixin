@@ -30,7 +30,6 @@ import de.geolykt.micromixin.internal.selectors.StringSelector;
 import de.geolykt.micromixin.internal.util.ASMUtil;
 import de.geolykt.micromixin.internal.util.CodeCopyUtil;
 import de.geolykt.micromixin.internal.util.Objects;
-import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -43,16 +42,16 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
     private final int require;
     private final int expect;
     @NotNull
-    private final ClassWrapperPool pool;
+    private final MixinTransformer<?> transformer;
 
     private MixinRedirectAnnotation(@NotNull MixinAtAnnotation at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, @NotNull ClassWrapperPool pool) {
+            @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinTransformer<?> transformer) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
-        this.pool = pool;
+        this.transformer = transformer;
     }
 
     @NotNull
@@ -122,7 +121,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         if (at == null) {
             throw new MixinParseException("Redirector Mixin " + node.name + "." + method.name + method.desc + " should define the at-value but does not. The mixin may be compiled for a future version of mixin.");
         }
-        return new MixinRedirectAnnotation(at, Collections.unmodifiableCollection(selectors), method, require, expect, transformer.getPool());
+        return new MixinRedirectAnnotation(at, Collections.unmodifiableCollection(selectors), method, require, expect, transformer);
     }
 
     @Override
@@ -157,8 +156,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
         }
         if (labels.size() < this.expect) {
-            // IMPLEMENT proper logging mechanism
-            System.err.println("[WARNING:MM/MRA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
+            this.transformer.getLogger().warn(MixinRedirectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
         }
 
         // IMPLEMENT @Redirect-chaining. The main part could be done through annotations.
@@ -178,7 +176,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                 VarInsnNode preInsert = new VarInsnNode(Opcodes.ALOAD, 0);
                 instructions.insertBefore(insn, preInsert);
-                ASMUtil.shiftDownByDesc(handlerNode.desc, false, to, targetMethod, preInsert, this.pool);
+                ASMUtil.shiftDownByDesc(handlerNode.desc, false, to, targetMethod, preInsert, this.transformer.getPool());
                 insertedOpcode = Opcodes.INVOKEVIRTUAL;
             } else {
                 insertedOpcode = Opcodes.INVOKESTATIC;

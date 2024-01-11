@@ -21,6 +21,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import de.geolykt.micromixin.MixinTransformer;
 import de.geolykt.micromixin.SimpleRemapper;
+import de.geolykt.micromixin.api.MixinLoggingFacade;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinMethodStub;
 import de.geolykt.micromixin.internal.MixinParseException;
@@ -46,14 +47,17 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     private final MethodNode injectSource;
     private final int require;
     private final int expect;
+    @NotNull
+    private final MixinLoggingFacade logger;
 
     private MixinExtrasModifyReturnValueAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect) {
+            @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinLoggingFacade logger) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
+        this.logger = logger;
     }
 
     @Override
@@ -88,8 +92,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
         }
         if (labels.size() < this.expect) {
-            // IMPLEMENT proper logging mechanism
-            System.err.println("[WARNING:MM/MIA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
+            this.logger.warn(MixinExtrasModifyReturnValueAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
         }
         String returnType = ASMUtil.getReturnType(this.injectSource.desc);
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
@@ -178,8 +181,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
                     }
                 }
             } else if (name.equals("target")) {
-                // IMPLEMENT Proper logging
-                System.err.println("[WARNING:MM/MEMRVA] Potentially outdated mixin: " + node.name + "." + method.name + method.desc + " has an @ModifyReturnValue annotation with the 'target = ...' attribute. However, this attribute is not yet officially implemented in either MixinExtras or micromxin-annotations. You are likely running an outdated version of micromixin-transformer!");
+                transformer.getLogger().warn(MixinExtrasModifyReturnValueAnnotation.class, "Potentially outdated mixin: {}.{} {} has an @ModifyReturnValue annotation with the 'target = ...' attribute. However, this attribute is not yet officially implemented in either MixinExtras or micromxin-annotations. You are likely running an outdated version of micromixin-transformer!", node.name, method.name, method.desc);
                 if (target != null) {
                     throw new MixinParseException("Duplicate \"target\" field in @ModifyReturnValue.");
                 }
@@ -228,6 +230,6 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
 
-        return new MixinExtrasModifyReturnValueAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect);
+        return new MixinExtrasModifyReturnValueAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, transformer.getLogger());
     }
 }

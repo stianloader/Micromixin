@@ -71,4 +71,4 @@ feature compatibility with the spongeian mixin implementation.
  - `@ModifyVariable`
  - `@ModifyConstant`
  - `@Inject` usage in constructors before `super()` call
- - Regex support in `Inject.target`, `Redirect.target` and `At.target`
+ - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar

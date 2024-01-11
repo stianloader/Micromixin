@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 
+import de.geolykt.micromixin.MixinTransformer;
 import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
@@ -32,7 +33,7 @@ public class MixinFieldStub implements ClassMemberStub {
     }
 
     @NotNull
-    public static MixinFieldStub parse(@NotNull ClassNode owner, @NotNull FieldNode field) {
+    public static MixinFieldStub parse(@NotNull ClassNode owner, @NotNull FieldNode field, @NotNull MixinTransformer<?> transformer) {
         List<MixinAnnotation<MixinFieldStub>> annotations = new ArrayList<MixinAnnotation<MixinFieldStub>>();
         if (field.visibleAnnotations != null) {
             for (AnnotationNode annot : field.visibleAnnotations) {
@@ -40,7 +41,7 @@ public class MixinFieldStub implements ClassMemberStub {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
                         annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
-                        annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot));
+                        annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot, transformer.getLogger()));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }

@@ -45,7 +45,6 @@ import de.geolykt.micromixin.internal.util.commenttable.KeyValueTableSection;
 import de.geolykt.micromixin.internal.util.commenttable.StringTableSection;
 import de.geolykt.micromixin.internal.util.locals.LocalCaptureResult;
 import de.geolykt.micromixin.internal.util.locals.LocalsCapture;
-import de.geolykt.micromixin.supertypes.ClassWrapperPool;
 
 public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -65,11 +64,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     @NotNull
     private final String locals;
     @NotNull
-    private final ClassWrapperPool pool;
+    private final MixinTransformer<?> transformer;
 
     private MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
             @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids, @NotNull String locals,
-            @NotNull ClassWrapperPool pool) {
+            @NotNull MixinTransformer<?> transformer) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
@@ -78,7 +77,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         this.cancellable = cancellable;
         this.denyVoids = denyVoids;
         this.locals = locals;
-        this.pool = pool;
+        this.transformer = transformer;
     }
 
     @NotNull
@@ -163,7 +162,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         if (locals == null) {
             locals = "NO_CAPTURE";
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer.getPool());
+        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer);
     }
 
     @Override
@@ -202,8 +201,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
         }
         if (labels.size() < this.expect) {
-            // IMPLEMENT proper logging mechanism
-            System.err.println("[WARNING:MM/MIA] Potentially outdated mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " expects " + this.expect + " injection points but only found " + labels.size() + ".");
+            this.transformer.getLogger().warn(MixinInjectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
         }
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
         for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
@@ -410,7 +408,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             // Nothing to do
             return;
         }
-        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.pool);
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.transformer.getPool());
 
         int initialFrameSize = ASMUtil.getInitialFrameSize(target);
         Frame<BasicValue> frame = result.frame;
@@ -494,7 +492,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             // Nothing to do, for now
             return false;
         }
-        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.pool);
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.transformer.getPool());
         if (this.locals.equals("PRINT")) {
             KeyValueTableSection injectionPointInfo = new KeyValueTableSection();
             CommentTable printTable = new CommentTable().addSection(injectionPointInfo);

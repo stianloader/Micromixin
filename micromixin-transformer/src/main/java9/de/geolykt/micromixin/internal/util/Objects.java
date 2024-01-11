@@ -19,14 +19,9 @@ public final class Objects {
         throw new AssertionError();
     }
 
-    @NotNull
-    public static <T> T requireNonNull(T object) {
-        return java.util.Objects.requireNonNull(object);
-    }
-
-    @NotNull
-    public static <T> T requireNonNull(T object, @NotNull String message) {
-        return java.util.Objects.requireNonNull(object, message);
+    public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
+        suppressed.forEach(throwable::addSuppressed);
+        return throwable;
     }
 
     public static boolean equals(@Nullable Object o1, @Nullable Object o2) {
@@ -37,8 +32,18 @@ public final class Objects {
         return java.util.Objects.hashCode(o);
     }
 
-    public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
-        suppressed.forEach(throwable::addSuppressed);
-        return throwable;
+    @NotNull
+    public static <T> T requireNonNull(T object) {
+        return java.util.Objects.requireNonNull(object);
+    }
+
+    @NotNull
+    public static <T> T requireNonNull(T object, @NotNull String message) {
+        return java.util.Objects.requireNonNull(object, message);
+    }
+
+    @NotNull
+    public static String toString(@Nullable Object o) {
+        return java.util.Objects.toString(o);
     }
 }

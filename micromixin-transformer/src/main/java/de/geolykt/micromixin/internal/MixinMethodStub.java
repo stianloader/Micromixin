@@ -50,7 +50,7 @@ public class MixinMethodStub implements ClassMemberStub {
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
                         annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
-                        annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot));
+                        annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Redirect;")) {
                         annotations.add(MixinRedirectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {

@@ -64,7 +64,7 @@ public class MixinStub implements Comparable<MixinStub> {
                 throw new NullPointerException();
             }
             try {
-                fields.add(MixinFieldStub.parse(node, field));
+                fields.add(MixinFieldStub.parse(node, field, transformer));
             } catch (MixinParseException e) {
                 if (transformer.isDelayingParseExceptions()) {
                     if (delayedExceptions == null) {

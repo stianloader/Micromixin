@@ -17,46 +17,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class Objects {
 
-    private Objects() {
-        throw new AssertionError();
-    }
-
-    @NotNull
-    @Contract(pure = true, value = "!null -> param1; null -> fail")
-    public static <T> T requireNonNull(T object) {
-        if (object == null) {
-            throw new NullPointerException();
-        }
-        return object;
-    }
-
-    @NotNull
-    @Contract(pure = true, value = "!null, _ -> param1; null, _ -> fail")
-    public static <T> T requireNonNull(T object, @NotNull String message) {
-        if (object == null) {
-            throw new NullPointerException(message);
-        }
-        return object;
-    }
-
-    @Contract(pure = true, value = "null, !null -> false; null, null -> true; !null, null -> false")
-    public static boolean equals(@Nullable Object o1, @Nullable Object o2) {
-        if (o1 == null) {
-            return o2 == null;
-        } else if (o2 == null) {
-            return false;
-        } else {
-            return o1.equals(o2);
-        }
-    }
-
-    public static int hashCode(@Nullable Object o) {
-        if (o == null) {
-            return 0;
-        }
-        return o.hashCode();
-    }
-
     @SuppressWarnings("unchecked")
     public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
         StringBuilder builder = new StringBuilder();
@@ -83,5 +43,56 @@ public final class Objects {
             RuntimeException ex = new RuntimeException("Altered stacktrace (Your java is out of date. Please update your java!):" + throwable.getMessage(), new RuntimeException(builder.toString()));
             return ex;
         }
+    }
+
+    @Contract(pure = true, value = "null, !null -> false; null, null -> true; !null, null -> false")
+    public static boolean equals(@Nullable Object o1, @Nullable Object o2) {
+        if (o1 == null) {
+            return o2 == null;
+        } else if (o2 == null) {
+            return false;
+        } else {
+            return o1.equals(o2);
+        }
+    }
+
+    public static int hashCode(@Nullable Object o) {
+        if (o == null) {
+            return 0;
+        }
+        return o.hashCode();
+    }
+
+    @NotNull
+    @Contract(pure = true, value = "!null -> param1; null -> fail")
+    public static <T> T requireNonNull(T object) {
+        if (object == null) {
+            throw new NullPointerException();
+        }
+        return object;
+    }
+
+    @NotNull
+    @Contract(pure = true, value = "!null, _ -> param1; null, _ -> fail")
+    public static <T> T requireNonNull(T object, @NotNull String message) {
+        if (object == null) {
+            throw new NullPointerException(message);
+        }
+        return object;
+    }
+
+    @SuppressWarnings("null")
+    @NotNull
+    @Contract(pure = true, value = "_ -> !null")
+    public static String toString(@Nullable Object o) {
+        if (o == null) {
+            return "null";
+        } else {
+            return o.toString();
+        }
+    }
+
+    private Objects() {
+        throw new AssertionError();
     }
 }

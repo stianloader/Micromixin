@@ -1,6 +1,7 @@
 package de.geolykt.micromixin;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +16,8 @@ import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.TraceClassVisitor;
 
 import de.geolykt.micromixin.api.InjectionPointSelectorFactory;
+import de.geolykt.micromixin.api.MixinLoggingFacade;
+import de.geolykt.micromixin.internal.DefaultMixinLogger;
 import de.geolykt.micromixin.internal.HandlerContextHelper;
 import de.geolykt.micromixin.internal.MixinParseException;
 import de.geolykt.micromixin.internal.MixinStub;
@@ -43,25 +46,28 @@ import de.geolykt.micromixin.supertypes.ClassWrapperPool;
  */
 public class MixinTransformer<M> {
 
+    private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
+
     @NotNull
-    private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    private final BytecodeProvider<M> bytecodeProvider;
+    private boolean delayParseExceptions = Boolean.getBoolean("de.geolykt.starloader.micromixin.delayedParseException");
     @NotNull
-    private final Map<ModularityAttached<M, String>, MixinConfig> mixins = new HashMap<ModularityAttached<M, String>, MixinConfig>();
+    private final InjectionPointSelectorFactory injectionPointSelectors = new InjectionPointSelectorFactory();
+    @NotNull
+    private MixinLoggingFacade logger = new DefaultMixinLogger();
+    private boolean mergeClassFileVersions = true;
     @NotNull
     private final Map<ModularityAttached<M, String>, ClassNode> mixinNodes = new HashMap<ModularityAttached<M, String>, ClassNode>();
+    @NotNull
+    private final Map<ModularityAttached<M, String>, MixinConfig> mixins = new HashMap<ModularityAttached<M, String>, MixinConfig>();
     @NotNull
     private final Map<ModularityAttached<M, String>, MixinStub> mixinStubs = new HashMap<ModularityAttached<M, String>, MixinStub>();
     @NotNull
     private final Map<String, TreeSet<MixinStub>> mixinTargets = new HashMap<String, TreeSet<MixinStub>>();
     @NotNull
-    private final BytecodeProvider<M> bytecodeProvider;
-    private boolean mergeClassFileVersions = true;
+    private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<ModularityAttached<M, String>, MixinConfig>();
     @NotNull
     private final ClassWrapperPool pool;
-    @NotNull
-    private final InjectionPointSelectorFactory injectionPointSelectors = new InjectionPointSelectorFactory();
-    private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
-    private boolean delayParseExceptions = Boolean.getBoolean("de.geolykt.starloader.micromixin.delayedParseException");
 
     public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
@@ -75,7 +81,7 @@ public class MixinTransformer<M> {
 
     public void addMixin(M attachment, @NotNull MixinConfig config) {
         Objects.requireNonNull(config, "config must not be null");
-        if (isMixin(attachment, config.mixinPackage)) { // FIXME: also validate other configs inserted previously.
+        if (this.isMixin(attachment, config.mixinPackage)) { // FIXME: also validate other configs inserted previously.
             throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") target the same package (" + config.mixinPackage + ").");
         }
         this.packageDeclarations.put(new ModularityAttached<M, String>(attachment, config.mixinPackage), config);
@@ -127,6 +133,11 @@ public class MixinTransformer<M> {
     }
 
     @NotNull
+    public MixinLoggingFacade getLogger() {
+        return this.logger;
+    }
+
+    @NotNull
     public ClassWrapperPool getPool() {
         return this.pool;
     }
@@ -157,14 +168,14 @@ public class MixinTransformer<M> {
      */
     public boolean isMixin(M attachment, @NotNull String internalName) {
         ModularityAttached<M, String> attached = new ModularityAttached<M, String>(attachment, internalName);
-        if (packageDeclarations.containsKey(attached)) {
+        if (this.packageDeclarations.containsKey(attached)) {
             return true;
         }
         int slashIndex = internalName.lastIndexOf('/');
         if (slashIndex == -1) {
             return false;
         } else {
-            return isMixin(attachment, internalName.substring(0, slashIndex));
+            return this.isMixin(attachment, internalName.substring(0, slashIndex));
         }
     }
 
@@ -174,6 +185,10 @@ public class MixinTransformer<M> {
 
     public void setDelayParseExceptions(boolean delayParseExceptions) {
         this.delayParseExceptions = delayParseExceptions;
+    }
+
+    public void setLogger(@NotNull MixinLoggingFacade logger) {
+        this.logger = logger;
     }
 
     public void setMergeClassFileVersions(boolean mergeClassFileVersions) {
@@ -209,10 +224,11 @@ public class MixinTransformer<M> {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
                 in.accept(cca);
             } catch (Throwable t) {
-                System.err.println("Invalidly transformed class: " + in.name);
-                t.printStackTrace();
-                TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.err));
+                this.getLogger().error(MixinTransformer.class, "Invalidly transformed class: {}", in.name, t);
+                StringWriter sw = new StringWriter();
+                TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(sw));
                 in.accept(tcv);
+                this.getLogger().info(MixinTransformer.class, "Disassembled class file:\n", sw);
             }
         }
     }
