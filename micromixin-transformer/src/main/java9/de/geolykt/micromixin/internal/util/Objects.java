@@ -1,5 +1,7 @@
 package de.geolykt.micromixin.internal.util;
 
+import java.util.List;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,5 +35,10 @@ public final class Objects {
 
     public static int hashCode(@Nullable Object o) {
         return java.util.Objects.hashCode(o);
+    }
+
+    public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
+        suppressed.forEach(throwable::addSuppressed);
+        return throwable;
     }
 }

@@ -6,12 +6,14 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import de.geolykt.micromixin.MixinTransformer;
 import de.geolykt.micromixin.SimpleRemapper;
+import de.geolykt.micromixin.internal.util.Objects;
 
 public class MixinStub implements Comparable<MixinStub> {
 
@@ -23,32 +25,58 @@ public class MixinStub implements Comparable<MixinStub> {
     public final Collection<MixinMethodStub> methods;
     @NotNull
     public final Collection<MixinFieldStub> fields;
+    @Nullable
+    private final List<MixinParseException> delayedExceptions;
 
-    public MixinStub(@NotNull ClassNode sourceNode, @NotNull MixinHeader header, @NotNull Collection<MixinMethodStub> methods, @NotNull Collection<MixinFieldStub> fields) {
+    public MixinStub(@NotNull ClassNode sourceNode, @NotNull MixinHeader header, @NotNull Collection<MixinMethodStub> methods, @NotNull Collection<MixinFieldStub> fields, @Nullable List<MixinParseException> delayedExceptions) {
         this.sourceNode = sourceNode;
         this.header = header;
         this.methods = methods;
         this.fields = fields;
+        this.delayedExceptions = delayedExceptions;
     }
 
     @NotNull
     public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
         List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
         List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
+        List<MixinParseException> delayedExceptions = null;
         for (MethodNode method : node.methods) {
             if (method == null) {
                 throw new NullPointerException();
             }
-            MixinMethodStub methodStub = MixinMethodStub.parse(node, method, transformer, sharedBuilder);
-            methods.add(methodStub);
+            try {
+                MixinMethodStub methodStub = MixinMethodStub.parse(node, method, transformer, sharedBuilder);
+                methods.add(methodStub);
+            } catch (MixinParseException e) {
+                if (transformer.isDelayingParseExceptions()) {
+                    if (delayedExceptions == null) {
+                        delayedExceptions = new ArrayList<MixinParseException>();
+                    }
+                    delayedExceptions.add(e);
+                } else {
+                    throw e;
+                }
+            }
         }
         for (FieldNode field : node.fields) {
             if (field == null) {
                 throw new NullPointerException();
             }
-            fields.add(MixinFieldStub.parse(node, field));
+            try {
+                fields.add(MixinFieldStub.parse(node, field));
+            } catch (MixinParseException e) {
+                if (transformer.isDelayingParseExceptions()) {
+                    if (delayedExceptions == null) {
+                        delayedExceptions = new ArrayList<MixinParseException>();
+                    }
+                    delayedExceptions.add(e);
+                } else {
+                    throw e;
+                }
+            }
         }
-        return new MixinStub(node, MixinHeader.parse(node, defaultPriority), Collections.unmodifiableCollection(methods), Collections.unmodifiableCollection(fields));
+        return new MixinStub(node, MixinHeader.parse(node, defaultPriority), Collections.unmodifiableCollection(methods), Collections.unmodifiableCollection(fields), delayedExceptions);
     }
 
     @Override
@@ -57,6 +85,13 @@ public class MixinStub implements Comparable<MixinStub> {
     }
 
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
+        List<MixinParseException> delayedExceptions = this.delayedExceptions;
+        if (delayedExceptions != null && !delayedExceptions.isEmpty()) {
+            Throwable t1 = new IllegalStateException("Some exceptions occured during the parsing process, which is why a mixin cannot be applied");
+            Throwable rethrown =  Objects.addSuppressed(t1, (List<? extends Throwable>) delayedExceptions);
+            throw (RuntimeException) rethrown;
+        }
+
         // Perform basic validation
         for (MixinMethodStub methodStub : this.methods) {
             if (methodStub.method.name.startsWith(hctx.handlerPrefix)) {

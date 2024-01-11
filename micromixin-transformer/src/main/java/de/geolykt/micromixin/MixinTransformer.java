@@ -61,6 +61,7 @@ public class MixinTransformer<M> {
     @NotNull
     private final InjectionPointSelectorFactory injectionPointSelectors = new InjectionPointSelectorFactory();
     private static final boolean DEBUG = Boolean.getBoolean("de.geolykt.starloader.micromixin.debug");
+    private boolean delayParseExceptions = Boolean.getBoolean("de.geolykt.starloader.micromixin.delayedParseException");
 
     public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
@@ -130,6 +131,15 @@ public class MixinTransformer<M> {
         return this.pool;
     }
 
+    public boolean isDelayingParseExceptions() {
+        return this.delayParseExceptions;
+    }
+
+    public boolean isMergingClassFileVersions() {
+        return this.mergeClassFileVersions;
+    }
+
+    @Deprecated
     public boolean isMergeingClassFileVersions() {
         return this.mergeClassFileVersions;
     }
@@ -160,6 +170,10 @@ public class MixinTransformer<M> {
 
     public boolean isMixinTarget(@NotNull String name) {
         return this.mixinTargets.containsKey(name);
+    }
+
+    public void setDelayParseExceptions(boolean delayParseExceptions) {
+        this.delayParseExceptions = delayParseExceptions;
     }
 
     public void setMergeClassFileVersions(boolean mergeClassFileVersions) {

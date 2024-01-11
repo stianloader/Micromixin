@@ -1,5 +1,10 @@
 package de.geolykt.micromixin.internal.util;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -7,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Class that copies functionality from java.util.Objects
  * that is not present on java 6.
+ *
+ * <p>Also includes other unavailable methods that didn't fix elsewhere.
  */
 public final class Objects {
 
@@ -48,5 +55,33 @@ public final class Objects {
             return 0;
         }
         return o.hashCode();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Following suppressed exceptions (consider updating your Java version for better details):\n");
+        Throwable cause = throwable.getCause();
+        List<? extends Throwable> suppressed2 = new ArrayList<Throwable>(suppressed);
+        if (cause != null) {
+            ((List<Throwable>) suppressed2).add(cause);
+            ((List<Throwable>) suppressed2).add(throwable);
+        }
+
+        for (Throwable t : suppressed2) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            builder.append("Suppressed:\n");
+            builder.append(sw.toString());
+        }
+
+        if (cause == null) {
+            throwable.initCause(new RuntimeException(builder.toString()));
+            return throwable;
+        } else {
+            RuntimeException ex = new RuntimeException("Altered stacktrace (Your java is out of date. Please update your java!):" + throwable.getMessage(), new RuntimeException(builder.toString()));
+            return ex;
+        }
     }
 }

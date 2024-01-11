@@ -11,6 +11,9 @@ import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.LocalCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.redirect.GenericInvoker;
 
 public class TestHarness {
@@ -26,7 +29,104 @@ public class TestHarness {
         runArgumentCaptureTest(report);
         runLocalPrintingTest(report);
         runRedirectTest(report);
+        runModifyReturnValuesTest2(report);
+        runModifyReturnValuesTest(report);
         return report;
+    }
+
+    public static void runModifyReturnValuesTest2(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueSignatureTest$NoConsumeValue");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueSignatureTest$NoProvideValue");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueSignatureTest$TargetVoid");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueSignatureTest$TargetVoidNoConsume");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueSignatureTest$TargetVoidRun");
+
+        set.addUnitAssertNotEquals("ModifyReturnValueInvalidTargetInsnTest.TargetReturn", ModifyReturnValueInvalidTargetInsnTest.TargetReturn::getValue, null);
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest$TargetHead");
+
+        set.addUnitAssertNotEquals("ModifyReturnValueVisibilityTest - private", ModifyReturnValueVisibilityTest.VisibilityPrivate::getValue, null);
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest$VisibilityPackageProtected");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest$VisibilityPublic");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest$VisibilityProtected");
+
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTypingTest$ConsumeSubclass");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTypingTest$ProvideSuperclass");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTypingTest$ProvideSubclass");
+        set.addUnitExpectClassloadingFailure("de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTypingTest$ConsumeSuperclass");
+
+        LoggerFactory.getLogger(TestHarness.class).info("ModifyReturnValuesTest2:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
+    }
+
+    public static void runModifyReturnValuesTest(@NotNull TestReport report) {
+        /* following code is generated - do not touch directly. */
+        TestSet set = new TestSet();
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteI", ModifyReturnValueTest::identityOverwriteI, -957256832);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteJ", ModifyReturnValueTest::identityOverwriteJ, Long.MAX_VALUE);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteS", ModifyReturnValueTest::identityOverwriteS, ((short) -58));
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteC", ModifyReturnValueTest::identityOverwriteC, 'c');
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteB", ModifyReturnValueTest::identityOverwriteB, ((byte) 126));
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteZ", ModifyReturnValueTest::identityOverwriteZ, true);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteF", ModifyReturnValueTest::identityOverwriteF, 1.2F);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteD", ModifyReturnValueTest::identityOverwriteD, 2.5D);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNul", ModifyReturnValueTest::identityOverwriteNul, Boolean.TRUE);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNul2", ModifyReturnValueTest::identityOverwriteNul2, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteStr", ModifyReturnValueTest::identityOverwriteStr, "Test2");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNulStr", ModifyReturnValueTest::identityOverwriteNulStr, "non-null");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNulStr2", ModifyReturnValueTest::identityOverwriteNulStr2, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteEmptyStr", ModifyReturnValueTest::identityOverwriteEmptyStr, "");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteClass", ModifyReturnValueTest::identityOverwriteClass, int.class);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNulClass", ModifyReturnValueTest::identityOverwriteNulClass, Object.class);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityOverwriteNulClass2", ModifyReturnValueTest::identityOverwriteNulClass2, null);
+
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughI", ModifyReturnValueTest::identityPassthroughI, 0);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughJ", ModifyReturnValueTest::identityPassthroughJ, 0L);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughS", ModifyReturnValueTest::identityPassthroughS, ((short) 0));
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughC", ModifyReturnValueTest::identityPassthroughC, '\u0000');
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughB", ModifyReturnValueTest::identityPassthroughB, ((byte) 0));
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughZ", ModifyReturnValueTest::identityPassthroughZ, false);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughF", ModifyReturnValueTest::identityPassthroughF, 0F);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughD", ModifyReturnValueTest::identityPassthroughD, 0D);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNul", ModifyReturnValueTest::identityPassthroughNul, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNul2", ModifyReturnValueTest::identityPassthroughNul2, Boolean.FALSE);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughStr", ModifyReturnValueTest::identityPassthroughStr, "Test");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNulStr", ModifyReturnValueTest::identityPassthroughNulStr, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNulStr2", ModifyReturnValueTest::identityPassthroughNulStr2, "");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughEmptyStr", ModifyReturnValueTest::identityPassthroughEmptyStr, "non-empty");
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughClass", ModifyReturnValueTest::identityPassthroughClass, void.class);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNulClass", ModifyReturnValueTest::identityPassthroughNulClass, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.identityPassthroughNulClass2", ModifyReturnValueTest::identityPassthroughNulClass2, Object.class);
+
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteI", new ModifyReturnValueTest()::virtualIdentityOverwriteI, -957256832);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteJ", new ModifyReturnValueTest()::virtualIdentityOverwriteJ, Long.MAX_VALUE);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteS", new ModifyReturnValueTest()::virtualIdentityOverwriteS, ((short) -58));
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteC", new ModifyReturnValueTest()::virtualIdentityOverwriteC, 'c');
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteB", new ModifyReturnValueTest()::virtualIdentityOverwriteB, ((byte) 126));
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteZ", new ModifyReturnValueTest()::virtualIdentityOverwriteZ, true);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteF", new ModifyReturnValueTest()::virtualIdentityOverwriteF, 1.2F);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteD", new ModifyReturnValueTest()::virtualIdentityOverwriteD, 2.5D);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNul", new ModifyReturnValueTest()::virtualIdentityOverwriteNul, Boolean.TRUE);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNul2", new ModifyReturnValueTest()::virtualIdentityOverwriteNul2, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteStr", new ModifyReturnValueTest()::virtualIdentityOverwriteStr, "Test2");
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNulStr", new ModifyReturnValueTest()::virtualIdentityOverwriteNulStr, "non-null");
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNulStr2", new ModifyReturnValueTest()::virtualIdentityOverwriteNulStr2, null);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteEmptyStr", new ModifyReturnValueTest()::virtualIdentityOverwriteEmptyStr, "");
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteClass", new ModifyReturnValueTest()::virtualIdentityOverwriteClass, int.class);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNulClass", new ModifyReturnValueTest()::virtualIdentityOverwriteNulClass, Object.class);
+        set.addUnitAssertEquals("ModifyReturnValueTest.virtualIdentityOverwriteNulClass2", new ModifyReturnValueTest()::virtualIdentityOverwriteNulClass2, null);
+
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2I", () -> ModifyReturnValueTest.mul3add2I((int) 1), (int) (((int) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2J", () -> ModifyReturnValueTest.mul3add2J((long) 1), (long) (((long) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2S", () -> ModifyReturnValueTest.mul3add2S((short) 1), (short) (((short) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2C", () -> ModifyReturnValueTest.mul3add2C((char) 1), (char) (((char) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2B", () -> ModifyReturnValueTest.mul3add2B((byte) 1), (byte) (((byte) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2F", () -> ModifyReturnValueTest.mul3add2F((float) 1), (float) (((float) 1) * 3 + 2));
+        set.addUnitAssertEquals("ModifyReturnValueTest.mul3add2D", () -> ModifyReturnValueTest.mul3add2D((double) 1), (double) (((double) 1) * 3 + 2));
+
+        LoggerFactory.getLogger(TestHarness.class).info("ModifyReturnValueTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runRedirectTest(@NotNull TestReport report) {

@@ -12,30 +12,23 @@
             <url>https://repo.spongepowered.org/maven</url>
         </repository>
         <repository>
-            <id>geolykt</id>
-            <url>https://geolykt.de/maven</url>
+            <id>stianloader-maven</id>
+            <url>https://stianloader.org/maven</url>
         </repository>
     </repositories>
 
     <dependencies>
         <dependency>
-            <groupId>org.spongepowered</groupId>
-            <artifactId>mixin</artifactId>
-            <version>0.8.5</version>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>24.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>de.geolykt.starloader</groupId>
-            <artifactId>launcher</artifactId>
-            <version>3.0.0</version>
+            <artifactId>launcher-sponge</artifactId>
+            <version>4.0.0-a20240110</version>
             <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <!-- Let's not test against our Mixin fork -->
-                    <artifactId>mixin</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

@@ -84,6 +84,19 @@ public @interface Inject {
     public boolean cancellable() default false;
 
     /**
+     * The expected amount of injection points. This behaves similar to {@link #require()}, however
+     * while {@link #require()} will cause a class file transformation failure, {@link #expect()}
+     * is a weaker form of it. Under the spongeian implementation, this attribute behaves like
+     * {@link #require()} if and only if the appropriate debug flags are activated. The micromixin transformer
+     * will meanwhile "just" unconditionally write a warning to the logger.
+     *
+     * <p>This attribute should be used to identify potentially outdated injectors.
+     *
+     * @return The expected amount of injection points
+     */
+    public int expect() default -1;
+
+    /**
      * Obtains whether and how locals are captured, or whether locals should just be printed.
      * By default, local variables are not captured, as the capture requires analysis of the method. Such analysis can be
      * performance intensive and is not suited in a performance-intensive situation such as classloading.
@@ -145,7 +158,7 @@ public @interface Inject {
     public String[] method() default {};
 
     /**
-     * The minimum amount of amount of injection points. If less injection points are found (as per {@link #at()}).
+     * The minimum amount of injection points. If less injection points are found (as per {@link #at()}).
      * an exception is thrown during transformation. The default amount of required injection points can be set
      * by mixin configuration file, but by default that is no minimum amount of required injection points.
      *

@@ -44,6 +44,8 @@ public class MixinFieldStub implements ClassMemberStub {
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }
+                } else if (annot.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
+                    throw new MixinParseException("Unimplemented MixinExtras annotation: " + annot.desc);
                 }
             }
         }

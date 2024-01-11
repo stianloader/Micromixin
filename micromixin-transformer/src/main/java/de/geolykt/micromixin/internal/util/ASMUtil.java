@@ -27,6 +27,23 @@ public class ASMUtil {
     public static final int CI_LEN = CALLBACK_INFO_NAME.length();
     public static final int CIR_LEN = CALLBACK_INFO_RETURNABLE_NAME.length();
 
+    /**
+     * Obtain the amount of arguments a method descriptor defines, irrespective of
+     * their size on the stack (so both int and long are counted as 1).
+     *
+     * @param methodDesc The method descriptor to use
+     * @return The amount of arguments
+     */
+    public static int getArgumentCount(@NotNull String methodDesc) {
+        DescString dstring = new DescString(methodDesc);
+        int count = 0;
+        while (dstring.hasNext()) {
+            dstring.nextType();
+            count++;
+        }
+        return count;
+    }
+
     @Nullable
     public static FieldNode getField(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
         for (FieldNode field : node.fields) {
@@ -114,6 +131,15 @@ public class ASMUtil {
         return null;
     }
 
+    @NotNull
+    public static AbstractInsnNode getNext(AbstractInsnNode insn) {
+        AbstractInsnNode next = insn.getNext();
+        while (next.getOpcode() == -1) {
+            next = next.getNext();
+        }
+        return next;
+    }
+
     public static int getReturnOpcode(int descReturnType) {
         switch (descReturnType) {
         case 'V': // void
@@ -136,6 +162,18 @@ public class ASMUtil {
         default:
             throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
         }
+    }
+
+    /**
+     * Obtains the descriptor type returned by a method descriptor.
+     * Throws an arbitrary exception if the descriptor is not a method descriptor.
+     *
+     * @param methodDesc The method descriptor to get the return type of.
+     * @return The returned type of the method
+     */
+    @NotNull
+    public static String getReturnType(String methodDesc) {
+        return methodDesc.substring(methodDesc.lastIndexOf(')') + 1);
     }
 
     public static int getStoreOpcode(int descReturnType) {
@@ -206,6 +244,10 @@ public class ASMUtil {
 
     public static boolean isCategory2(int descType) {
         return descType == 'J' || descType == 'D';
+    }
+
+    public static boolean isReturn(int opcode) {
+        return Opcodes.IRETURN <= opcode && opcode <= Opcodes.RETURN;
     }
 
     public static int popReturn(@NotNull String methodDesc) {

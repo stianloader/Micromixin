@@ -2,6 +2,8 @@
 
 Micromixin is a lightweight reimplementation of Spongepowered's Mixin framework.
 
+If you wish to talk about Micromixin, this project has a discord: https://discord.gg/CjnPMxsAX6
+
 ## Building
 
 When providing source code freely on the internet I usually want to provide it in a
@@ -57,6 +59,7 @@ micromixin-runtime should most likely always be used.
  - `@Shadow`
  - `@Overwrite`
  - `@Redirect`
+ - `@ModifyReturnValue` (MixinExtras)
 
 ## Notable unsupported features
 

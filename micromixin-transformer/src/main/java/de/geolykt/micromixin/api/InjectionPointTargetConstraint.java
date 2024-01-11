@@ -18,6 +18,7 @@ public interface InjectionPointTargetConstraint {
      * @param insn The instruction to check.
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
      * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
+     * @return True if valid, false otherwise
      */
     boolean isValid(@NotNull AbstractInsnNode insn, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 }

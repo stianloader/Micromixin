@@ -20,6 +20,7 @@ import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinUniqueAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualClInitMergeAnnotation;
 import de.geolykt.micromixin.internal.annotation.VirtualConstructorMergeAnnotation;
+import de.geolykt.micromixin.internal.annotation.mixinsextras.MixinExtrasModifyReturnValueAnnotation;
 
 public class MixinMethodStub implements ClassMemberStub {
 
@@ -54,6 +55,12 @@ public class MixinMethodStub implements ClassMemberStub {
                         annotations.add(MixinRedirectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
+                    }
+                } else if (annot.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
+                    if (annot.desc.equals("Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;")) {
+                        annotations.add(MixinExtrasModifyReturnValueAnnotation.parse(node, method, annot, transformer, sharedBuilder));
+                    } else {
+                        throw new MixinParseException("Unimplemented MixinExtras annotation: " + annot.desc);
                     }
                 }
             }
