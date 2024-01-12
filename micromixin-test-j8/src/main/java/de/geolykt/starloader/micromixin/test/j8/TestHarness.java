@@ -11,6 +11,8 @@ import de.geolykt.starloader.micromixin.test.j8.targets.InjectorRemapTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.LocalCaptureTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.MultiInjectTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
+import de.geolykt.starloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest.IllegalPoison;
 import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTest;
 import de.geolykt.starloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest;
@@ -250,6 +252,15 @@ public class TestHarness {
 
     public static void runMultiInjectionTests(TestReport report) {
         TestSet set = new TestSet();
+        set.addUnitExpectTransformationFailureOrAssert("de.geolykt.starloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest$IllegalPoison", () -> {
+            try {
+                IllegalPoison.getValue();
+            } catch (NoClassDefFoundError ignore) {
+            }
+
+            return InjectorStackPosioningTest.getBehaviour().equals("POPPING");
+        });
+
         set.addUnit("MultiInjectTest.injectionPointA0", MultiInjectTest::injectionPointA0);
         set.addUnit("MultiInjectTest.injectionPointA1", MultiInjectTest::injectionPointA1);
         set.addUnit("MultiInjectTest.injectionPointA2", MultiInjectTest::injectionPointA2);

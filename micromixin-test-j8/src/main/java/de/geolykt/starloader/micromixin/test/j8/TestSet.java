@@ -30,6 +30,21 @@ public class TestSet {
         }
     }
 
+    private static boolean isVerifyError(Throwable t) {
+        if (t == null) {
+            return false;
+        }
+        if (t instanceof VerifyError) {
+            return true;
+        }
+        for (Throwable s : t.getSuppressed()) {
+            if (TestSet.isVerifyError(s)) {
+                return true;
+            }
+        }
+        return TestSet.isVerifyError(t.getCause());
+    }
+
     private final List<TestUnit> units = new ArrayList<>();
 
     public void executeAll(TestReport report, Logger logger) {
@@ -70,6 +85,36 @@ public class TestSet {
                 return;
             }
             throw new AssertionError("Runnable " + unit.toString() + " did not throw");
+        }));
+    }
+
+    public void addUnitExpectTransformationFailureOrAssert(String name, BooleanSupplier test) {
+        this.units.add(new TestUnit(name, () -> {
+            PrintStream originOut = System.out;
+            try {
+                System.setOut(new PrintStream(new OutputStream() {
+                    @Override
+                    public void write(int b) throws IOException {
+                        // NOP
+                    }
+                }));
+                getClass().getClassLoader().loadClass(name);
+            } catch (ClassNotFoundException cnfe) {
+                if (TestSet.isVerifyError(cnfe)) {
+                    throw new IllegalStateException("Class " + name + " loaded wrongly", cnfe);
+                } else if (!test.getAsBoolean()) {
+                    IllegalStateException ex = new IllegalStateException("Class " + name + " failed to pass test (after generic CL failure)");
+                    ex.addSuppressed(cnfe);
+                    throw ex;
+                }
+                return;
+            } finally {
+                System.setOut(originOut);
+            }
+
+            if (!test.getAsBoolean()) {
+                throw new IllegalStateException("Class " + name + " failed to pass test (without CL failure)");
+            }
         }));
     }
 

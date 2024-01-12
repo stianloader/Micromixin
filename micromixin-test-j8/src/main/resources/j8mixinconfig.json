@@ -33,6 +33,8 @@
     "mixinextra.ModifyReturnValueVisbilityMixins$VisibilityPrivate",
     "mixinextra.ModifyReturnValueVisbilityMixins$VisibilityPackageProtected",
     "mixinextra.ModifyReturnValueVisbilityMixins$VisibilityProtected",
+    "invalid.InjectorStackPosioningMixins$IllegalPoison",
+    "invalid.InjectorStackPosioningMixins",
     "invalid.InvalidOverwriteAliasTestMixins",
     "invalid.InvalidOverwriteAccessReductionMixins",
     "invalid.InvalidPrintAttemptMixinsA",
