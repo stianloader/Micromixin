@@ -1,5 +1,7 @@
 package de.geolykt.starloader.micromixin.test.j8.codegen;
 
+import java.util.Objects;
+
 class CodegenCommon {
 
     public static final String[][] PRIMITIVES = {
@@ -11,6 +13,12 @@ class CodegenCommon {
             { "boolean", "Z" },
             { "float", "F" },
             { "double", "D" }
+    };
+
+    public static final String[][] IDENTITY_TABLE_MINIMAL = {
+            { "int",    "I", "0",    "-957256832",   "0",                  "-957256832" },
+            { "double", "D", "0D",   "2.5D",         Objects.toString(0D), Objects.toString(2.5D) },
+            { "Object", "L", "null", "Boolean.TRUE", "null",               "true" }
     };
 
     public static final String[][] IDENTITY_TABLE = {

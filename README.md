@@ -12,6 +12,8 @@ it gets a bit more complicated but still not too much of an issue), however in o
 support Java 6 (this functionality was requested by someone interested in this project),
 <b>one needs to compile with Java 11 at most. Building with newer JDKs won't work.</b>
 
+Otherwise, this project can be built like any other project via `./gradlew build`.
+
 ## Why reimplement?
 
 The astute among you may be painfully aware that reimplementing any large framework is
@@ -53,12 +55,24 @@ micromixin-annotations should strictly be used for compilation only,
 micromixin-transformer should strictly be used for runtime transformation only,
 micromixin-runtime should most likely always be used.
 
+## Maven
+
+This project is available at https://stianloader.org/maven/ with following coordinates:
+ - groupid: de.geolykt.starloader
+ - artifactid: micromixin-transformer / micromixin-runtime / micromixin-annotations
+
+ Available versions are listed under
+ https://stianloader.org/maven/de/geolykt/starloader/micromixin-runtime/
+
+In the future, "stable" releases may be offered under OSSRH (maven central).
+
 ## Supported features
 
- - `@Inject`
- - `@Shadow`
- - `@Overwrite`
- - `@Redirect`
+ - `@Inject` (Sponge)
+ - `@Shadow` (Sponge)
+ - `@Overwrite` (Sponge)
+ - `@Redirect` (Sponge)
+ - `@ModifyArg` (Sponge)
  - `@ModifyReturnValue` (MixinExtras)
 
 ## Notable unsupported features

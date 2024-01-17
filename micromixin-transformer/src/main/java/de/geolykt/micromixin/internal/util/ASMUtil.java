@@ -1,8 +1,15 @@
 package de.geolykt.micromixin.internal.util;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.TypeReference;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -10,6 +17,7 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
@@ -26,6 +34,8 @@ public class ASMUtil {
     public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_NAME + ";";
     public static final int CI_LEN = CALLBACK_INFO_NAME.length();
     public static final int CIR_LEN = CALLBACK_INFO_RETURNABLE_NAME.length();
+    public static final String ROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Roll;";
+    public static final String UNROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Unroll;";
 
     /**
      * Obtain the amount of arguments a method descriptor defines, irrespective of
@@ -176,6 +186,45 @@ public class ASMUtil {
         return methodDesc.substring(methodDesc.lastIndexOf(')') + 1);
     }
 
+    public static int getShallowStashConfiguration(List<String> headTypes, int uniformDepth) {
+        // 1 | 1, 1 // 1 | 2 // 2, 1 | 1, 1 // 2, 1 | 2
+        // DUP2_X1, POP2 <-> DUP_X2, POP
+        // 1, 1 | 1, 1 // 2 | 2 // 1, 1 | 2 // 2 | 1, 1
+        // DUP2_X2, POP2 <-> DUP2_X2, POP2
+        // 1, 1 | 1 // 2, | 1 // 1, 1 | 1, 2 // 2 | 1, 2
+        // DUP_X2, POP <-> DUP2_X1, POP2
+        int foregroundBeginIndex = headTypes.size() - uniformDepth;
+        if (foregroundBeginIndex == 0) {
+            // No background operands, only compute the foreground operand amount.
+            if (ASMUtil.isCategory2(headTypes.get(0).codePointAt(0))
+                    || (uniformDepth >= 2 && !ASMUtil.isCategory2(headTypes.get(1).codePointAt(0)))) {
+                return 2;
+            } else {
+                return 1;
+            }
+        }
+
+        int backgroundStack;
+        int foregroundStack;
+
+        if (ASMUtil.isCategory2(headTypes.get(foregroundBeginIndex - 1).codePointAt(0))
+                || (foregroundBeginIndex != 1
+                && !ASMUtil.isCategory2(headTypes.get(foregroundBeginIndex - 2).codePointAt(0)))) {
+            backgroundStack = 2;
+        } else {
+            backgroundStack = 1;
+        }
+
+        if (ASMUtil.isCategory2(headTypes.get(foregroundBeginIndex).codePointAt(0))
+                || (uniformDepth >= 2 && !ASMUtil.isCategory2(headTypes.get(foregroundBeginIndex + 1).codePointAt(0)))) {
+            foregroundStack = 2;
+        } else {
+            foregroundStack = 1;
+        }
+
+        return (backgroundStack << 2) | foregroundStack;
+    }
+
     public static int getStoreOpcode(int descReturnType) {
         switch (descReturnType) {
         case '[': // array
@@ -246,8 +295,163 @@ public class ASMUtil {
         return descType == 'J' || descType == 'D';
     }
 
+    public static boolean isCategory2VarInsn(int opcode) {
+        return opcode == Opcodes.DSTORE
+                || opcode == Opcodes.DLOAD
+                || opcode == Opcodes.LLOAD
+                || opcode == Opcodes.LSTORE;
+    }
+
     public static boolean isReturn(int opcode) {
         return Opcodes.IRETURN <= opcode && opcode <= Opcodes.RETURN;
+    }
+
+    /**
+     * Temporarily pop (or hide them deep in the stack) a given amount of operands.
+     * This method will attempt to use as few additional local variables as possible,
+     * depending on the implementation this may be achieved via annotations or even
+     * stack analysis. The method's signature is made in a way to easily change the implementation
+     * as needed, so arguments that appear superfluous on the surface ought not be
+     * discarded.
+     *
+     * @param method The method where the instructions belong to. For locals analysis purposes only.
+     * @param beginMoveInsn The instruction at which the stack has it's original contents.
+     * For locals analysis purposes only.
+     * @param endRollbackInsn The instruction at which the stack should return to it's original
+     * constellation. No jump instruction which moves outside beginMoveInsn and this instruction
+     * may be between the two instructions. For locals analysis purposes only.
+     * @param headTypes The type descriptors of the types on the top of the stack.
+     * There might be more types a bit more deeply hidden but they are not of relevance.
+     * @param uniformDepth The amount of operands to pop - category 2 operands count as
+     * a single value. May not be larger than the size of headTypes .
+     * @param moveOut Instructions which "store" the operands of the rollback operation are appended to
+     * this insn list.
+     * @param rollbackOut Instructions which "load" the operands of the rollback operation are <b>prepended</b>
+     * (as per {@link InsnList#insert(AbstractInsnNode)}) to this insn list.
+     */
+    public static void moveStackHead(MethodNode method, @NotNull AbstractInsnNode beginMoveInsn,
+            @NotNull AbstractInsnNode endRollbackInsn, @NotNull List<String> headTypes, int uniformDepth,
+            @NotNull InsnList moveOut, @NotNull InsnList rollbackOut) {
+        Set<Integer> reusableLocals = new LinkedHashSet<Integer>();
+
+        int highestLVTIndex = 0;
+        {
+            Set<Integer> unusableLocals = new LinkedHashSet<Integer>();
+            AbstractInsnNode insnNode = method.instructions.getFirst();
+            while (insnNode != null) {
+                if (insnNode.getType() == AbstractInsnNode.VAR_INSN) {
+                    int local = ((VarInsnNode) insnNode).var;
+                    boolean cat2 = ASMUtil.isCategory2VarInsn(insnNode.getOpcode());
+                    highestLVTIndex = Math.max(highestLVTIndex, cat2 ? local + 1 : local);
+                    List<TypeAnnotationNode> annots = insnNode.invisibleTypeAnnotations;
+                    if (annots != null) {
+                        boolean annotated = false;
+                        for (TypeAnnotationNode annot : annots) {
+                            if (annot.desc.equals(ASMUtil.ROLL_ANNOT_DESC)
+                                    || annot.desc.equals(ASMUtil.UNROLL_ANNOT_DESC)) {
+                                annotated = true;
+                                if (cat2) {
+                                    reusableLocals.add(local);
+                                    reusableLocals.add(local + 1);
+                                } else {
+                                    reusableLocals.add(local);
+                                }
+                                break;
+                            }
+                        }
+                        if (!annotated) {
+                            if (cat2) {
+                                unusableLocals.add(local);
+                                unusableLocals.add(local + 1);
+                            } else {
+                                unusableLocals.add(local);
+                            }
+                        }
+                    }
+                }
+                insnNode = insnNode.getNext();
+            }
+
+            // Other transformers could still mess up our locals reuse policies, so we better not risk anything and declare
+            // them as void.
+            reusableLocals.removeAll(unusableLocals);
+        }
+
+        // TODO Nested roll/unroll not yet supported. As of now this method assumes that this is never the case
+
+        int shallowStashConfig = ASMUtil.getShallowStashConfiguration(headTypes, uniformDepth);
+        int shallowStashedElements = shallowStashConfig & 0x03 /* = 0b11 */;
+        boolean cat2StashedElem = shallowStashedElements == 2 && ASMUtil.isCategory2(headTypes.get(headTypes.size() - uniformDepth).codePointAt(0));
+        int deepStashedElementIndex = headTypes.size() - uniformDepth + (cat2StashedElem ? 1 : shallowStashedElements);
+
+        for (int i = headTypes.size() - 1; i >= deepStashedElementIndex; i--) {
+            int type = headTypes.get(i).codePointAt(0);
+            boolean cat2 = ASMUtil.isCategory2(type);
+            int localIndex = -1;
+            Iterator<Integer> it = reusableLocals.iterator();
+            while (it.hasNext()) {
+                int l0 = it.next();
+                if (cat2 && !reusableLocals.contains(l0 + 1)) {
+                    continue;
+                }
+                localIndex = l0;
+                reusableLocals.remove(l0);
+                if (cat2) {
+                    reusableLocals.remove(l0 + 1);
+                }
+                break;
+            }
+
+            if (localIndex == -1) {
+                localIndex = ++highestLVTIndex;
+                if (cat2) {
+                    highestLVTIndex++;
+                }
+            }
+
+            VarInsnNode storeInsn = new VarInsnNode(ASMUtil.getStoreOpcode(type), localIndex);
+            VarInsnNode loadInsn = new VarInsnNode(ASMUtil.getLoadOpcode(type), localIndex);
+            loadInsn.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
+            storeInsn.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
+            // the type reference is not really right and rather made-up, but at least noone in the eco-system should complain about it
+            loadInsn.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT << 24, null, ROLL_ANNOT_DESC));
+            storeInsn.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT << 24, null, UNROLL_ANNOT_DESC));
+            rollbackOut.insert(loadInsn);
+            moveOut.add(storeInsn);
+        }
+
+        switch (shallowStashConfig) {
+        // Cases 1 & 2 happen if no background exists. Nothing needs to happen in these cases
+        case 1 /* = 0b00_01 */:
+        case 2 /* = 0b00_10 */:
+            break;
+        case 5 /* = 0b01_01 */:
+            rollbackOut.insert(new InsnNode(Opcodes.POP));
+            rollbackOut.insert(new InsnNode(Opcodes.DUP_X1));
+            moveOut.add(new InsnNode(Opcodes.DUP_X1));
+            moveOut.add(new InsnNode(Opcodes.POP));
+            break;
+        case 6 /* = 0b01_10 */:
+            rollbackOut.insert(new InsnNode(Opcodes.POP));
+            rollbackOut.insert(new InsnNode(Opcodes.DUP_X2));
+            moveOut.add(new InsnNode(Opcodes.DUP2_X1));
+            moveOut.add(new InsnNode(Opcodes.POP2));
+            break;
+        case 9 /* = 0b10_01 */:
+            rollbackOut.insert(new InsnNode(Opcodes.POP2));
+            rollbackOut.insert(new InsnNode(Opcodes.DUP2_X1));
+            moveOut.add(new InsnNode(Opcodes.DUP_X2));
+            moveOut.add(new InsnNode(Opcodes.POP));
+            break;
+        case 10 /* = 0b10_10 */:
+            rollbackOut.insert(new InsnNode(Opcodes.POP2));
+            rollbackOut.insert(new InsnNode(Opcodes.DUP2_X2));
+            moveOut.add(new InsnNode(Opcodes.DUP2_X2));
+            moveOut.add(new InsnNode(Opcodes.POP2));
+            break;
+        default:
+            throw new IllegalStateException("Unknown shallow stash config value: " + shallowStashConfig);
+        }
     }
 
     public static int popReturn(@NotNull String methodDesc) {
@@ -345,5 +549,29 @@ public class ASMUtil {
             }
         }
         target.instructions.insert(previousInsn, inject);
+    }
+
+    public static int toOperandDepth(List<String> headTypes, int uniformDepth) {
+        int operandDepth = 0;
+        for (int i = 0; i < uniformDepth; i++) {
+            if (ASMUtil.isCategory2(headTypes.get(headTypes.size() - i).codePointAt(0))) {
+                operandDepth += 2;
+            } else {
+                operandDepth++;
+            }
+        }
+        return operandDepth;
+    }
+
+    public static int toUniformDepth(List<String> headTypes, int operandDepth) {
+        int uniformDepth = 0;
+        for (int popDepth = 0, i = headTypes.size() - 1; popDepth < operandDepth; i--, uniformDepth++) {
+            if (ASMUtil.isCategory2(headTypes.get(i).codePointAt(0))) {
+                popDepth += 2;
+            } else {
+                popDepth++;
+            }
+        }
+        return uniformDepth;
     }
 }

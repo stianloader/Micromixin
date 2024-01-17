@@ -14,6 +14,7 @@ import de.geolykt.micromixin.MixinTransformer;
 import de.geolykt.micromixin.SimpleRemapper;
 import de.geolykt.micromixin.internal.annotation.MixinAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinInjectAnnotation;
+import de.geolykt.micromixin.internal.annotation.MixinModifyArgAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinOverwriteAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinRedirectAnnotation;
 import de.geolykt.micromixin.internal.annotation.MixinShadowAnnotation;
@@ -53,6 +54,8 @@ public class MixinMethodStub implements ClassMemberStub {
                         annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Redirect;")) {
                         annotations.add(MixinRedirectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
+                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/ModifyArg;")) {
+                        annotations.add(MixinModifyArgAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }
