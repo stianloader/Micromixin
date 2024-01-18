@@ -58,11 +58,11 @@ micromixin-runtime should most likely always be used.
 ## Maven
 
 This project is available at https://stianloader.org/maven/ with following coordinates:
- - groupid: de.geolykt.starloader
+ - groupid: org.stianloader
  - artifactid: micromixin-transformer / micromixin-runtime / micromixin-annotations
 
  Available versions are listed under
- https://stianloader.org/maven/de/geolykt/starloader/micromixin-runtime/
+ https://stianloader.org/maven/org/stianloader/micromixin-runtime/
 
 In the future, "stable" releases may be offered under OSSRH (maven central).
 

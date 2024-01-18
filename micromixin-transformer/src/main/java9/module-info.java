@@ -1,4 +1,4 @@
-module de.geolykt.starloader.micromixin.transform {
+module org.stianloader.micromixin.transform {
     requires transitive org.objectweb.asm;
     requires org.objectweb.asm.commons;
     requires transitive org.objectweb.asm.tree;
@@ -6,7 +6,7 @@ module de.geolykt.starloader.micromixin.transform {
     requires transitive org.json;
     requires org.jetbrains.annotations;
 
-    exports de.geolykt.micromixin;
-    exports de.geolykt.micromixin.api;
-    exports de.geolykt.micromixin.supertypes;
+    exports org.stianloader.micromixin;
+    exports org.stianloader.micromixin.api;
+    exports org.stianloader.micromixin.supertypes;
 }

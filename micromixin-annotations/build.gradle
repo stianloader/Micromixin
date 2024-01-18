@@ -4,9 +4,9 @@ plugins {
     id 'eclipse'
 }
 
-group = 'de.geolykt.starloader'
+group = 'org.stianloader'
 def archivesBaseName = 'micromixin-annotations'
-version = '0.1.0'
+version = '0.2.0'
 
 repositories {
     mavenLocal()

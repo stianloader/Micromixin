@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "de.geolykt.starloader.micromixin.test.j8.mixin",
+  "package": "org.stianloader.micromixin.test.j8.mixin",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
