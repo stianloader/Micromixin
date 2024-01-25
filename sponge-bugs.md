@@ -2,7 +2,7 @@ This is a list of issues that are considered as bugs in the spongeian mixin
 implementation. As of now they are forcefully reproduced in the micromixin
 implementation, but in the future that should change.
 
-henceforth, this list exists to facilitate migration to more acceptable standard
+Henceforth, this list exists to facilitate migration to more acceptable standard
 behaviour.
 
 WARNING: Micromixin has a LOT more bugs than sponge. It needs a lot more

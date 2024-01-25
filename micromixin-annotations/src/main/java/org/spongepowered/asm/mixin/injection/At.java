@@ -14,6 +14,81 @@ import java.lang.annotation.RetentionPolicy;
 public @interface At {
 
     /**
+     * A list of arguments that can be consumed by the injection point provider.
+     * These arguments are used if {@link #target()} and {@link #desc()} either do not apply
+     * or are not descriptive enough.
+     *
+     * <p>The probably most common use of this attribute is for use in the CONSTANT
+     * injection point. Examples of the syntax of this injection point are follows:
+     * <ul>
+     *  <li><code>nullValue=true</code></li>
+     *  <li><code>intValue=8</code></li>
+     *  <li><code>stringValue=name</code></li>
+     * </ul>
+     * Please be aware that the above examples may be a bit erroneous, but should still work for
+     * micromixin. However, it has not yet been investigated as to why that is the case.
+     *
+     * <p>The exact syntax of the arguments differ from injection point provider to injection
+     * point provider. The provider is defined via {@link #value()}. Consult the manual
+     * of your injection point for further details.
+     *
+     * @return The arguments to pass to the injection point provider for further discrimination.
+     */
+    public String[] args() default { };
+
+    /**
+     * The targeted signature. Usage of {@link Desc} may result in better compile-time error
+     * and sanity checking, however depending on your tooling the difference between {@link #desc()} and
+     * {@link #target()} may be indistinguishable in this regard.
+     *
+     * <p><b>Warning: Fabric's tiny-remapper does not support remapping this annotation. Proceed with caution.
+     * </b> For more information, <a href="https://github.com/FabricMC/tiny-remapper/pull/109">see the PR that
+     * introduced Desc remapping in tiny-remapper</a>.
+     *
+     * @return The constraint to use as a {@link Desc} annotation.
+     * @see Inject#target()
+     * @see At#target()
+     */
+    public Desc desc() default @Desc("");
+
+    /**
+     * <p>The target attribute is a discriminator with whom the chosen instructions can be
+     * constrained with more specific accuracy if the injection point isn't descriptive enough
+     * as-is. 
+     * 
+     * <p>This attribute should match to a method for <code>INVOKE</code>, <code>INVOKE_ASSIGN</code>
+     * and <code>INVOKE_STRING</code>. It should match to a field for <code>FIELD</code> and match to
+     * a class/descriptor (can be an array) for <code>NEW</code>.
+     *
+     * <p>The following are all valid formats of explicit target selectors:
+     *
+     * <ul>
+     *  <li><code>targetMethod</code></li>
+     *  <li><code>targetMethod(Lcom/example/Argument;)V</code></li>
+     *  <li><code>(Lcom/example/Argument;)V</code></li>
+     *  <li><code>targetMethod(I)Lcom/example/ReturnValue;</code></li>
+     *  <li><code>targetMethod()Z</code></li>
+     *  <li><code>Lcom/example/Target;targetMethod(Lcom/example/Argument;)V</code></li>
+     *  <li><code>Lcom/example/Target;(Lcom/example/Argument;)V</code></li>
+     * </ul>
+     *
+     * <p>Warning: Depending on your platform and tooling, not specifying a fully qualified reference
+     * may cause errors. On SLL there will be no issues at runtime (with either micromixin or the spongeian
+     * mixin implementation), however other platforms and tooling may not be so considerate.
+     * Especially remappers (which are recommended if not necessary in obfuscated environments) may struggle
+     * with incompletely qualified targets.
+     *
+     * <p>Hint: Usage of {@link #desc()} should be preferred over {@link #target()} if possible.
+     * However, beware that doing so may not be viable depending on your platform. Please
+     * heed the advice provided in the documentation of {@link #desc()} and the documentation
+     * of your platform and other tooling.
+     *
+     * @return A target selector to use as a constraint.
+     * @see Inject#method()
+     */
+    public String target() default "";
+
+    /**
      * Defines the type of instructions that should be matched.
      * The following values are all valid types:
      * <ul>
