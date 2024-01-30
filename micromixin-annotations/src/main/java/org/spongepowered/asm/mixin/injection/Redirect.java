@@ -8,69 +8,49 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * The {@link ModifyArg} annotation allows to apply a function on a single
- * argument used to call a method. More specifically, the mixin implementation
- * will call the argument modifier handler with the original argument value.
- * The handler will then return the modified value with whom the targeted method
- * is called with.
+ * The {@link Redirect} annotation redirects a method call to the mixin implementation.
+ * The method on whom the annotation is applied is referenced within the micromixin documentation as the redirect handler.
  *
- * <p>A single {@link ModifyArg} handler can only modify a single argument.
- * If multiple arguments are to be modified, multiple handlers are required.
- * Alternatively, different (as of yet unimplemented) annotations can be used,
- * for example ModifyArgs.
+ * <h2>Handler signature and arguments</h2>
+ * The redirect handler must consume all arguments of the redirected method in the order they appear within the
+ * redirected method. In case the redirected method is not static, the redirect handler must also consume the instance type
+ * of the owner of the redirected method at the first position. If the redirected method returns a value, 
  *
- * <h3>Local variable use</h3>
+ * <p>The redirect handler must be static regardless of the static-ness of the redirected method. As a logical consequence
+ * the redirect handler must also be private.
+ * These steps are required as {@link Redirect} does not modify the stack and replaces a single instruction
+ * with another single instruction.
  *
- * <p>The micromxin-transformer implementation tries to avoid usage of local variables
- * when using ModifyArg. However this is not always possible. For the target descriptor
- * (ICDLjava/lang/Object;I)V and an index of 2 the transformer will produce following bytecode:
+  <p>Locals and argument capture is not supported when using {@link Redirect}.
  *
- * <blockquote><code>
- * ISTORE index0<br>
- * ASTORE index1<br>
- * DUP2_X2<br>
- * POP2<br>
- * ALOAD 0<br>
- * SWAP<br>
- * invokevirtual Clazz.handler(C)C<br>
- * DUP2_X2<br>
- * POP2<br>
- * ALOAD index1<br>
- * ILOAD index0<br>
- * invokeX Clazz.original(ICDLjava/lang/Object;I)V<br>
- * </code></blockquote>
+ * <h2>Field redirects</h2>
+ * Aside from redirecting methods which is the main use of this annotation, {@link Redirect} is also capable of redirecting
+ * read as well as write references to fields - static or not. However, this is not yet supported within micromixin at
+ * the point of writing (28th of January 2024). Regardless, the signature of the handler would behave much as if the GETFIELD,
+ * GETSTATIC, PUTFIELD or PUTSTATIC were replaced with appropriate getter or setter methods. The integrity of the
+ * operand stack must be preserved.
  *
- * <p>While micromixin-transformer uses opcodes such as DUP or POP aggressively, the spongeian implementation
- * will use xSTORE/xLOAD everywhere.
+ * <h2>Array access redirects</h2>
+ * Furthermore {@link Redirect} is capable of redirecting array accesses via the xALOAD and xASTORE opcode families.
+ * Like field access redirects, this is also not yet implemented in micromixin at the point of writing (28th of January 2024).
  *
- * <h3>Signature and visibility modifiers</h3>
- *
- * <p>The {@link ModifyArg} handler (also known as the "argument modifier") MUST
- * declare the same return type (subtypes are not supported) and argument
- * type (supertypes are not supported). If the targeted method is static, the handler MUST be static and private.
- * For non-static targeted methods the handler MUST NOT be static, but otherwise the accessibility
- * modifiers are not of relevance.
- 
-  <p>Locals and argument capture is not supported when using {@link ModifyArg}.
+ * <p>When redirecting read access to an array of type <code>{type}</code>, the signature of the redirect handler is as
+ * follows: <code>private static {type} handlerName({type}[] array, int index)</code>. Likewise write access would have
+ * following signature: <code>private static void handlerName({type}[] array, int index, {type} element)</code>.
  */
 @Documented
 @Retention(CLASS)
 @Target(METHOD)
-public @interface ModifyArg {
+public @interface Redirect {
 
     /**
      * The injection point where the injection should occur.
-     * If none of the injection points apply no exception is thrown by default (this default can be changed
-     * through {@link #require()}), however transformation does not occur (Micromixin still copies the handler into
-     * the target class anyways though).
+     * If the injection point does not match anything no exception is thrown by default (this default can be changed
+     * through {@link #require()}), however transformation does still partially occur (Micromixin still copies the handler
+     * into the target class anyways).
      *
-     * <p>Note that contrary to other annotations provided by Mixins or MixinExtra, {@link ModifyArg} can only
-     * target a single {@link At}, however the spongeian mixin implementation as well as micromixin-transformer
-     * allows this single {@link At} to match multiple instructions (as would be the case when using RETURN).
-     *
-     * <p>The injection points of the {@link ModifyArg} MUST point to MethodInsnNodes. The current micromixin-transformer
-     * implementation as such forbids to target INVOKEDYNAMIC instructions with this annotation. Otherwise
-     * INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE and INVOKESTATIC are all valid targets.
+     * <p>Unlike {@link Inject}, {@link Redirect}'s {@link #at()} is able to match multiple instructions with a single
+     * {@link At}.
      *
      * @return The injection point.
      */
@@ -88,19 +68,6 @@ public @interface ModifyArg {
      * @return The expected amount of injection points
      */
     public int expect() default -1;
-
-    /**
-     * The ordinal of the argument to capture for the argument modifier handler.
-     *
-     * <p>The index does not care about the computational type category of the arguments.
-     * That is both doubles and ints are both treated as having the size of 1.
-     *
-     * <p>A value of -1 means that the ordinal is automatically evaluated based on the argument type.
-     * Should multiple arguments match, an error is thrown.
-     *
-     * @return The ordinal of the argument to capture, or -1 to automatically choose the ordinal
-     */
-    public int index() default -1;
 
     /**
      * The targeted method selectors. Only one method is picked from the list of provided methods.

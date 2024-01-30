@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  * Class that copies functionality from java.util.Objects
  * that is not present on java 6.
  *
- * <p>Also includes other unavailable methods that didn't fix elsewhere.
+ * <p>Also includes other unavailable methods that didn't fit elsewhere.
  */
 public final class Objects {
 

@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -148,4 +149,11 @@ public @interface ModifyReturnValue {
      * @return The minimum amount of injection points
      */
     public int require() default -1;
+
+    /**
+     * The available slices used for bisecting the available injection points declared by {@link #at()}.
+     *
+     * @return An array of declared slices.
+     */
+    public Slice[] slice() default {};
 }

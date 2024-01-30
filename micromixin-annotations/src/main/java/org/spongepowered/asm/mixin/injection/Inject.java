@@ -60,8 +60,12 @@ public @interface Inject {
     /**
      * The injection points where the injection should occur.
      * If none of the injection points apply no exception is thrown by default (this default can be changed
-     * through {@link #require()}), however transformation does not occur (Micromixin still copies the handler into
-     * the target class anyways).
+     * through {@link #require()}), however transformation does still partially occur (Micromixin still copies the handler
+     * into the target class anyways).
+     *
+     * <p>Unlike many other annotations such as {@link Redirect} or {@link ModifyArg}, each {@link At} annotation may at
+     * most represent a single instruction - that is if multiple instructions were to match the requirements set by the
+     * annotation, only the first matching instruction will be used and the others are discarded.
      *
      * @return The injection points.
      */
@@ -165,6 +169,13 @@ public @interface Inject {
      * @return The minimum amount of injection points
      */
     public int require() default -1;
+
+    /**
+     * The available slices used for bisecting the available injection points declared by {@link #at()}.
+     *
+     * @return An array of declared slices.
+     */
+    public Slice[] slice() default {};
 
     /**
      * The targeted methods. Only one method is picked from the list of provided methods.

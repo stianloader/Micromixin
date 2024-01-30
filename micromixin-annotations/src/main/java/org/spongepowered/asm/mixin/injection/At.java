@@ -52,6 +52,23 @@ public @interface At {
     public Desc desc() default @Desc("");
 
     /**
+     * The id of the {@link Slice} that should be passed to the injection point to narrow down the amount of
+     * resulting matched instructions. This should be the preferred way of selecting one specific instruction
+     * from a pool of otherwise similar instructions as this would be the least brittle option - provided the
+     * slices are not used carelessly.
+     *
+     * <p>Note that micromixin-transformer as well as the accompanying documentation only partly implements
+     * {@link Slice#id()} as well as {@link At#slice()}; significant derivations are to be expected between
+     * micromixin-transformer's behaviour (as well as the documented behaviour) and the spongeian transformer
+     * behaviour (as well as it's documentation). As such, usage of these attributes ought to be avoided in
+     * environments where usage of micromixin-transformer is expected and the spongeian documentation should be
+     * consulted before making use of this attribute.
+     *
+     * @return The id of the {@link Slice} to use, as per {@link Slice#id()}.
+     */
+    public String slice() default "";
+
+    /**
      * <p>The target attribute is a discriminator with whom the chosen instructions can be
      * constrained with more specific accuracy if the injection point isn't descriptive enough
      * as-is. 

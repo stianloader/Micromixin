@@ -77,7 +77,7 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
 
 ## Notable unsupported features
 
-Note that we are steadily working towards adding new features and to stablish throughout
+Note that we are steadily working towards adding new features and to establish throughout
 feature compatibility with the spongeian mixin implementation.
 
  - `@Coerce`

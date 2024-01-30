@@ -13,6 +13,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.SimpleRemapper;
 import org.stianloader.micromixin.api.InjectionPointSelector;
 import org.stianloader.micromixin.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.internal.MixinParseException;
 
@@ -26,23 +27,33 @@ public class HeadInjectionPointSelector extends InjectionPointSelector implement
     }
 
     @Override
-    @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+    @Nullable
+    public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
+            @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
+            @NotNull StringBuilder sharedBuilder) {
+        for (AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder); insn != null; insn = insn.getNext()) {
             if (insn.getOpcode() != -1) {
                 LabelNode temp = new LabelNode();
                 method.instructions.insertBefore(temp, insn);
-                return Collections.singletonList(temp);
+                return temp;
             } else if (insn instanceof LabelNode) {
                 @SuppressWarnings("null")
                 LabelNode temp = (LabelNode) insn; // I don't quite understand why that hack is necessary, but whatever floats your boat...
-                return Collections.singletonList(temp);
+                return temp;
             }
         }
         // There are no instructions in the list
         LabelNode temp = new LabelNode();
         method.instructions.insert(temp);
-        return Collections.singletonList(temp);
+        return temp;
+    }
+
+    @Override
+    @NotNull
+    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
+            @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
+            @NotNull StringBuilder sharedBuilder) {
+        return Collections.singletonList(this.getFirst(method, from, to, remapper, sharedBuilder));
     }
 
     @Override

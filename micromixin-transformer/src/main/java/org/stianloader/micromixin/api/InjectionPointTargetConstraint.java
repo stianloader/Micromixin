@@ -6,8 +6,8 @@ import org.stianloader.micromixin.SimpleRemapper;
 
 /**
  * A constraint that is applied on every injection point before it can be considered a valid injection point.
- * Corresponds to the @At(target = [...]) or @At(desc = [...]) values. As such, this constraint is blind to
- * the ordinal position of the injection point.
+ * Corresponds to the <code>@At(target = [...])</code> or <code>@At(desc = [...])</code> values.
+ * As such, this constraint is blind to the ordinal position of the injection point.
  */
 public interface InjectionPointTargetConstraint {
 

@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
+import org.stianloader.micromixin.test.j8.mixin.invalid.InvalidDuplicateSliceTestMixins;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -11,8 +12,11 @@ import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyArgTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
+import org.stianloader.micromixin.test.j8.targets.SliceTest;
+import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest.IllegalPoison;
+import org.stianloader.micromixin.test.j8.targets.invalid.InvalidDuplicateSliceTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest;
@@ -34,7 +38,38 @@ public class TestHarness {
         runModifyReturnValuesTest2(report);
         runModifyReturnValuesTest(report);
         runModifyArgTest(report);
+        runSliceTest(report);
         return report;
+    }
+
+    public static void runSliceTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnit("SliceTest.sliceTest0Inject", SliceTest::sliceTest0Inject);
+        set.addUnit("SliceTest.sliceTest0ModifyArg", SliceTest::sliceTest0ModifyArg);
+        set.addUnit("SliceTest.sliceTest0Redirect", SliceTest::sliceTest0Redirect);
+        set.addUnit("SliceTest.sliceTest1ModifyArg", SliceTest::sliceTest1ModifyArg);
+        set.addUnit("SliceTest.sliceTest1Redirect", SliceTest::sliceTest1Redirect);
+        set.addUnitAssertEquals("SliceTest.sliceTest1Redirect{1}", () -> SliceTest.sliceTest2Inject(-1), -1);
+        set.addUnitAssertEquals("SliceTest.sliceTest1Redirect{2}", () -> SliceTest.sliceTest2Inject(6), 30);
+        set.addUnitAssertEquals("SliceTest.sliceTest1Redirect{3}", () -> SliceTest.sliceTest2Inject(4), 3);
+        set.addUnitAssertEquals("SliceTest.sliceTest2ModifyReturnValue{1}", () -> SliceTest.sliceTest2ModifyReturnValue(-1), -1);
+        set.addUnitAssertEquals("SliceTest.sliceTest2ModifyReturnValue{2}", () -> SliceTest.sliceTest2ModifyReturnValue(6), 30);
+        set.addUnitAssertEquals("SliceTest.sliceTest2ModifyReturnValue{3}", () -> SliceTest.sliceTest2ModifyReturnValue(4), 3);
+        set.addUnitAssertEquals("SliceTest.sliceTest3ModifyReturnValue{1}", () -> SliceTest.sliceTest3ModifyReturnValue(-1), -1);
+        set.addUnitAssertEquals("SliceTest.sliceTest3ModifyReturnValue{2}", () -> SliceTest.sliceTest3ModifyReturnValue(6), 30);
+        set.addUnitAssertEquals("SliceTest.sliceTest3ModifyReturnValue{3}", () -> SliceTest.sliceTest3ModifyReturnValue(4), 6);
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.invalid.InvalidDuplicateSliceTestMixins");
+        set.addUnit("SliceTest.sliceTest4InjectA", () -> SliceTest.sliceTest4InjectA(new MutableInt(2)));
+        set.addUnitAssertEquals("SliceTest.sliceTest4InjectB", () -> SliceTest.sliceTest4InjectB().intValue(), 22);
+        set.addUnit("SliceTest.sliceTest4InjectC", SliceTest::sliceTest4InjectC);
+        set.addUnitAssertEquals("SliceTest.sliceTest4InjectD{1}", () -> SliceTest.sliceTest4InjectD(new MutableInt(0)).intValue(), 9);
+        set.addUnitAssertEquals("SliceTest.sliceTest4InjectD{2}", () -> SliceTest.sliceTest4InjectD(new MutableInt(9)).intValue(), 22);
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.SliceTest$InvalidlyExcludedTailTest");
+        AmbigiousSliceTest.class.toString();
+
+        LoggerFactory.getLogger(TestHarness.class).info("SliceTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runModifyArgTest(@NotNull TestReport report) {

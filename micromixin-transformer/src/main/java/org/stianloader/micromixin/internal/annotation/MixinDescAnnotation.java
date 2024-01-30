@@ -33,7 +33,7 @@ public class MixinDescAnnotation {
     }
 
     @NotNull
-    public static MixinDescAnnotation parse(@NotNull ClassNode node, @NotNull String fallbackMethodDesc, @NotNull AnnotationNode atValue) {
+    public static MixinDescAnnotation parse(@NotNull ClassNode node, @NotNull AnnotationNode atValue) {
         String value = null;
         Type ret = null;
         Type owner = null;
@@ -43,6 +43,9 @@ public class MixinDescAnnotation {
             Object val = atValue.values.get(i + 1);
             if (name.equals("value")) {
                 value = (String) val;
+                if (value.equals("sliceTest0ModifyArg")) {
+                    System.out.println();
+                }
             } else if (name.equals("ret")) {
                 ret = (Type) val;
             } else if (name.equals("owner")) {
@@ -62,7 +65,7 @@ public class MixinDescAnnotation {
             // The spongeian mixin implementation doesn't complain about this case, but it also doesn't work as intended in that case
             throw new MixinParseException("[(.] present in \"value\"");
         }
-        String splicedMethodDesc = fallbackMethodDesc;
+        String splicedMethodDesc = "()V";
         if (ret != null) {
             splicedMethodDesc = splicedMethodDesc.substring(0, splicedMethodDesc.lastIndexOf(')') + 1) + ret.getDescriptor();
         }

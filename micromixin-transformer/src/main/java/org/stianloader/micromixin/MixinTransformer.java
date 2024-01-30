@@ -12,7 +12,9 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.ASMifier;
 import org.objectweb.asm.util.CheckClassAdapter;
+import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.stianloader.micromixin.api.InjectionPointSelectorFactory;
 import org.stianloader.micromixin.api.MixinLoggingFacade;
@@ -202,7 +204,21 @@ public class MixinTransformer<M> {
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
         StringBuilder sharedBuilder = new StringBuilder();
         for (MixinStub stub : mixins) {
-            stub.applyTo(in, hctx, sharedBuilder);
+            try {
+                stub.applyTo(in, hctx, sharedBuilder);
+            } catch (Throwable t) {
+                if (t instanceof Error && !(t instanceof AssertionError)) {
+                    throw (Error) t;
+                }
+                if (DEBUG) {
+                    StringWriter sw = new StringWriter();
+                    TraceClassVisitor tcv = new TraceClassVisitor(null, new Textifier(), new PrintWriter(sw));
+                    in.accept(tcv);
+                    this.getLogger().info(MixinTransformer.class, "Disassembled class file:\n{}", sw);
+                }
+                throw new RuntimeException("Failed to apply mixin stub originating from " + stub.sourceNode.name + " to node " + in.name, t);
+            }
+
             if (this.isMergeingClassFileVersions()) {
                 int adjustOrigin = in.version & ~Opcodes.V_PREVIEW;
                 int adjustSource = stub.sourceNode.version & ~Opcodes.V_PREVIEW;

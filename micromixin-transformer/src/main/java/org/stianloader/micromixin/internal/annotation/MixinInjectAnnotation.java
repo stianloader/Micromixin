@@ -11,6 +11,8 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.TypeReference;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -21,12 +23,16 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 import org.stianloader.micromixin.MixinTransformer;
 import org.stianloader.micromixin.SimpleRemapper;
+import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.internal.HandlerContextHelper;
 import org.stianloader.micromixin.internal.MixinMethodStub;
 import org.stianloader.micromixin.internal.MixinParseException;
@@ -51,7 +57,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     private static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
 
     @NotNull
-    public final Collection<MixinAtAnnotation> at;
+    public final Collection<SlicedInjectionPointSelector> at;
     @NotNull
     public final Collection<MixinTargetSelector> selectors;
     @NotNull
@@ -65,7 +71,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     @NotNull
     private final MixinTransformer<?> transformer;
 
-    private MixinInjectAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
+    private MixinInjectAnnotation(@NotNull Collection<SlicedInjectionPointSelector> at, @NotNull Collection<MixinTargetSelector> selectors,
             @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids, @NotNull String locals,
             @NotNull MixinTransformer<?> transformer) {
         this.at = at;
@@ -85,9 +91,9 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             throw new MixinParseException("The injector handler method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
+        List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;
-        String fallbackMethodDesc = ASMUtil.getTargetDesc(method, sharedBuilder);
         int require = -1;
         int expect = -1;
         boolean cancellable = false;
@@ -120,7 +126,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     if (atValue == null) {
                         throw new NullPointerException();
                     }
-                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, fallbackMethodDesc, atValue);
+                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, atValue);
                     target.add(parsed);
                 }
                 target = Collections.unmodifiableCollection(target);
@@ -139,6 +145,19 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 cancellable = (Boolean) val;
             } else if (name.equals("locals")) {
                 locals = ((String[]) val)[1];
+            } else if (name.equals("slice")) {
+                @SuppressWarnings("unchecked")
+                List<AnnotationNode> sliceValues = ((List<AnnotationNode>) val);
+                for (AnnotationNode sliceValue : sliceValues) {
+                    if (sliceValue == null) {
+                        throw new NullPointerException();
+                    }
+                    try {
+                        slice.add(MixinSliceAnnotation.parse(node, sliceValue, transformer.getInjectionPointSelectors()));
+                    } catch (MixinParseException mpe) {
+                        throw new MixinParseException("Unable to parse @Slice annotation defined by " + node.name + "." + method.name + method.desc, mpe);
+                    }
+                }
             } else {
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
@@ -161,7 +180,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         if (locals == null) {
             locals = "NO_CAPTURE";
         }
-        return new MixinInjectAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer);
+
+        Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(at, slice));
+
+        return new MixinInjectAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer);
     }
 
     @Override
@@ -171,11 +193,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
-            for (MixinAtAnnotation at : this.at) {
+            for (SlicedInjectionPointSelector at : this.at) {
                 MethodNode targetMethod = selector.selectMethod(to, sourceStub);
                 if (targetMethod != null) {
                     if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.value + "\") does not support usage within a constructor.");
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
                     }
                     if (this.denyVoids && targetMethod.desc.codePointBefore(targetMethod.desc.length()) == 'V') {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + "V, which is a void method. The injector however has a CallbackInfoReturnable, which suggests a non-void type as the target's return type. This issue is caused due to the following selector (Make sure to set the return type accordingly!): " + selector);
@@ -209,7 +231,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
             boolean category2 = ASMUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
-            if (captureLocalsEarly(sourceStub.sourceNode, to, method, label, sharedBuilder)) {
+            if (this.captureLocalsEarly(sourceStub.sourceNode, to, method, label, sharedBuilder)) {
                 continue;
             }
             if (returnType != 'V' && category2) {
@@ -434,7 +456,24 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             List<String> providedLocals = new ArrayList<String>();
 
             for (int i = initialFrameSize; i < maxLocals; i++) {
-                String desc = frame.getLocal(i).getType().getDescriptor();
+                BasicValue local = frame.getLocal(i);
+                Type localType = local.getType();
+                if (localType == null) {
+                    StringWriter sw = new StringWriter();
+                    AbstractInsnNode hackInstruction = new InsnNode(Opcodes.NOP);
+                    hackInstruction.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
+                    hackInstruction.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.RESOURCE_VARIABLE, null, "Lorg/stianloader/micromixin/internal/MixinInjectAnnotationTraceLabel;"));
+                    try {
+                        target.instructions.insertBefore(label, hackInstruction);
+                        TraceMethodVisitor tmv = new TraceMethodVisitor(new Textifier());
+                        target.accept(tmv);
+                        tmv.p.print(new PrintWriter(sw));
+                    } finally {
+                        target.instructions.remove(hackInstruction);
+                    }
+                    throw new AssertionError("localType == null, for i = " + i + "; initialFrameSize = " + initialFrameSize + "; maxLocals = " + maxLocals + "; frame[i] = " + local + "; frame = " + frame + "; frame[i].class= " + local.getClass() + "; frame[i].size = " + local.getSize() + "; target = " + targetClass.name + "." + target.name + target.desc+ "; source = " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + "; ats = {" + this.at + "}; targetCode = \n" + sw.toString());
+                }
+                String desc = localType.getDescriptor();
                 providedLocals.add(desc);
                 if (ASMUtil.isCategory2(desc.codePointAt(0))) {
                     i++;

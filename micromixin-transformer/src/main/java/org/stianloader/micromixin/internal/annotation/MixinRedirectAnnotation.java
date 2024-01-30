@@ -19,6 +19,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.MixinTransformer;
 import org.stianloader.micromixin.SimpleRemapper;
+import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.internal.HandlerContextHelper;
 import org.stianloader.micromixin.internal.MixinMethodStub;
 import org.stianloader.micromixin.internal.MixinParseException;
@@ -33,7 +34,7 @@ import org.stianloader.micromixin.internal.util.Objects;
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     @NotNull
-    public final MixinAtAnnotation at;
+    public final SlicedInjectionPointSelector at;
     @NotNull
     public final Collection<MixinTargetSelector> selectors;
     @NotNull
@@ -43,7 +44,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
     @NotNull
     private final MixinTransformer<?> transformer;
 
-    private MixinRedirectAnnotation(@NotNull MixinAtAnnotation at, @NotNull Collection<MixinTargetSelector> selectors,
+    private MixinRedirectAnnotation(@NotNull SlicedInjectionPointSelector at, @NotNull Collection<MixinTargetSelector> selectors,
             @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinTransformer<?> transformer) {
         this.at = at;
         this.selectors = selectors;
@@ -60,6 +61,8 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         String[] targetSelectors = null;
         int require = -1;
         int expect = -1;
+        MixinSliceAnnotation slice = null;
+
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
             Object val = annot.values.get(i + 1);
@@ -83,7 +86,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     if (atValue == null) {
                         throw new NullPointerException();
                     }
-                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, "()V", atValue);
+                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, atValue);
                     target.add(parsed);
                 }
                 target = Collections.unmodifiableCollection(target);
@@ -98,10 +101,14 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("slice")) {
+                assert val != null;
+                slice = MixinSliceAnnotation.parse(node, (AnnotationNode) val, transformer.getInjectionPointSelectors());
             } else {
-                throw new MixinParseException("Unimplemented key in @Redirect" + node.name + "." + method.name + method.desc + ": " + name);
+                throw new MixinParseException("Unimplemented key in @Redirect " + node.name + "." + method.name + method.desc + ": " + name);
             }
         }
+
         List<MixinTargetSelector> selectors = new ArrayList<MixinTargetSelector>();
         if (target != null) {
             for (MixinDescAnnotation desc : target) {
@@ -117,10 +124,13 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             // IMPLEMENT what about injector groups?
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
+
         if (at == null) {
             throw new MixinParseException("Redirector Mixin " + node.name + "." + method.name + method.desc + " should define the at-value but does not. The mixin may be compiled for a future version of mixin.");
         }
-        return new MixinRedirectAnnotation(at, Collections.unmodifiableCollection(selectors), method, require, expect, transformer);
+
+        SlicedInjectionPointSelector slicedAt = MixinAtAnnotation.bake(at, slice);
+        return new MixinRedirectAnnotation(slicedAt, Collections.unmodifiableCollection(selectors), method, require, expect, transformer);
     }
 
     @Override
@@ -130,7 +140,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("The redirect handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " is static, but isn't private. Consider making the method private, as both access modifiers cannot be present at the same time.");
         }
         if (!this.at.supportsRedirect()) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + at.value + "\") which does not support usage within a @Redirect context.");
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + at.getSelector().fullyQualifiedName + "\") which does not support usage within a @Redirect context.");
         }
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$redirect$" + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
@@ -165,7 +175,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 insn = insn.getNext();
             }
             if (!(insn instanceof MethodInsnNode)) {
-                throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction that isn't a MethodInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.value + ")");
+                throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction that isn't a MethodInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
             }
             // IMPLEMENT verify arguments.
             // TODO test whether argument capture is a thing with @Redirect

@@ -15,6 +15,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.SimpleRemapper;
 import org.stianloader.micromixin.api.InjectionPointSelector;
 import org.stianloader.micromixin.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.internal.MixinParseException;
 import org.stianloader.micromixin.internal.annotation.ConstantSelector;
@@ -60,15 +61,45 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
     }
 
     @Override
+    @Nullable
+    public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+
+        for (; insn != null && insn != guard; insn = insn.getNext()) {
+            if (this.constSelector.matchesConstant(insn)) {
+                return ASMUtil.getLabelNodeBefore(insn, method.instructions);
+            }
+        }
+
+        if (insn == null) {
+            // This is an error condition. Technically speaking we should attach more data in order to more easily
+            // debug this issue, but the current plan is to validate for these kinds of errors ahead of time.
+            throw new IllegalStateException("Exhausted instruction list before hitting the last instruction in the slice. This likely points to an invalidly programmed selector as well as insufficent slice validation.");
+        }
+
+        return null;
+    }
+
+    @Override
     @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        // IMPLEMENT fetch ordinal
+    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         List<LabelNode> labels = new ArrayList<LabelNode>();
-        for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+
+        for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (this.constSelector.matchesConstant(insn)) {
                 labels.add(ASMUtil.getLabelNodeBefore(insn, method.instructions));
             }
         }
+
+        if (insn == null) {
+            // This is an error condition. Technically speaking we should attach more data in order to more easily
+            // debug this issue, but the current plan is to validate for these kinds of errors ahead of time.
+            throw new IllegalStateException("Exhausted instruction list before hitting the last instruction in the slice. This likely points to an invalidly programmed selector as well as insufficent slice validation.");
+        }
+
         return labels;
     }
 

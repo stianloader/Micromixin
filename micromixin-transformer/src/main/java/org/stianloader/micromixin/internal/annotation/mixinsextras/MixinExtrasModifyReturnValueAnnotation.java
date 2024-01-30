@@ -21,6 +21,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.MixinTransformer;
 import org.stianloader.micromixin.SimpleRemapper;
 import org.stianloader.micromixin.api.MixinLoggingFacade;
+import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.internal.HandlerContextHelper;
 import org.stianloader.micromixin.internal.MixinMethodStub;
 import org.stianloader.micromixin.internal.MixinParseException;
@@ -28,6 +29,7 @@ import org.stianloader.micromixin.internal.MixinStub;
 import org.stianloader.micromixin.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinAtAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinDescAnnotation;
+import org.stianloader.micromixin.internal.annotation.MixinSliceAnnotation;
 import org.stianloader.micromixin.internal.selectors.DescSelector;
 import org.stianloader.micromixin.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.internal.selectors.StringSelector;
@@ -39,7 +41,7 @@ import org.stianloader.micromixin.internal.util.Objects;
 public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     @NotNull
-    public final Collection<MixinAtAnnotation> at;
+    public final Collection<SlicedInjectionPointSelector> at;
     @NotNull
     public final Collection<MixinTargetSelector> selectors;
     @NotNull
@@ -49,7 +51,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     @NotNull
     private final MixinLoggingFacade logger;
 
-    private MixinExtrasModifyReturnValueAnnotation(@NotNull Collection<MixinAtAnnotation> at, @NotNull Collection<MixinTargetSelector> selectors,
+    private MixinExtrasModifyReturnValueAnnotation(@NotNull Collection<SlicedInjectionPointSelector> at, @NotNull Collection<MixinTargetSelector> selectors,
             @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinLoggingFacade logger) {
         this.at = at;
         this.selectors = selectors;
@@ -65,11 +67,11 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
-            for (MixinAtAnnotation at : this.at) {
+            for (SlicedInjectionPointSelector at : this.at) {
                 MethodNode targetMethod = selector.selectMethod(to, sourceStub);
                 if (targetMethod != null) {
                     if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.value + "\") does not support usage within a constructor.");
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
                     }
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
                         if (((this.injectSource.access & Opcodes.ACC_STATIC) == 0)) {
@@ -158,6 +160,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
         }
 
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
+        List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;
         String[] targetSelectors = null;
         int require = -1;
@@ -191,7 +194,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
                     if (atValue == null) {
                         throw new NullPointerException();
                     }
-                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, "()" + returnType, atValue);
+                    MixinDescAnnotation parsed = MixinDescAnnotation.parse(node, atValue);
                     target.add(parsed);
                 }
                 target = Collections.unmodifiableCollection(target);
@@ -206,6 +209,19 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("slice")) {
+                @SuppressWarnings("unchecked")
+                List<AnnotationNode> sliceValues = ((List<AnnotationNode>) val);
+                for (AnnotationNode sliceValue : sliceValues) {
+                    if (sliceValue == null) {
+                        throw new NullPointerException();
+                    }
+                    try {
+                        slice.add(MixinSliceAnnotation.parse(node, sliceValue, transformer.getInjectionPointSelectors()));
+                    } catch (MixinParseException mpe) {
+                        throw new MixinParseException("Unable to parse @Slice annotation defined by " + node.name + "." + method.name + method.desc, mpe);
+                    }
+                }
             } else {
                 throw new MixinParseException("Unimplemented key in @ModifyReturnValue: " + name);
             }
@@ -229,6 +245,8 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
 
-        return new MixinExtrasModifyReturnValueAnnotation(Collections.unmodifiableCollection(at), Collections.unmodifiableCollection(selectors), method, require, expect, transformer.getLogger());
+        Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(at, slice));
+
+        return new MixinExtrasModifyReturnValueAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, transformer.getLogger());
     }
 }

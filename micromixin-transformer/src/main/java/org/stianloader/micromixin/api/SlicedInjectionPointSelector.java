@@ -1,10 +1,6 @@
 package org.stianloader.micromixin.api;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,24 +9,21 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.SimpleRemapper;
+import org.stianloader.micromixin.internal.selectors.inject.TailInjectionPointSelector;
 
-public abstract class InjectionPointSelector {
-
-    @NotNull
-    public final String fullyQualifiedName;
+public class SlicedInjectionPointSelector {
 
     @NotNull
-    public final Set<String> allNames;
+    private final InjectionPointSelector selector;
+    @Nullable
+    private final SlicedInjectionPointSelector from;
+    @Nullable
+    private final SlicedInjectionPointSelector to;
 
-    public InjectionPointSelector(@NotNull String fqn, @NotNull Collection<String> allNames) {
-        this.fullyQualifiedName = fqn;
-        Set<String> names = new HashSet<String>(allNames);
-        names.add(fqn);
-        this.allNames = Collections.unmodifiableSet(names);
-    }
-
-    public InjectionPointSelector(@NotNull String fqn, @NotNull String... aliases) {
-        this(fqn, Arrays.asList(aliases));
+    public SlicedInjectionPointSelector(@NotNull InjectionPointSelector selector, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to) {
+        this.selector = selector;
+        this.from = from;
+        this.to = to;
     }
 
     /**
@@ -50,18 +43,23 @@ public abstract class InjectionPointSelector {
      * guaranteed that such as check won't be introduced in the future).
      *
      * @param method The method to find the entrypoints in.
-     * @param from The {@link InjectionPointSelector} that represents the start of the slice where the injection point should be selected from. May be null to represent HEAD (start of method).
-     * @param to The {@link InjectionPointSelector} that represents the end of the slice where the injection point should be selected from. May be null to represent TAIL (end of method).
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
      * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
      * @return The selected or generated label that is before the matched instruction, or null if no instructions match.
      */
     @Nullable
-    public abstract LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
+    public LabelNode getFirst(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        return this.selector.getFirst(method, this.from, this.to, remapper, sharedBuilder);
+    }
+
+    @Nullable
+    public SlicedInjectionPointSelector getFrom() {
+        return this.from;
+    }
 
     /**
      * Obtains the {@link LabelNode LabelNodes} that are before every applicable entrypoint within
-     * the provided method as defined by this {@link InjectionPointSelector}.
+     * the provided method as defined by this {@link SlicedInjectionPointSelector}.
      * If no {@link LabelNode} is immediately before the selected instruction(s), the label is created and added
      * to the method's {@link InsnList}. However, as labels do not exist in JVMS-compliant bytecode (instead
      * offsets are used), doing so will not create bloat in the resulting class file.
@@ -70,14 +68,30 @@ public abstract class InjectionPointSelector {
      * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns -1.
      *
      * @param method The method to find the entrypoints in.
-     * @param from The {@link InjectionPointSelector} that represents the start of the slice where the injection point should be selected from. May be null to represent HEAD (start of method).
-     * @param to The {@link InjectionPointSelector} that represents the end of the slice where the injection point should be selected from. May be null to represent TAIL (end of method).
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
      * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
      * @return The selected or generated labels that are before the matched instruction(-s).
      */
     @NotNull
-    public abstract Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
+    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        return this.selector.getLabels(method, this.from, this.to, remapper, sharedBuilder);
+    }
+
+    @NotNull
+    public InjectionPointSelector getSelector() {
+        return this.selector;
+    }
+
+    @Nullable
+    public SlicedInjectionPointSelector getTo() {
+        return this.to;
+    }
+
+    @Deprecated
+    public boolean supportsConstructors() {
+        // FIXME This is completely bogus behaviour!
+        return this.selector == TailInjectionPointSelector.INSTANCE;
+    }
 
     /**
      * Checks whether the injection point can be used in conjunction with the Redirect-annotation.
@@ -91,6 +105,12 @@ public abstract class InjectionPointSelector {
      */
     @Deprecated
     public boolean supportsRedirect() {
-        return true;
+        return this.selector.supportsRedirect();
+    }
+
+    @Override
+    @NotNull
+    public String toString() {
+        return "SlicedInjectionPointSelector[" + this.selector.fullyQualifiedName + ", from = " + this.from + ", to = " + this.to + "]";
     }
 }
