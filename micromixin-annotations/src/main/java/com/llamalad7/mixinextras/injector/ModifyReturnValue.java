@@ -105,9 +105,12 @@ public @interface ModifyReturnValue {
     public int expect() default -1;
 
     /**
-     * The targeted method selectors. Only one method is picked from the list of provided methods.
-     * As such the list should generally only be used to mark method aliases among others.
-     * The following are all valid formats of explicit target selectors:
+     * The targeted method selectors. The amounts of methods that may match and are selected is not bound to
+     * any hard value and as such it should be limited by setting attributes such as {@link #require()} or
+     * {@link #expect()} as otherwise the injector might accidentally not match anything with no way of knowing
+     * what exactly went wrong.
+     *
+     * <p>The following are all valid formats of explicit target selectors:
      *
      * <ul>
      *  <li><code>targetMethod</code></li>
@@ -133,9 +136,10 @@ public @interface ModifyReturnValue {
      * Micromixin does not support them (yet). As such, quantifiers are not included in the documentation.
      *
      * <p>MixinExtra does not support target matching via {@link Desc}. It is likely that this feature will never
-     * be implemented by MixinExtra as the developer finds that feature superfluous. As such, the micromixin
-     * transformer is unlikely to implement that feature either, at least for as long as Mixin implementations
-     * based on the spongeian mixin implementation remain viable in the galimulator modding space.
+     * be implemented by MixinExtra as the developer finds that feature superfluous. While the micromixin-transformer
+     * does implement that feature regardless, making use of the feature would require a custom annotation library
+     * for as long as Mixin implementations based on the spongeian mixin implementation remain viable
+     * in the galimulator modding space and the strict interoperability between the implementations is needed.
      *
      * @return The target selectors that define the target method of the handler.
      */

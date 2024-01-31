@@ -1,6 +1,7 @@
 package org.stianloader.micromixin.test.j8.targets;
 
 import org.stianloader.micromixin.test.j8.Blackhole;
+import org.stianloader.micromixin.test.j8.MutableInt;
 
 public class MultiInjectTest {
 
@@ -126,5 +127,60 @@ public class MultiInjectTest {
     }
     public static int getInjectionPointGCount() {
         return MultiInjectTest.injectionPointGCount;
+    }
+
+    // injection point H - Regular old injection point tests but with different Annotations
+    // H0 = @Inject (CIR)
+    // H1 = @ModifyArg
+    // H2 = @ModifyReturnValue
+    // H3 = @Redirect
+    // Expect 2 (if not injecting, 1 would be returned)
+
+    public static int injectionPointH0A() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH0B() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH1A() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH1B() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH2A() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH2B() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH3A() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
+    }
+
+    public static int injectionPointH3B() {
+        MutableInt mutInt = new MutableInt(0);
+        mutInt.add(1);
+        return mutInt.intValue();
     }
 }

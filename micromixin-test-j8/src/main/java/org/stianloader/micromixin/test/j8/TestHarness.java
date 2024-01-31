@@ -579,6 +579,15 @@ public class TestHarness {
         set.addUnit("MultiInjectTest.injectionPointG1", MultiInjectTest::injectionPointG1);
         set.addUnit("MultiInjectTest.injectionPointG2", MultiInjectTest::injectionPointG2);
         set.addUnitAssertEquals("MultiInjectTest.getInjectionPointGCount", MultiInjectTest::getInjectionPointGCount, 1);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH0A", MultiInjectTest::injectionPointH0A, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH0B", MultiInjectTest::injectionPointH0B, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH1A", MultiInjectTest::injectionPointH1A, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH1B", MultiInjectTest::injectionPointH1B, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH2A", MultiInjectTest::injectionPointH2A, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH2B", MultiInjectTest::injectionPointH2B, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH3A", MultiInjectTest::injectionPointH3A, 2);
+        set.addUnitAssertEquals("MultiInjectTest.injectionPointH3B", MultiInjectTest::injectionPointH3B, 2);
+
         LoggerFactory.getLogger(TestHarness.class).info("MultiInjectTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

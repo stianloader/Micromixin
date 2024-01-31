@@ -4,9 +4,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.stianloader.micromixin.test.j8.MutableInt;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
+
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
 @Mixin(MultiInjectTest.class)
 public class MultiInjectTestMixins {
@@ -75,5 +80,25 @@ public class MultiInjectTestMixins {
         // Injector should only match injectionPointG1 (which has double as it's return type)
         MultiInjectTest.injectionPointGCount++;
         return 0;
+    }
+
+    @Inject(method = { "injectionPointH0A", "injectionPointH0B" }, cancellable = true, at = @At("TAIL"))
+    private static void injectorH0(CallbackInfoReturnable<Integer> ci) {
+        ci.setReturnValue(2);
+    }
+
+    @ModifyArg(method = { "injectionPointH1A", "injectionPointH1B" }, at = @At(value = "INVOKE", desc = @Desc(owner = MutableInt.class, value = "add", args = int.class, ret = MutableInt.class)))
+    private static int injectorH1(int arg) {
+        return 2;
+    }
+
+    @ModifyReturnValue(method = { "injectionPointH2A", "injectionPointH2B" }, at = @At("TAIL"))
+    private static int injectorH2(int ret) {
+        return 2;
+    }
+
+    @Redirect(method = { "injectionPointH3A", "injectionPointH3B" }, at = @At(value = "INVOKE", desc = @Desc(owner = MutableInt.class, value = "add", args = int.class, ret = MutableInt.class)))
+    private static MutableInt injectorH3(MutableInt arg0, int arg1) {
+        return arg0.add(2);
     }
 }

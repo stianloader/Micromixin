@@ -127,9 +127,12 @@ public @interface Inject {
     public LocalCapture locals() default LocalCapture.NO_CAPTURE;
 
     /**
-     * The targeted method selectors. Only one method is picked from the list of provided methods.
-     * As such the list should generally only be used to mark method aliases among others.
-     * The following are all valid formats of explicit target selectors:
+     * The targeted method selectors. The amounts of methods that may match and are selected is not bound to
+     * any hard value and as such it should be limited by setting attributes such as {@link #require()} or
+     * {@link #expect()} as otherwise the injector might accidentally not match anything with no way of knowing
+     * what exactly went wrong.
+     *
+     * <p>The following are all valid formats of explicit target selectors:
      *
      * <ul>
      *  <li><code>targetMethod</code></li>
