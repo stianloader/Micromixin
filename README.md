@@ -2,7 +2,8 @@
 
 Micromixin is a lightweight reimplementation of Spongepowered's Mixin framework.
 
-If you wish to talk about Micromixin, this project has a discord: https://discord.gg/CjnPMxsAX6
+If you wish to talk about Micromixin or request that a feature gets implemented with
+increased priority, you can join our discord: https://discord.gg/CjnPMxsAX6
 
 ## Building
 
@@ -73,6 +74,7 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
  - `@Overwrite` (Sponge)
  - `@Redirect` (Sponge)
  - `@ModifyArg` (Sponge)
+ - `@ModifyConstant` (Sponge)
  - `@ModifyReturnValue` (MixinExtras)
 
 ## Notable unsupported features
@@ -80,9 +82,27 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
 Note that we are steadily working towards adding new features and to establish throughout
 feature compatibility with the spongeian mixin implementation.
 
+ - Refmaps. This feature will not be implemented by myself in the forseeable future,
+   if you absolutely need that feature: PR it. The underlying infrastructure probably
+   already exists so it won't be a herculean task.
  - `@Coerce`
  - `@ModifyArgs`
  - `@ModifyVariable`
- - `@ModifyConstant`
  - `@Inject` usage in constructors before `super()` call
  - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar
+
+## Contributing
+
+Even though it might sound surprising to most of you, writing the actual transformers is
+often very trivial work. However, testing the compliance of implemented transformers is
+a lot of work (although it often being rather dumb labour). As such writing test mixins
+which allow to inspect the behaviour of sponge's mixin implementation is the best way of
+guaranteeing that a feature gets implemented even if you can't wrap your head around
+micromixin's codebase. These tests don't necessarily have to be PR'd to this repository
+and can be written for a modloader other than SLL, but they should be mostly modloader
+agnostic (that is: easily portable to SLL) as SLL is the only loader that I am aware of
+which can make use of both sponge's mixin implementation and micromixin.
+
+However, you can also indirectly contribute to micromixin by simply making use of it
+and reporting any bugs you find along the way! (though please don't make use of micromixin
+in gigantic projects and expect it to work fine)

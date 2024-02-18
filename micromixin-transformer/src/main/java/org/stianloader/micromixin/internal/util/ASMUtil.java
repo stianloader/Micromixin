@@ -36,6 +36,18 @@ public class ASMUtil {
     public static final String ROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Roll;";
     public static final String UNROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Unroll;";
 
+    @NotNull
+    public static AbstractInsnNode afterInstruction(@NotNull AbstractInsnNode insn) {
+        AbstractInsnNode next = insn.getNext();
+        while (next != null && next.getOpcode() == -1) {
+            next = next.getNext();
+        }
+        if (next == null) {
+            return insn;
+        }
+        return next;
+    }
+
     /**
      * Obtain the amount of arguments a method descriptor defines, irrespective of
      * their size on the stack (so both int and long are counted as 1).

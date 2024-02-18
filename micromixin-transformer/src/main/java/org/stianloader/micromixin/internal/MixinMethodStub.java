@@ -14,6 +14,7 @@ import org.stianloader.micromixin.SimpleRemapper;
 import org.stianloader.micromixin.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinInjectAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinModifyArgAnnotation;
+import org.stianloader.micromixin.internal.annotation.MixinModifyConstantAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinOverwriteAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinRedirectAnnotation;
 import org.stianloader.micromixin.internal.annotation.MixinShadowAnnotation;
@@ -55,6 +56,8 @@ public class MixinMethodStub implements ClassMemberStub {
                         annotations.add(MixinRedirectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/ModifyArg;")) {
                         annotations.add(MixinModifyArgAnnotation.parse(node, method, annot, transformer, sharedBuilder));
+                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/ModifyConstant;")) {
+                        annotations.add(MixinModifyConstantAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }

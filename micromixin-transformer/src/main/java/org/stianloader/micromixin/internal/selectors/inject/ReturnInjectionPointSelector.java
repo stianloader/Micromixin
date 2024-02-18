@@ -33,7 +33,7 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
@@ -57,7 +57,7 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
             @NotNull StringBuilder sharedBuilder) {
         List<LabelNode> labels = new ArrayList<LabelNode>();
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {

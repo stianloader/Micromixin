@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.SimpleRemapper;
 import org.stianloader.micromixin.internal.selectors.inject.TailInjectionPointSelector;
+import org.stianloader.micromixin.internal.util.ASMUtil;
 
 public class SlicedInjectionPointSelector {
 
@@ -24,6 +25,33 @@ public class SlicedInjectionPointSelector {
         this.selector = selector;
         this.from = from;
         this.to = to;
+    }
+
+    /**
+     * Obtains the instruction immediately after the next instruction.
+     *
+     * <p>Handle with care, improper use may lead to unexpected behaviour with frames or jumps!
+     * The method is mainly intended to be used in order to easily check whether an instruction lies between
+     * two other instructions.
+     *
+     * @param method The method to find the entrypoints in.
+     * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
+     * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
+     * @return Instruction immediately after the next instruction.
+     */
+    @Nullable
+    public AbstractInsnNode getAfterSelected(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        LabelNode first = this.getFirst(method, remapper, sharedBuilder);
+        if (first == null) {
+            return null;
+        }
+        AbstractInsnNode selected = ASMUtil.afterInstruction(first);
+        AbstractInsnNode afterSelected = selected.getNext();
+        if (afterSelected == null) {
+            return selected;
+        } else {
+            return afterSelected;
+        }
     }
 
     /**

@@ -12,6 +12,8 @@
     "LocalPrintingTestMixins",
     "MixinOverwriteTestMixins",
     "ModifyArgMixins",
+    "ModifyConstantMixins",
+    "ModifyConstantAuxiliaryTestMixins",
     "MultiInjectTestMixins",
     "SliceTestMixins",
     "SliceTestMixins$AmbigiousSliceTestMixin",

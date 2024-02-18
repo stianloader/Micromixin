@@ -66,7 +66,7 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (insn instanceof MethodInsnNode && this.constraint.isValid(insn, remapper, sharedBuilder)) {
@@ -90,7 +90,7 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
             @NotNull StringBuilder sharedBuilder) {
         List<LabelNode> labels = new ArrayList<LabelNode>();
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (insn instanceof MethodInsnNode && this.constraint.isValid(insn, remapper, sharedBuilder)) {

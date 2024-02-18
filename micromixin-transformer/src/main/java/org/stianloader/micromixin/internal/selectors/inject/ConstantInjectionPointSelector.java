@@ -55,7 +55,7 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
     @NotNull
     private final ConstantSelector constSelector;
 
-    private ConstantInjectionPointSelector(@NotNull ConstantSelector constSelector) {
+    public ConstantInjectionPointSelector(@NotNull ConstantSelector constSelector) {
         super("org.spongepowered.asm.mixin.injection.points.BeforeConstant", "CONSTANT");
         this.constSelector = constSelector;
     }
@@ -64,7 +64,7 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
     @Nullable
     public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (this.constSelector.matchesConstant(insn)) {
@@ -86,7 +86,7 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
     public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         List<LabelNode> labels = new ArrayList<LabelNode>();
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (this.constSelector.matchesConstant(insn)) {

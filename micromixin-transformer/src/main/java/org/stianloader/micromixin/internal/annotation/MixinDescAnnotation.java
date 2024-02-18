@@ -43,9 +43,6 @@ public class MixinDescAnnotation {
             Object val = atValue.values.get(i + 1);
             if (name.equals("value")) {
                 value = (String) val;
-                if (value.equals("sliceTest0ModifyArg")) {
-                    System.out.println();
-                }
             } else if (name.equals("ret")) {
                 ret = (Type) val;
             } else if (name.equals("owner")) {

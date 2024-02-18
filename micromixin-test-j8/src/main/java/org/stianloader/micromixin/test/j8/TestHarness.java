@@ -4,19 +4,19 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
-import org.stianloader.micromixin.test.j8.mixin.invalid.InvalidDuplicateSliceTestMixins;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
 import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyArgTest;
+import org.stianloader.micromixin.test.j8.targets.ModifyConstantAuxiliaryTest;
+import org.stianloader.micromixin.test.j8.targets.ModifyConstantTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest.IllegalPoison;
-import org.stianloader.micromixin.test.j8.targets.invalid.InvalidDuplicateSliceTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest;
@@ -39,7 +39,71 @@ public class TestHarness {
         runModifyReturnValuesTest(report);
         runModifyArgTest(report);
         runSliceTest(report);
+        runModifyConstantTest(report);
+        runModifyConstantAuxTest(report);
         return report;
+    }
+
+    public static void runModifyConstantAuxTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.untargetableConstantVoidImplicit", ModifyConstantAuxiliaryTest::untargetableConstantVoidImplicit, void.class);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.untargetableConstantVoidExplicit", ModifyConstantAuxiliaryTest::untargetableConstantVoidExplicit, void.class);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.untargetableConstantIntImplicit", ModifyConstantAuxiliaryTest::untargetableConstantIntImplicit, int.class);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.untargetableConstantIntExplicit", ModifyConstantAuxiliaryTest::untargetableConstantIntExplicit, int.class);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.targetableConstantSelfImplicit", ModifyConstantAuxiliaryTest::targetableConstantSelfImplicit, null);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.targetableConstantSelfExplicit", ModifyConstantAuxiliaryTest::targetableConstantSelfExplicit, null);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.slicedConstant0 (false)", () -> ModifyConstantAuxiliaryTest.slicedConstant0(false), 60);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.slicedConstant0 (true)", () -> ModifyConstantAuxiliaryTest.slicedConstant0(true), 135);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.slicedConstant1 (false)", () -> ModifyConstantAuxiliaryTest.slicedConstant1(false), 60);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.slicedConstant1 (true)", () -> ModifyConstantAuxiliaryTest.slicedConstant1(true), 135);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureMultipleImplicit0", ModifyConstantAuxiliaryTest::captureMultipleImplicit0, 15);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureMultipleExplicit0", ModifyConstantAuxiliaryTest::captureMultipleExplicit0, 15);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureMultipleExplicit0B", ModifyConstantAuxiliaryTest::captureMultipleExplicit0B, 15);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureMultipleImplicit1", ModifyConstantAuxiliaryTest::captureMultipleImplicit1, 45);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureMultipleExplicit1", ModifyConstantAuxiliaryTest::captureMultipleExplicit1, 45);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfZ0", ModifyConstantAuxiliaryTest::captureIfZ0, 16);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfZ1", ModifyConstantAuxiliaryTest::captureIfZ1, 16);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfI0", ModifyConstantAuxiliaryTest::captureIfI0, 16);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfI1", ModifyConstantAuxiliaryTest::captureIfI1, 16);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfI2", ModifyConstantAuxiliaryTest::captureIfI2, 16);
+        set.addUnitAssertEquals("ModifyConstantAuxiliaryTest.captureIfI3", ModifyConstantAuxiliaryTest::captureIfI3, 16);
+
+        LoggerFactory.getLogger(TestHarness.class).info("ModifyConstantAuxiliaryTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
+    }
+
+    public static void runModifyConstantTest(@NotNull TestReport report) {
+        /* following code is generated - do not touch directly. */
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitI", ModifyConstantTest::modifyRetExplicitI, -957256832);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitI", ModifyConstantTest::modifyRetImplicitI, -957256832);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitJ", ModifyConstantTest::modifyRetExplicitJ, Long.MAX_VALUE);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitJ", ModifyConstantTest::modifyRetImplicitJ, Long.MAX_VALUE);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitS", ModifyConstantTest::modifyRetExplicitS, ((short) -58));
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitS", ModifyConstantTest::modifyRetImplicitS, ((short) -58));
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitC", ModifyConstantTest::modifyRetExplicitC, 'c');
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitC", ModifyConstantTest::modifyRetImplicitC, 'c');
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitB", ModifyConstantTest::modifyRetExplicitB, ((byte) 126));
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitB", ModifyConstantTest::modifyRetImplicitB, ((byte) 126));
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitZ", ModifyConstantTest::modifyRetExplicitZ, true);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitZ", ModifyConstantTest::modifyRetImplicitZ, true);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitF", ModifyConstantTest::modifyRetExplicitF, 1.2F);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitF", ModifyConstantTest::modifyRetImplicitF, 1.2F);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitD", ModifyConstantTest::modifyRetExplicitD, 2.5D);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitD", ModifyConstantTest::modifyRetImplicitD, 2.5D);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitStr", ModifyConstantTest::modifyRetExplicitStr, "Test2");
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitStr", ModifyConstantTest::modifyRetImplicitStr, "Test2");
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitNulStr2", ModifyConstantTest::modifyRetExplicitNulStr2, null);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitNulStr2", ModifyConstantTest::modifyRetImplicitNulStr2, null);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitEmptyStr", ModifyConstantTest::modifyRetExplicitEmptyStr, "");
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitEmptyStr", ModifyConstantTest::modifyRetImplicitEmptyStr, "");
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetExplicitNulClass2", ModifyConstantTest::modifyRetExplicitNulClass2, null);
+        set.addUnitAssertEquals("ModifyConstantTest.modifyRetImplicitNulClass2", ModifyConstantTest::modifyRetImplicitNulClass2, null);
+
+        LoggerFactory.getLogger(TestHarness.class).info("ModifyConstantTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runSliceTest(@NotNull TestReport report) {

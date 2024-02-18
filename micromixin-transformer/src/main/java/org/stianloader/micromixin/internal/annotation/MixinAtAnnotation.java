@@ -13,6 +13,7 @@ import java.util.TreeSet;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.api.InjectionPointSelector;
@@ -22,6 +23,14 @@ import org.stianloader.micromixin.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.internal.MixinParseException;
 import org.stianloader.micromixin.internal.selectors.DescSelector;
 import org.stianloader.micromixin.internal.selectors.StringSelector;
+import org.stianloader.micromixin.internal.selectors.constant.ClassConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.DoubleConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.FloatConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.IntConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.LongConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.NullConstantSelector;
+import org.stianloader.micromixin.internal.selectors.constant.StringConstantSelector;
+import org.stianloader.micromixin.internal.selectors.inject.ConstantInjectionPointSelector;
 import org.stianloader.micromixin.internal.selectors.inject.HeadInjectionPointSelector;
 import org.stianloader.micromixin.internal.selectors.inject.TailInjectionPointSelector;
 import org.stianloader.micromixin.internal.util.Objects;
@@ -241,6 +250,76 @@ public class MixinAtAnnotation {
             throw new MixinParseException("The required field \"value\" is missing.");
         }
         return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice);
+    }
+
+    @NotNull
+    public static MixinAtAnnotation parseConstantAnnotation(@NotNull ClassNode mixinSource, @NotNull AnnotationNode constantValue) throws MixinParseException {
+        // @Constant is quite similar to @At(value = "CONSTANT", ...) in structure and functionality,
+        // so in order to prevent ourselves to duplicate the logic for slices, we plainly interpret any @Constant
+        // annotations as @At(value = "CONSTANT", ...) expressions.
+        // This approach doesn't actually completely work once we expand 0 condition constants,
+        // but it is likely that the constant selector could be wrapped or expanded upon in order to support
+        // these extensions.
+
+        String slice = "";
+        ConstantSelector selector = null;
+
+        for (int i = 0; i < constantValue.values.size(); i += 2) {
+            String name = (String) constantValue.values.get(i);
+            Object val = constantValue.values.get(i + 1);
+            if (name.equals("nullValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                if (((Boolean) val).booleanValue()) {
+                    selector = NullConstantSelector.INSTANCE;
+                } else {
+                    throw new MixinParseException("@Constant may not have nullValue=false within the micromixin implementation (this is likely a flaw of micromxin).");
+                }
+            } else if (name.equals("intValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new IntConstantSelector(((Integer) val).intValue());
+            } else if (name.equals("stringValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new StringConstantSelector(Objects.requireNonNull((String) val));
+            } else if (name.equals("classValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new ClassConstantSelector(Objects.requireNonNull(((Type) val)).getDescriptor());
+            } else if (name.equals("doubleValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new DoubleConstantSelector(((Double) val).doubleValue());
+            } else if (name.equals("floatValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new FloatConstantSelector(((Float) val).floatValue());
+            } else if (name.equals("longValue")) {
+                if (selector != null) {
+                    throw new MixinParseException("@Constant may not have multiple value selectors (this is likely a flaw of micromxin).");
+                }
+                selector = new LongConstantSelector((Long) val);
+            } else if (name.equals("slice")) {
+                slice = (String) Objects.requireNonNull(val);
+            } else {
+                throw new MixinParseException("Unimplemented key in @Constant: " + name);
+            }
+        }
+
+        if (selector == null) {
+            throw new MixinParseException("The @Constant annotation requires any of the following required fields: [nullValue, stringValue, intValue, classValue, doubleValue].");
+        }
+
+        // TODO @Constant, like @At has an ordinal.
+        // However, this key and the underlying functionality has not yet been implemented in micromixin-transformer.
+        return new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), slice);
     }
 
     @NotNull
