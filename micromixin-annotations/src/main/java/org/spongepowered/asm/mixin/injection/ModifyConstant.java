@@ -1,79 +1,111 @@
 package org.spongepowered.asm.mixin.injection;
 
 import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+
+import org.spongepowered.asm.mixin.Mixin;
 
 /**
- * The {@link ModifyArg} annotation allows to apply a function on a single
- * argument used to call a method. More specifically, the mixin implementation
- * will call the argument modifier handler with the original argument value.
- * The handler will then return the modified value with whom the targeted method
- * is called with.
+ * The {@link ModifyConstant} annotation allows to apply a function on a single constant
+ * after pushing the constant onto the operand stack. More specifically,
+ * the mixin implementation will call the constant modifier handler with the original
+ * constant value. The handler will then return the modified value which replaces the
+ * original value on the operand stack.
  *
- * <p>A single {@link ModifyArg} handler can only modify a single argument.
- * If multiple arguments are to be modified, multiple handlers are required.
- * Alternatively, different (as of yet unimplemented) annotations can be used,
- * for example ModifyArgs.
- *
- * <h3>Local variable use</h3>
- *
- * <p>The micromxin-transformer implementation tries to avoid usage of local variables
- * when using ModifyArg. However this is not always possible. For the target descriptor
- * (ICDLjava/lang/Object;I)V and an index of 2 the transformer will produce following bytecode:
+ * <h3>Chaining</h3>
+ * While the original value can be constant, it is not guaranteed to be so.
+ * Micromixin-transformer and the spongeian mixin implementation allow
+ * {@link ModifyConstant} to "chain", that is multiple constant modifier handlers can
+ * target the same constant and the result of one constant modifier handler will be used
+ * as the input of the other. Or, in laymen's terms, the resulting code would look something
+ * like follows:
  *
  * <blockquote><code>
- * ISTORE index0<br>
- * ASTORE index1<br>
- * DUP2_X2<br>
- * POP2<br>
- * ALOAD 0<br>
- * SWAP<br>
- * invokevirtual Clazz.handler(C)C<br>
- * DUP2_X2<br>
- * POP2<br>
- * ALOAD index1<br>
- * ILOAD index0<br>
- * invokeX Clazz.original(ICDLjava/lang/Object;I)V<br>
+ * modifyConstant0(modifyConstant1(CONSTANT))
  * </code></blockquote>
  *
- * <p>While micromixin-transformer uses opcodes such as DUP or POP aggressively, the spongeian implementation
- * will use xSTORE/xLOAD everywhere.
+ * In this case, modifyConstant0 has a lower {@link Mixin#priority() priority} than modifyConstant1
+ * or applied before modifyConstant1 due to other (usually implementation-specific) reasons. If
+ * the ordering of constant modifiers is important, then it is necessary to set the
+ * mixin priority as necessary as otherwise the ordering is not guaranteed to stay constant, potentially
+ * causing intermittent hard-to-reproduce bugs.
  *
  * <h3>Signature and visibility modifiers</h3>
  *
- * <p>The {@link ModifyArg} handler (also known as the "argument modifier") MUST
+ * <p>The {@link ModifyConstant} handler (also known as the "constant modifier") MUST
  * declare the same return type (subtypes are not supported) as its argument
  * type (supertypes are not supported). If the targeted method is static, the handler MUST be static and private.
  * For non-static targeted methods the handler MUST NOT be static, but otherwise the accessibility
  * modifiers are not of relevance.
  
-  <p>Locals and argument capture is not supported when using {@link ModifyArg}.
+  <p>Locals and argument capture is not supported when using {@link ModifyConstant}.
+ *
+ * <h3>Example use and produced bytecode</h3>
+ *
+ * Assume the following target method:
+ *
+ * <blockquote><pre>
+ * public static void main() {
+ *   System.out.println("Test!");
+ * }
+ * </pre></blockquote>
+ *
+ * The above target method can be modified with following handler to instead produce "Hello World.":
+ *
+ * <blockquote><pre>
+ * &#64;ModifyConstant(target = &#64;Desc("main"), constant = &#64;Constant(stringValue = "Test!"))
+ * private static String modifyConstant(String originalValue) {
+ *     return "Hello World.";
+ * }
+ * </pre></blockquote>
+ *
+ * This produces following bytecode:
+ *
+ * <blockquote><pre>
+ * GETSTATIC java/lang/System.out Ljava/io/PrintStream;
+ * LDC "Test!"
+ * + INVOKESTATIC TargetClass.modifyConstant(Ljava/lang/String;)Ljava/lang/String;
+ * INVOKEVIRTUAL java/io/PrintStream.println(Ljava/lang/String;)V
+ * </pre></blockquote>
+ *
+ * which is equivalent to following code:
+ *
+ * <blockquote><pre>
+ * public static void main() {
+ *   System.out.println(modifyConstant("Test!"));
+ * }
+ * </pre></blockquote>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface ModifyArg {
+public @interface ModifyConstant {
 
     /**
-     * The injection point where the injection should occur.
-     * If none of the injection points apply no exception is thrown by default (this default can be changed
-     * through {@link #require()}), however transformation does not occur (Micromixin still copies the handler into
-     * the target class anyways though).
+     * The list of constants the constant modifier should target.
      *
-     * <p>Note that contrary to other annotations provided by Mixins or MixinExtra, {@link ModifyArg} can only
-     * target a single {@link At}, however the spongeian mixin implementation as well as micromixin-transformer
-     * allows this single {@link At} to match multiple instructions (as would be the case when using RETURN).
+     * <p>If multiple constants are provided or if the constant occurs multiple times
+     * within the respective {@link Constant#slice() slice}, then all occurrences of
+     * all constants are matched.
      *
-     * <p>The injection points of the {@link ModifyArg} MUST point to MethodInsnNodes. The current micromixin-transformer
-     * implementation as such forbids to target INVOKEDYNAMIC instructions with this annotation. Otherwise
-     * INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE and INVOKESTATIC are all valid targets.
+     * <p>If the list is empty or undefined, then a special injection point selector
+     * is used that matches any constant that matches the modifier method's accepted
+     * type (be weary when using this feature with null values - this behaviour isn't
+     * guaranteed to be stable for null values).
      *
-     * @return The injection point.
+     * <p>This list behaves quite similarly to {@link Inject#at()}
+     * and micromixin-transformer's internal representation of this field
+     * is mostly identical to {@link Inject#at()}. While doing so greatly
+     * reduces expenses in required coding time, it has the unfortunate
+     * side effect that micromixin-transformer cannot validate the
+     * passed {@link Constant constants}. In other words: It trusts you
+     * (the API consumer) to specify valid constants and will fail in unexpected
+     * ways if this assumption doesn't hold true. HOWEVER, this behaviour
+     * is subject to change and shouldn't be relied upon.
+     *
+     * @return A list of constants to target
      */
-    public At at();
+    public Constant[] constant() default {};
 
     /**
      * The expected amount of injection points. This behaves similar to {@link #require()}, however
@@ -87,19 +119,6 @@ public @interface ModifyArg {
      * @return The expected amount of injection points
      */
     public int expect() default -1;
-
-    /**
-     * The ordinal of the argument to capture for the argument modifier handler.
-     *
-     * <p>The index does not care about the computational type category of the arguments.
-     * That is both doubles and ints are both treated as having the size of 1.
-     *
-     * <p>A value of -1 means that the ordinal is automatically evaluated based on the argument type.
-     * Should multiple arguments match, an error is thrown.
-     *
-     * @return The ordinal of the argument to capture, or -1 to automatically choose the ordinal
-     */
-    public int index() default -1;
 
     /**
      * The targeted method selectors. The amounts of methods that may match and are selected is not bound to
@@ -140,7 +159,7 @@ public @interface ModifyArg {
     public String[] method() default {};
 
     /**
-     * The minimum amount of injection points. If less injection points are found (as per {@link #at()}).
+     * The minimum amount of injection points. If less injection points are found (as per {@link #constant()}).
      * an exception is thrown during transformation. The default amount of required injection points can be set
      * by mixin configuration file, but by default that is no minimum amount of required injection points.
      *
@@ -149,15 +168,11 @@ public @interface ModifyArg {
     public int require() default -1;
 
     /**
-     * The slice to make use for the injection points defined by {@link #at()}.
+     * The available slices used for bisecting the available injection points declared by {@link #constant()}.
      *
-     * <p>The id of the slice is ignored as per the spongeian documentation, but this behaviour may not be
-     * reflected by micromixin-transformer. It is as such not recommended to depend on this behaviour.
-     * See {@link At#slice()} and {@link Slice#id()} for further information.
-     *
-     * @return The slice used to filter the possible instructions matched by injection points.
+     * @return An array of declared slices.
      */
-    public Slice slice() default @Slice;
+    public Slice[] slice() default {};
 
     /**
      * The targeted methods.Only one method is picked from the list of provided methods.

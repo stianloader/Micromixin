@@ -37,7 +37,8 @@ Painpoints of the official Mixin implementation that this implementation seeks t
    ). Micromixin rejects that practice and will POP/POP2 such operands as that leads
    to unstable behaviour.
  - Mixin using Java 8 (Micromixin uses Java 6, making it usable for some more niche
-   purposes)
+   purposes. However thanks to multi-release jars API consumers for Java 9+ will see
+   little difference)
 
 ## Modules
 

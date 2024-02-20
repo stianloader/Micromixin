@@ -1,10 +1,9 @@
 package org.spongepowered.asm.mixin.injection;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.CLASS;
-
 import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
@@ -39,8 +38,8 @@ import java.lang.annotation.Target;
  * following signature: <code>private static void handlerName({type}[] array, int index, {type} element)</code>.
  */
 @Documented
-@Retention(CLASS)
-@Target(METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface Redirect {
 
     /**

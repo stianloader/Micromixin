@@ -27,6 +27,8 @@ public @interface At {
      * </ul>
      * Please be aware that the above examples may be a bit erroneous, but should still work for
      * micromixin. However, it has not yet been investigated as to why that is the case.
+     * More specifically, micromixin-transformer supports the same keys as defined by the attributes
+     * of the {@link Constant} annotation.
      *
      * <p>The exact syntax of the arguments differ from injection point provider to injection
      * point provider. The provider is defined via {@link #value()}. Consult the manual
