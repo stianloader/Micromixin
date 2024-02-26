@@ -42,12 +42,14 @@ Painpoints of the official Mixin implementation that this implementation seeks t
 
 ## Modules
 
-The Micromixin framework comes in three modules. "micromixin-annotations" includes
+The Micromixin framework comes in five modules.
+
+ - "micromixin-annotations" includes
 all the traditional mixin annotations that are implemented by Micromixin - nothing more.
-"micromixin-transformer" includes the transformer - i.e. it is the heart of the project.
-"micromixin-runtime" includes everything needed to run transformed classes (such as the
+ - "micromixin-transformer" includes the transformer - i.e. it is the heart of the project.
+ - "micromixin-runtime" includes everything needed to run transformed classes (such as the
 CallbackInfo classes).
-"micromixin-test-j8" includes tests for Micromxin and is the least interesting part of
+ - "micromixin-test-j8" includes tests for Micromxin and is the least interesting part of
 the project.
 
 <b>Warning: In 90% of cases you'll want to bundle micromixin-transformer alongside
@@ -61,7 +63,10 @@ micromixin-runtime should most likely always be used.
 
 This project is available at https://stianloader.org/maven/ with following coordinates:
  - groupid: org.stianloader
- - artifactid: micromixin-transformer / micromixin-runtime / micromixin-annotations
+ - artifactid:
+  - micromixin-transformer
+  - or micromixin-runtime
+  - or micromixin-annotations
 
  Available versions are listed under
  https://stianloader.org/maven/org/stianloader/micromixin-runtime/

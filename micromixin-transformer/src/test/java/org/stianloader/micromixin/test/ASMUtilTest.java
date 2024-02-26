@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 
 import org.junit.Test;
-import org.stianloader.micromixin.internal.util.ASMUtil;
+import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class ASMUtilTest {
 
