@@ -8,13 +8,12 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
+import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
-import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
@@ -29,15 +28,13 @@ public class TailInjectionPointSelector extends InjectionPointSelector implement
 
     @Override
     @Nullable
-    public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
-            @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
-            @NotNull StringBuilder sharedBuilder) {
-        AbstractInsnNode guard = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
+    public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        AbstractInsnNode guard = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode insn = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getPrevious()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
-                return ASMUtil.getLabelNodeBefore(insn, method.instructions);
+                return insn;
             }
         }
 
@@ -55,10 +52,10 @@ public class TailInjectionPointSelector extends InjectionPointSelector implement
 
     @Override
     @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
+    public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
-        return Collections.singletonList(this.getFirst(method, from, to, remapper, sharedBuilder));
+        return Collections.singletonList(this.getFirstInsn(method, from, to, remapper, sharedBuilder));
     }
 
     @Override

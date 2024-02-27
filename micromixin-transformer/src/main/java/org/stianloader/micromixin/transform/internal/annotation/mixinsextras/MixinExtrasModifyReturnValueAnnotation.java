@@ -3,7 +3,6 @@ package org.stianloader.micromixin.transform.internal.annotation.mixinsextras;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,6 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -65,44 +63,15 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
-        for (MixinTargetSelector selector : selectors) {
-            for (SlicedInjectionPointSelector at : this.at) {
-                MethodNode targetMethod = selector.selectMethod(to, sourceStub);
-                if (targetMethod != null) {
-                    if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
-                    }
-                    if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
-                        if (((this.injectSource.access & Opcodes.ACC_STATIC) == 0)) {
-                            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
-                        } else if (((this.injectSource.access & Opcodes.ACC_PUBLIC) != 0)) {
-                            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
-                        }
-                    } else if ((this.injectSource.access & Opcodes.ACC_STATIC) != 0) {
-                        // Technically that one could be doable, but it'd be nasty.
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
-                    }
-                    for (LabelNode label : at.getLabels(targetMethod, remapper, sharedBuilder)) {
-                        labels.put(label, targetMethod);
-                    }
-                }
-            }
-        }
-        if (labels.size() < this.require) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
-        }
-        if (labels.size() < this.expect) {
-            this.logger.warn(MixinExtrasModifyReturnValueAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
-        }
+        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, remapper, sharedBuilder, this.logger);
         String returnType = ASMUtil.getReturnType(this.injectSource.desc);
-        for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
-            LabelNode label = entry.getKey();
+
+        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
+            AbstractInsnNode insn = entry.getKey();
             MethodNode method = entry.getValue();
             if (!ASMUtil.getReturnType(method.desc).equals(returnType)) {
                 throw new IllegalStateException("The return value modifier method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " is annotated with @ModifyReturnValue but does not consume the return type of the method it targets (" + to.name + "." + method.name + method.desc + ")");
             }
-            AbstractInsnNode insn = ASMUtil.getNext(label);
             if (!ASMUtil.isReturn(insn.getOpcode())) {
                 throw new IllegalStateException("The return value modifier method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets an instruction that isn't in the xRETURN family of instructions. The targeted instruction is in " + to.name + "." + method.name + method.desc);
             }
@@ -122,7 +91,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
                 opcode = Opcodes.INVOKESTATIC;
             }
             inject.add(new MethodInsnNode(opcode, to.name, handlerNode.name, handlerNode.desc));
-            method.instructions.insert(label, inject);
+            method.instructions.insertBefore(insn, inject);
         }
     }
 

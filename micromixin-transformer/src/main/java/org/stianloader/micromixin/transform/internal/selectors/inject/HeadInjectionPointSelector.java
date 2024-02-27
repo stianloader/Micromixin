@@ -8,14 +8,14 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
+import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
-import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
+import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class HeadInjectionPointSelector extends InjectionPointSelector implements InjectionPointSelectorProvider {
 
@@ -28,32 +28,26 @@ public class HeadInjectionPointSelector extends InjectionPointSelector implement
 
     @Override
     @Nullable
-    public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
+    public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
-        for (AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder); insn != null; insn = insn.getNext()) {
-            if (insn.getOpcode() != -1) {
-                LabelNode temp = new LabelNode();
-                method.instructions.insertBefore(temp, insn);
-                return temp;
-            } else if (insn instanceof LabelNode) {
-                @SuppressWarnings("null")
-                LabelNode temp = (LabelNode) insn; // I don't quite understand why that hack is necessary, but whatever floats your boat...
-                return temp;
+        if (from == null) {
+            AbstractInsnNode firstInsn = method.instructions.getFirst();
+            if (firstInsn.getOpcode() != -1) {
+                return firstInsn;
             }
+            return ASMUtil.getNext(method.instructions.getFirst());
+        } else {
+            return from.getFirstInsn(method, remapper, sharedBuilder);
         }
-        // There are no instructions in the list
-        LabelNode temp = new LabelNode();
-        method.instructions.insert(temp);
-        return temp;
     }
 
     @Override
     @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
+    public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from,
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
-        return Collections.singletonList(this.getFirst(method, from, to, remapper, sharedBuilder));
+        return Collections.singletonList(this.getFirstInsn(method, from, to, remapper, sharedBuilder));
     }
 
     @Override

@@ -3,7 +3,6 @@ package org.stianloader.micromixin.transform.internal.annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +13,6 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -62,40 +60,12 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
-        for (MixinTargetSelector selector : this.selectors) {
-            for (SlicedInjectionPointSelector at : this.slicedAts) {
-                MethodNode targetMethod = selector.selectMethod(to, sourceStub);
-                if (targetMethod != null) {
-                    if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
-                        if (((this.injectSource.access & Opcodes.ACC_STATIC) == 0)) {
-                            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
-                        } else if (((this.injectSource.access & Opcodes.ACC_PUBLIC) != 0)) {
-                            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
-                        }
-                    } else if ((this.injectSource.access & Opcodes.ACC_STATIC) != 0) {
-                        // Technically that one could be doable, but it'd be nasty.
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
-                    }
-                    for (LabelNode label : at.getLabels(targetMethod, remapper, sharedBuilder)) {
-                        labels.put(label, targetMethod);
-                    }
-                }
-            }
-        }
-
-        if (labels.size() < this.require) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
-        } else if (labels.size() < this.expect) {
-            this.logger.warn(MixinModifyConstantAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
-        }
-
+        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.slicedAts, to, sourceStub, this.injectSource, this.require, this.expect, remapper, sharedBuilder, this.logger);
         String argumentType = ASMUtil.getReturnType(this.injectSource.desc);
 
-        for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
-            LabelNode label = entry.getKey();
+        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
+            AbstractInsnNode insn = entry.getKey();
             MethodNode method = entry.getValue();
-            AbstractInsnNode insn = ASMUtil.getNext(label);
             // TODO Perform constant type sanity handling (for example when capturing a BIPUSH, one may not have a descriptor of (J)J)
             InsnList inject = new InsnList();
             int handlerInvokeOpcode;

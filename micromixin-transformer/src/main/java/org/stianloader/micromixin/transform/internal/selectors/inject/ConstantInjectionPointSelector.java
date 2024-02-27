@@ -10,16 +10,14 @@ import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
+import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
-import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.annotation.ConstantSelector;
-import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class ConstantInjectionPointSelector extends InjectionPointSelector {
     @NotNull
@@ -62,13 +60,13 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
 
     @Override
     @Nullable
-    public LabelNode getFirst(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
+    public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (this.constSelector.matchesConstant(insn)) {
-                return ASMUtil.getLabelNodeBefore(insn, method.instructions);
+                return insn;
             }
         }
 
@@ -83,14 +81,14 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
 
     @Override
     @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        List<LabelNode> labels = new ArrayList<LabelNode>();
-        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirst(method, remapper, sharedBuilder);
+    public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        List<AbstractInsnNode> matched = new ArrayList<AbstractInsnNode>();
+        AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (this.constSelector.matchesConstant(insn)) {
-                labels.add(ASMUtil.getLabelNodeBefore(insn, method.instructions));
+                matched.add(insn);
             }
         }
 
@@ -100,7 +98,7 @@ public class ConstantInjectionPointSelector extends InjectionPointSelector {
             throw new IllegalStateException("Exhausted instruction list before hitting the last instruction in the slice. This likely points to an invalidly programmed selector as well as insufficent slice validation.");
         }
 
-        return labels;
+        return matched;
     }
 
     @Override

@@ -5,8 +5,6 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
@@ -41,7 +39,7 @@ public class SlicedInjectionPointSelector {
      */
     @Nullable
     public AbstractInsnNode getAfterSelected(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        LabelNode first = this.getFirst(method, remapper, sharedBuilder);
+        AbstractInsnNode first = this.getFirstInsn(method, remapper, sharedBuilder);
         if (first == null) {
             return null;
         }
@@ -55,15 +53,9 @@ public class SlicedInjectionPointSelector {
     }
 
     /**
-     * Obtains the first {@link LabelNode} that is before the first applicable entrypoint within
-     * the provided method as defined by this {@link InjectionPointSelector}.
-     *
-     * <p>If no {@link LabelNode} is immediately before the selected instruction, the label is created and added
-     * to the method's {@link InsnList}. However, as labels do not exist in JVMS-compliant bytecode (instead
-     * offsets are used), doing so will not create bloat in the resulting class file.
-     *
-     * <p>Only "pseudo"-instructions may be between the selected instruction and the label.
-     * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns -1.
+     * Obtains the first {@link AbstractInsnNode} that corresponds to the first applicable entrypoint within
+     * the provided method as defined by this {@link InjectionPointSelector}. The {@link AbstractInsnNode} may
+     * not be virtual, that is it may not have an {@link AbstractInsnNode#getOpcode() opcode} value of -1.
      *
      * <p>Implementations of this method are trusted to not go out of bounds when it comes to the slices.
      * Failure to do so could have nasty consequences for user behaviour as micromixin-transformer or any
@@ -73,11 +65,11 @@ public class SlicedInjectionPointSelector {
      * @param method The method to find the entrypoints in.
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
      * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
-     * @return The selected or generated label that is before the matched instruction, or null if no instructions match.
+     * @return The first matched instruction, or null if no instructions match.
      */
     @Nullable
-    public LabelNode getFirst(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        return this.selector.getFirst(method, this.from, this.to, remapper, sharedBuilder);
+    public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        return this.selector.getFirstInsn(method, this.from, this.to, remapper, sharedBuilder);
     }
 
     @Nullable
@@ -86,23 +78,22 @@ public class SlicedInjectionPointSelector {
     }
 
     /**
-     * Obtains the {@link LabelNode LabelNodes} that are before every applicable entrypoint within
+     * Obtains the {@link AbstractInsnNode AbstractInsnNodes} that correspond to every applicable entrypoint within
      * the provided method as defined by this {@link SlicedInjectionPointSelector}.
-     * If no {@link LabelNode} is immediately before the selected instruction(s), the label is created and added
-     * to the method's {@link InsnList}. However, as labels do not exist in JVMS-compliant bytecode (instead
-     * offsets are used), doing so will not create bloat in the resulting class file.
      *
-     * <p>Only "pseudo"-instructions may be between the selected instruction and the label.
-     * Pseudo-instructions are instructions where {@link AbstractInsnNode#getOpcode()} returns -1.
+     * <p>Implementations of this method are trusted to not go out of bounds when it comes to the slices.
+     * Failure to do so could have nasty consequences for user behaviour as micromixin-transformer or any
+     * other caller is not guaranteed to verify the location of the matched instructions (but inversely it is not
+     * guaranteed that such as check won't be introduced in the future).
      *
      * @param method The method to find the entrypoints in.
      * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
      * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
-     * @return The selected or generated labels that are before the matched instruction(-s).
+     * @return The selected instruction nodes that correspond to this entry point.
      */
     @NotNull
-    public Collection<LabelNode> getLabels(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        return this.selector.getLabels(method, this.from, this.to, remapper, sharedBuilder);
+    public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        return this.selector.getMatchedInstructions(method, this.from, this.to, remapper, sharedBuilder);
     }
 
     @NotNull

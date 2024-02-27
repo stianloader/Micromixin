@@ -191,17 +191,19 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
-        for (MixinTargetSelector selector : selectors) {
+        Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
+        for (MixinTargetSelector selector : this.selectors) {
             for (SlicedInjectionPointSelector at : this.at) {
                 MethodNode targetMethod = selector.selectMethod(to, sourceStub);
                 if (targetMethod != null) {
                     if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
                     }
+
                     if (this.denyVoids && targetMethod.desc.codePointBefore(targetMethod.desc.length()) == 'V') {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + "V, which is a void method. The injector however has a CallbackInfoReturnable, which suggests a non-void type as the target's return type. This issue is caused due to the following selector (Make sure to set the return type accordingly!): " + selector);
                     }
+
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
                         if (((this.injectSource.access & Opcodes.ACC_STATIC) == 0)) {
                             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
@@ -212,26 +214,32 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                         // Technically that one could be doable, but it'd be nasty.
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
-                    for (LabelNode label : at.getLabels(targetMethod, remapper, sharedBuilder)) {
-                        labels.put(label, targetMethod);
+                    for (AbstractInsnNode insn : at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
+                        if (insn.getOpcode() == -1) {
+                            throw new IllegalStateException("Selector " + at + " matched virtual instruction " + insn.getClass() + ". Declaring mixin " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc);
+                        }
+                        matched.put(insn, targetMethod);
                     }
                 }
             }
         }
-        if (labels.size() < this.require) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
+
+        if (matched.size() < this.require) {
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + matched.size() + ".");
         }
-        if (labels.size() < this.expect) {
-            this.transformer.getLogger().warn(MixinInjectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
+        if (matched.size() < this.expect) {
+            this.transformer.getLogger().warn(MixinInjectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, matched.size());
         }
+
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.
-        for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
-            LabelNode label = entry.getKey();
+        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
+            AbstractInsnNode insn = entry.getKey();
             MethodNode method = entry.getValue();
+
             int returnType = method.desc.codePointAt(method.desc.lastIndexOf(')') + 1);
             boolean category2 = ASMUtil.isCategory2(returnType);
             InsnList injected = new InsnList();
-            if (this.captureLocalsEarly(sourceStub.sourceNode, to, method, label, sharedBuilder)) {
+            if (this.captureLocalsEarly(sourceStub.sourceNode, to, method, insn, sharedBuilder)) {
                 continue;
             }
             if (returnType != 'V' && category2) {
@@ -239,12 +247,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // but uses the local variable table for temporary storage
                 int returnOpcode = ASMUtil.getReturnOpcode(returnType);
                 int lvt0 = scanNextFreeLVTIndex(method);
-                AbstractInsnNode nextInsn = label.getNext();
-                while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
-                    nextInsn = nextInsn.getNext();
-                }
                 int storedType;
-                if (nextInsn.getOpcode() != returnOpcode) {
+                if (insn.getOpcode() != returnOpcode) {
                     injected.add(new InsnNode(Opcodes.ACONST_NULL));
                     storedType = 'L';
                 } else {
@@ -271,14 +275,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(Opcodes.DUP));
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
-                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
                     this.captureArguments(sourceStub, injected, to, method);
-                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -301,12 +305,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Note: only applies for category 1 return types.
                 // In turn, it wholly operates on the stack.
                 int returnOpcode = ASMUtil.getReturnOpcode(returnType);
-                AbstractInsnNode nextInsn = label.getNext();
-                while (nextInsn.getOpcode() == -1) { // If this line NPEs, the label is misplaced. This may be caused by invalid shifts. (Are shifts that go past the last RETURN valid? - Can you even shift to after a RETURN at all?)
-                    nextInsn = nextInsn.getNext();
-                }
                 int storedType;
-                if (nextInsn.getOpcode() != returnOpcode) {
+                if (insn.getOpcode() != returnOpcode) {
                     injected.add(new InsnNode(Opcodes.ACONST_NULL));
                     storedType = 'L';
                 } else {
@@ -338,14 +338,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Now RET, CIR, CIR
                 if ((method.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
-                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 } else {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                     injected.add(new InsnNode(Opcodes.SWAP));
                     // Now RET, CIR, THIS, CIR
                     this.captureArguments(sourceStub, injected, to, method);
-                    this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                    this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
@@ -381,7 +381,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_NAME, "<init>", "(Ljava/lang/String;Z)V"));
                 this.captureArguments(sourceStub, injected, to, method);
-                this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                 injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 if (this.cancellable) {
@@ -397,10 +397,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 this.captureArguments(sourceStub, injected, to, method);
-                this.captureLocals(sourceStub.sourceNode, to, method, injected, label, sharedBuilder);
+                this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                 injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, to.name, handlerNode.name, handlerNode.desc));
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
-                if (cancellable) {
+                if (this.cancellable) {
                     injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_NAME, "isCancelled", "()Z"));
                     LabelNode skipReturn = new LabelNode();
@@ -409,7 +409,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     injected.add(skipReturn);
                 }
             }
-            method.instructions.insert(label, injected); // Not insertBefore due to jump instructions and stuff
+            method.instructions.insertBefore(insn, injected);
         }
     }
 
@@ -420,16 +420,16 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
      * @param targetClass The ASM {@link ClassNode} representation of the class that is targeted by the mixin
      * @param target The ASM {@link MethodNode} representation of the method that should be transformed by the inject.
      * @param out Instructions generated through the local capture that should be prefixed before the actual injection handling. Intended to load the local variables.
-     * @param label The label which is targeted by the injection.
+     * @param inspectionTarget The instruction which is targeted by the injection.
      * @param sharedBuilder A shared {@link StringBuilder} instance used to reduce duplicate allocations
      */
     private void captureLocals(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target,
-            @NotNull InsnList out, LabelNode label, @NotNull StringBuilder sharedBuilder) {
+            @NotNull InsnList out, AbstractInsnNode inspectionTarget, @NotNull StringBuilder sharedBuilder) {
         if (this.locals.equals("NO_CAPTURE")) {
             // Nothing to do
             return;
         }
-        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.transformer.getPool());
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(inspectionTarget), this.transformer.getPool());
 
         int initialFrameSize = ASMUtil.getInitialFrameSize(target);
         Frame<BasicValue> frame = result.frame;
@@ -464,7 +464,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     hackInstruction.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
                     hackInstruction.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.RESOURCE_VARIABLE, null, "Lorg/stianloader/micromixin/internal/MixinInjectAnnotationTraceLabel;"));
                     try {
-                        target.instructions.insertBefore(label, hackInstruction);
+                        target.instructions.insertBefore(inspectionTarget, hackInstruction);
                         TraceMethodVisitor tmv = new TraceMethodVisitor(new Textifier());
                         target.accept(tmv);
                         tmv.p.print(new PrintWriter(sw));
@@ -521,16 +521,16 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
      * @param handlerOwner The owner class of the injector source.
      * @param targetClass The ASM {@link ClassNode} representation of the class that is targeted by the mixin
      * @param target The ASM {@link MethodNode} representation of the method that should be transformed by the inject.
-     * @param label The label which is targeted by the injection.
+     * @param inspectionTarget The instruction which is targeted by the injection.
      * @param sharedBuilder A shared {@link StringBuilder} instance used to reduce duplicate allocations
      * @return True to abort injection (for example with PRINT), false otherwise.
      */
-    private boolean captureLocalsEarly(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target, LabelNode label, @NotNull StringBuilder sharedBuilder) {
+    private boolean captureLocalsEarly(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target, AbstractInsnNode inspectionTarget, @NotNull StringBuilder sharedBuilder) {
         if (this.locals.equals("NO_CAPTURE") || this.locals.equals("CAPTURE_FAILHARD")) {
             // Nothing to do, for now
             return false;
         }
-        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(label), this.transformer.getPool());
+        LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(inspectionTarget), this.transformer.getPool());
         if (this.locals.equals("PRINT")) {
             KeyValueTableSection injectionPointInfo = new KeyValueTableSection();
             CommentTable printTable = new CommentTable().addSection(injectionPointInfo);

@@ -1,9 +1,12 @@
 package org.stianloader.micromixin.transform.internal.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +24,12 @@ import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
+import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
+import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
+import org.stianloader.micromixin.transform.internal.MixinStub;
+import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
 import org.stianloader.micromixin.transform.supertypes.ClassWrapperPool;
 
@@ -46,6 +54,46 @@ public class ASMUtil {
             return insn;
         }
         return next;
+    }
+
+    @NotNull
+    public static Map<AbstractInsnNode, MethodNode> enumerateTargets(@NotNull Collection<MixinTargetSelector> selectors, @NotNull Collection<SlicedInjectionPointSelector> ats, @NotNull ClassNode target, @NotNull MixinStub mixinSource, @NotNull MethodNode injectMethodSource, int require, int expect, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder, @NotNull MixinLoggingFacade logger) {
+        Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
+        for (MixinTargetSelector selector : selectors) {
+            for (SlicedInjectionPointSelector at : ats) {
+                MethodNode targetMethod = selector.selectMethod(target, mixinSource);
+                if (targetMethod != null) {
+                    if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
+                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
+                    }
+                    if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
+                        if (((injectMethodSource.access & Opcodes.ACC_STATIC) == 0)) {
+                            throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
+                        } else if (((injectMethodSource.access & Opcodes.ACC_PUBLIC) != 0)) {
+                            throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
+                        }
+                    } else if ((injectMethodSource.access & Opcodes.ACC_STATIC) != 0) {
+                        // Technically that one could be doable, but it'd be nasty.
+                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
+                    }
+                    for (AbstractInsnNode insn : at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
+                        if (insn.getOpcode() == -1) {
+                            throw new IllegalStateException("Selector " + at + " matched virtual instruction " + insn.getClass() + ". Declaring mixin " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc);
+                        }
+                        matched.put(insn, targetMethod);
+                    }
+                }
+            }
+        }
+
+        if (matched.size() < require) {
+            throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " requires " + require + " injection points but only found " + matched.size() + ".");
+        }
+        if (matched.size() < expect) {
+            logger.warn(ASMUtil.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", mixinSource.sourceNode.name, injectMethodSource.name, injectMethodSource.desc, expect, matched.size());
+        }
+
+        return matched;
     }
 
     /**

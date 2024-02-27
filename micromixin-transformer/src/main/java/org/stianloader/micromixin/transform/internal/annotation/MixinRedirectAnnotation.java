@@ -13,7 +13,6 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -143,7 +142,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + at.getSelector().fullyQualifiedName + "\") which does not support usage within a @Redirect context.");
         }
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$redirect$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<LabelNode, MethodNode> labels = new HashMap<LabelNode, MethodNode>();
+        Map<MethodInsnNode, MethodNode> matched = new HashMap<MethodInsnNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
             MethodNode targetMethod = selector.selectMethod(to, sourceStub);
             if (targetMethod != null) {
@@ -156,27 +155,27 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     // Technically that one could be doable, but it'd be nasty.
                     throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                 }
-                for (LabelNode label : this.at.getLabels(targetMethod, remapper, sharedBuilder)) {
-                    labels.put(label, targetMethod);
+                for (AbstractInsnNode insn : this.at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
+                    if (!(insn instanceof MethodInsnNode)) {
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
+                    }
+                    matched.put((MethodInsnNode) insn, targetMethod);
                 }
             }
         }
-        if (labels.size() < this.require) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + labels.size() + ".");
+        if (matched.size() < this.require) {
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " requires " + this.require + " injection points but only found " + matched.size() + ".");
         }
-        if (labels.size() < this.expect) {
-            this.transformer.getLogger().warn(MixinRedirectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, labels.size());
+        if (matched.size() < this.expect) {
+            this.transformer.getLogger().warn(MixinRedirectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, matched.size());
         }
 
         // IMPLEMENT @Redirect-chaining. The main part could be done through annotations.
-        for (Map.Entry<LabelNode, MethodNode> entry : labels.entrySet()) {
-            AbstractInsnNode insn = entry.getKey().getNext();
-            while (insn.getOpcode() == -1) {
-                insn = insn.getNext();
-            }
-            if (!(insn instanceof MethodInsnNode)) {
-                throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction that isn't a MethodInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
-            }
+        // Note: The Spongeian mixin impl probably does not support that anyways - so is there a point implementing such
+        // behaviour anyways? Besides - what is the point of chaining redirects? Wouldn't that cause unending hazard?
+        // I think yes. Instead one ought to use @ModifyX anyways
+        for (Map.Entry<MethodInsnNode, MethodNode> entry : matched.entrySet()) {
+            MethodInsnNode insn = entry.getKey();
             // IMPLEMENT verify arguments.
             // TODO test whether argument capture is a thing with @Redirect
             MethodNode targetMethod = entry.getValue();
