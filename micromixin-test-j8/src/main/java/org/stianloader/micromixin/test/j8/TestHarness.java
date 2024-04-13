@@ -15,6 +15,7 @@ import org.stianloader.micromixin.test.j8.targets.ModifyConstantTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
+import org.stianloader.micromixin.test.j8.targets.StringTargetTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest.IllegalPoison;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
@@ -41,7 +42,28 @@ public class TestHarness {
         runSliceTest(report);
         runModifyConstantTest(report);
         runModifyConstantAuxTest(report);
+        runStringTargetTest(report);
         return report;
+    }
+
+    public static void runStringTargetTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+        set.addUnit("StringTargetTest.loadDotMixinTarget", StringTargetTest::loadDotMixinTarget);
+        set.addUnit("StringTargetTest.loadDetchedReturnDescriptorTarget", StringTargetTest::loadDetchedReturnDescriptorTarget);
+        set.addUnit("StringTargetTest.loadSlashMixinTarget", StringTargetTest::loadSlashMixinTarget);
+        set.addUnit("StringTargetTest.loadSlashDotMixinTarget", StringTargetTest::loadSlashDotMixinTarget);
+        set.addUnitExpectThrow("StringTargetTest.loadFullSlashMixinTarget", StringTargetTest::loadFullSlashMixinTarget, AssertionError.class);
+        set.addUnitExpectThrow("StringTargetTest.loadFullDotMixinTarget", StringTargetTest::loadFullDotMixinTarget, AssertionError.class);
+        set.addUnit("StringTargetTest.loadWhitespaceDescriptorTarget0", StringTargetTest::loadWhitespaceDescriptorTarget0);
+        set.addUnit("StringTargetTest.loadWhitespaceDescriptorTarget1", StringTargetTest::loadWhitespaceDescriptorTarget1);
+        set.addUnit("StringTargetTest.loadWhitespaceDescriptorTarget2", StringTargetTest::loadWhitespaceDescriptorTarget2);
+        set.addUnit("StringTargetTest.loadWhitespaceDescriptorTarget3", StringTargetTest::loadWhitespaceDescriptorTarget3);
+        set.addUnit("StringTargetTest.loadWhitespaceDescriptorTarget4", StringTargetTest::loadWhitespaceDescriptorTarget4);
+        set.addUnitExpectThrow("StringTargetTest.loadWhitespaceMixinTarget", StringTargetTest::loadWhitespaceMixinTarget, AssertionError.class);
+        set.addUnit("StringTargetTest.loadWhitespaceNameTarget", StringTargetTest::loadWhitespaceNameTarget);
+
+        LoggerFactory.getLogger(TestHarness.class).info("StringTargetTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runModifyConstantAuxTest(@NotNull TestReport report) {

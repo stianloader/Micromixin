@@ -89,7 +89,19 @@ public @interface At {
      *  <li><code>targetMethod()Z</code></li>
      *  <li><code>Lcom/example/Target;targetMethod(Lcom/example/Argument;)V</code></li>
      *  <li><code>Lcom/example/Target;(Lcom/example/Argument;)V</code></li>
+     *  <li><code>Lcom/example/Target;targetMethod(Lcom/example/Argument;) V</code></li>
+     *  <li><code>Lcom/example/Target;target Method(Lcom/example/Argument;)V</code></li>
+     *  <li><code>Lcom/example/Target;targetMethod(Lcom/exam ple/Argument;)V</code></li>
      * </ul>
+     *
+     * <p>The parts of the explicit target selector (owner, name, descriptor) must always have the same order,
+     * but the individual parts must not necessarily be present.
+     *
+     * <p>While permissible, it is <strong>strongly discouraged</strong> to make use of whitespace in explicit
+     * target selectors. When they are used, the spongeian mixin implementation (and also micromixin) will
+     * discard all whitespace characters (tabs included). This is documented behaviour (in both micromixin
+     * and sponge's mixin) and is unlikely to change in the future. This discouragement exists as this feature
+     * may cause target selectors to be illegible.
      *
      * <p>Warning: Depending on your platform and tooling, not specifying a fully qualified reference
      * may cause errors. On SLL there will be no issues at runtime (with either micromixin or the spongeian

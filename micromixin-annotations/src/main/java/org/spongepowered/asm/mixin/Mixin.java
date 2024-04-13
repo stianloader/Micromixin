@@ -22,10 +22,25 @@ import java.lang.annotation.Target;
 public @interface Mixin {
 
     /**
+     * The relative priority of the mixin, which defines the order in which the mixin is applied.
+     * The default value can be set through the mixin config.
+     *
+     * @return The priority of the mixin.
+     */
+    public int priority() default 1000;
+
+    /**
      * The fully qualified names of the target classes.
      * The spongeian implementation will warn if {@link #targets()}
      * is used where {@link #value()} could be used instead,
      * but the Micromixin implementation does not warn in such instances.
+     *
+     * <p>Packages can both be separated with dots (e.g. <code>java.lang.Object</code>) like is done in Java
+     * source code, or be separated with slashes (e.g. <code>java/lang/Object</code>). Inner classes are always
+     * separated with the dollar symbol (e.g. <code>java/util/AbstractMap$SimpleImmutableEntry</code>) - using
+     * dots instead is not permissible (note that it will cause the mixin to fail silently as technically a class
+     * within the specified package could be loaded - it is permissible for classes and packages to be named
+     * similarly).
      *
      * @return The targeted classes.
      */
@@ -39,12 +54,4 @@ public @interface Mixin {
      * @return The targeted classes.
      */
     public Class<?>[] value() default { };
-
-    /**
-     * The relative priority of the mixin, which defines the order in which the mixin is applied.
-     * The default value can be set through the mixin config.
-     *
-     * @return The priority of the mixin.
-     */
-    public int priority() default 1000;
 }

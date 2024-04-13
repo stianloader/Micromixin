@@ -56,7 +56,7 @@ public class MixinHeader {
                 @SuppressWarnings("unchecked")
                 List<String> aev = (List<String>) value;
                 for (String target : aev) {
-                    targets.add('L' + target + ';');
+                    targets.add('L' + target.replace('.', '/') + ';');
                 }
             } else if (name.equals("priority")){
                 priority = (Integer) value;
