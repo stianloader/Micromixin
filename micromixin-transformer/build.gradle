@@ -109,6 +109,10 @@ jar {
         include 'module-info.class'
     }
 
+    into('META-INF/LICENSES/' + archivesBaseName) {
+        from project.rootProject.file("LICENSE")
+    }
+
     manifest {
         attributes 'Multi-Release': true
     }
@@ -120,6 +124,10 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
     into('META-INF/versions/9') {
         from sourceSets.java9.allSource
+    }
+
+    into('META-INF/LICENSES/' + archivesBaseName) {
+        from project.rootProject.file("LICENSE")
     }
 }
 
