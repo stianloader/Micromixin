@@ -63,7 +63,7 @@ java {
 
 compileJava {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(6)
+        languageVersion = JavaLanguageVersion.of(11)
     }
 
     sourceCompatibility = '1.6'

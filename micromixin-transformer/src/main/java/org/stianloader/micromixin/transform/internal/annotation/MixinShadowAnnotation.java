@@ -34,11 +34,24 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
 
     @NotNull
     public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation, @Nullable List<AnnotationNode> allAnnotations) {
+        boolean isMutable = false;
+        if (allAnnotations != null) {
+            for (AnnotationNode currAnn : allAnnotations) {
+                if (currAnn.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
+                    if (!currAnn.values.isEmpty()) throw new MixinParseException("The @Mutable annotation does not take any values in");
+                    isMutable = true;
+                    break;
+                }
+            }
+        }
+
         String prefix = "shadow$";
         List<String> aliases = Collections.emptyList();
+
         if (annotation.values == null) {
-            return new MixinShadowAnnotation<T0>(prefix, aliases, false);
+            return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable);
         }
+
         for (int i = 0; i < annotation.values.size(); i += 2) {
             String name = (String) annotation.values.get(i);
             if (name.equals("aliases")) {
@@ -53,16 +66,6 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                 }
             } else {
                 throw new MixinParseException("Unimplemented option for @Shadow: " + name);
-            }
-        }
-
-        boolean isMutable = false;
-        if (allAnnotations != null) {
-            for (AnnotationNode currAnn : allAnnotations) {
-                if (currAnn.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
-                    isMutable = true;
-                    break;
-                }
             }
         }
 
@@ -126,7 +129,11 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         if (!this.isMutable) return;
 
         if (source instanceof MixinFieldStub) {
-            ((MixinFieldStub) source).field.access &= ~Opcodes.ACC_FINAL;
+            for (FieldNode fn : to.fields) {
+                if (fn.name.equals(source.getName()) && fn.desc.equals(source.getDesc())) {
+                    fn.access &= ~Opcodes.ACC_FINAL;
+                }
+            }
         } else {
             throw new UnsupportedOperationException("Annotating Shadow'ed members is only possible with fields");
         }
