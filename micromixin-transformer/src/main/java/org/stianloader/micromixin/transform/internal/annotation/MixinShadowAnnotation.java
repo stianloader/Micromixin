@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -18,24 +20,39 @@ import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
-
     @NotNull
     private final String prefix;
     @NotNull
     private final List<String> aliases;
+    private final boolean isMutable;
 
-    private MixinShadowAnnotation(@NotNull String prefix, @NotNull List<String> aliases) {
+    private MixinShadowAnnotation(@NotNull String prefix, @NotNull List<String> aliases, boolean isMutable) {
         this.prefix = prefix;
         this.aliases = aliases;
+        this.isMutable = isMutable;
     }
 
     @NotNull
-    public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation) {
+    public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation, @Nullable List<AnnotationNode> allAnnotations) {
+        boolean isMutable = false;
+        if (allAnnotations != null) {
+            for (AnnotationNode currAnn : allAnnotations) {
+                if (currAnn.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
+                    if (!currAnn.values.isEmpty())
+                        throw new MixinParseException("The @Mutable annotation does not take any values in");
+                    isMutable = true;
+                    break;
+                }
+            }
+        }
+
         String prefix = "shadow$";
         List<String> aliases = Collections.emptyList();
+
         if (annotation.values == null) {
-            return new MixinShadowAnnotation<T0>(prefix, aliases);
+            return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable);
         }
+
         for (int i = 0; i < annotation.values.size(); i += 2) {
             String name = (String) annotation.values.get(i);
             if (name.equals("aliases")) {
@@ -52,7 +69,8 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                 throw new MixinParseException("Unimplemented option for @Shadow: " + name);
             }
         }
-        return new MixinShadowAnnotation<T0>(prefix, aliases);
+
+        return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable);
     }
 
     private void apply(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull SimpleRemapper out, @NotNull StringBuilder sharedBuilder) {
@@ -107,14 +125,26 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper,
-            @NotNull StringBuilder sharedBuilder) {
-        // NOP
+                      @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper,
+                      @NotNull StringBuilder sharedBuilder) {
+        if (!this.isMutable) return;
+
+        if (source instanceof MixinFieldStub) {
+            for (FieldNode fn : to.fields) {
+                String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
+                String mappedName = remapper.fieldRenames.get(source.getOwner().name, source.getDesc(), source.getName());
+                if (fn.name.equals(mappedName) && fn.desc.equals(mappedDesc)) {
+                    fn.access &= ~Opcodes.ACC_FINAL;
+                }
+            }
+        } else {
+            throw new UnsupportedOperationException("Annotating Shadow'ed members is only possible with fields");
+        }
     }
 
     @Override
     public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+                                @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
             apply((MixinMethodStub) source, target, remapper, sharedBuilder);
         } else if (source instanceof MixinFieldStub) {

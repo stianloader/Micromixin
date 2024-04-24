@@ -15,7 +15,6 @@ import org.stianloader.micromixin.transform.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinShadowAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinUniqueAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.VirtualFieldOverlayAnnotation;
-import org.stianloader.micromixin.transform.internal.annotation.MixinMutableAnnotation;
 
 public class MixinFieldStub implements ClassMemberStub {
 
@@ -39,11 +38,9 @@ public class MixinFieldStub implements ClassMemberStub {
             for (AnnotationNode annot : field.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot));
+                        annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot, field.visibleAnnotations));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot, transformer.getLogger()));
-                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
-                        annotations.add(new MixinMutableAnnotation<MixinFieldStub>());
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }

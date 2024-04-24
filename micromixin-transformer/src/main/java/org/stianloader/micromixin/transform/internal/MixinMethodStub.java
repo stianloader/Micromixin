@@ -49,7 +49,7 @@ public class MixinMethodStub implements ClassMemberStub {
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;")) {
                         annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot));
+                        annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot, null));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Redirect;")) {
@@ -108,8 +108,8 @@ public class MixinMethodStub implements ClassMemberStub {
 
     @Override
     public void collectMappings(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub stub, @NotNull SimpleRemapper out,
-            @NotNull StringBuilder sharedBuilder) {
+                                @NotNull MixinStub stub, @NotNull SimpleRemapper out,
+                                @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinMethodStub> annotation : this.annotations) {
             annotation.collectMappings(this, target, out, sharedBuilder);
         }
