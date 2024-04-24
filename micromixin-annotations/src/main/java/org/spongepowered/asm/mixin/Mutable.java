@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * {@link Mutable} can only be applied to {@link Shadow}ed fields or methods.
+ * {@link Mutable} can only be applied to {@link Shadow shadowed} fields.
  * <p>
  * When applied to a field, it removes the {@code final} modifier if the field is marked with it, thus making the field mutable.
  */
