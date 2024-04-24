@@ -15,6 +15,7 @@ import org.stianloader.micromixin.transform.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinShadowAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinUniqueAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.VirtualFieldOverlayAnnotation;
+import org.stianloader.micromixin.transform.internal.annotation.MixinMutableAnnotation;
 
 public class MixinFieldStub implements ClassMemberStub {
 
@@ -41,6 +42,8 @@ public class MixinFieldStub implements ClassMemberStub {
                         annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot, transformer.getLogger()));
+                    } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
+                        annotations.add(new MixinMutableAnnotation<MixinFieldStub>());
                     } else {
                         throw new MixinParseException("Unimplemented mixin annotation: " + annot.desc);
                     }
@@ -76,7 +79,7 @@ public class MixinFieldStub implements ClassMemberStub {
 
     @Override
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub source,
-            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+                        @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinFieldStub> a : this.annotations) {
             a.apply(target, hctx, source, this, remapper, sharedBuilder);
         }
@@ -84,8 +87,8 @@ public class MixinFieldStub implements ClassMemberStub {
 
     @Override
     public void collectMappings(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx,
-            @NotNull MixinStub stub, @NotNull SimpleRemapper out,
-            @NotNull StringBuilder sharedBuilder) {
+                                @NotNull MixinStub stub, @NotNull SimpleRemapper out,
+                                @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinFieldStub> annotation : this.annotations) {
             annotation.collectMappings(this, target, out, sharedBuilder);
         }
