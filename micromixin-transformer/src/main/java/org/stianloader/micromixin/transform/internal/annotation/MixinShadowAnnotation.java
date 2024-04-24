@@ -38,7 +38,8 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         if (allAnnotations != null) {
             for (AnnotationNode currAnn : allAnnotations) {
                 if (currAnn.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
-                    if (!currAnn.values.isEmpty()) throw new MixinParseException("The @Mutable annotation does not take any values in");
+                    if (!currAnn.values.isEmpty())
+                        throw new MixinParseException("The @Mutable annotation does not take any values in");
                     isMutable = true;
                     break;
                 }
@@ -130,7 +131,9 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
 
         if (source instanceof MixinFieldStub) {
             for (FieldNode fn : to.fields) {
-                if (fn.name.equals(source.getName()) && fn.desc.equals(source.getDesc())) {
+                String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
+                String mappedName = remapper.fieldRenames.get(source.getOwner().name, source.getDesc(), source.getName());
+                if (fn.name.equals(mappedName) && fn.desc.equals(mappedDesc)) {
                     fn.access &= ~Opcodes.ACC_FINAL;
                 }
             }
