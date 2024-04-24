@@ -1,4 +1,4 @@
-plugins {buil
+plugins {
     id 'java-library'
     id 'maven-publish'
     id 'eclipse'
