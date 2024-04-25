@@ -38,7 +38,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         if (allAnnotations != null) {
             for (AnnotationNode currAnn : allAnnotations) {
                 if (currAnn.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {
-                    if (!currAnn.values.isEmpty())
+                    if (currAnn.values != null && !currAnn.values.isEmpty())
                         throw new MixinParseException("The @Mutable annotation does not take any values in");
                     isMutable = true;
                     break;
