@@ -82,6 +82,25 @@ import org.spongepowered.asm.mixin.Mixin;
 public @interface ModifyConstant {
 
     /**
+     * The maximum amount of injection points that should be allowed. If the value of this
+     * element is below 1 or if the value is below the {@link ModifyConstant#require() minimum amount}
+     * of allowable injection points then the limit is not being enforced. However,
+     * {@link ModifyConstant#expect()} has no influence on {@link ModifyConstant#allow()}.
+     *
+     * <p>Furthermore this limit is only valid per target class. That is, if multiple target classes are
+     * defined as per {@link Mixin#value()} or {@link Mixin#targets()} then this limit is only applicable
+     * for all the injection points in the targeted class. This limitation is caused due to the fact
+     * that the targeted classes are not known until they are loaded in by the classloader, at which point
+     * all the injection logic occurs.
+     *
+     * <p>This limit is shared across all methods (as defined by {@link ModifyConstant#method()} or
+     * {@link ModifyConstant#target()}) targeted by the handler within a class.
+     *
+     * @return The maximum amount targeted of injection points within the target class.
+     */
+    public int allow() default -1;
+
+    /**
      * The list of constants the constant modifier should target.
      *
      * <p>If multiple constants are provided or if the constant occurs multiple times

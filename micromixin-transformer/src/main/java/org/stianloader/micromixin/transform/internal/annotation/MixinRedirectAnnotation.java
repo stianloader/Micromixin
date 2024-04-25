@@ -32,6 +32,7 @@ import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
+    private final int allow;
     @NotNull
     public final SlicedInjectionPointSelector at;
     @NotNull
@@ -44,12 +45,13 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
     private final MixinTransformer<?> transformer;
 
     private MixinRedirectAnnotation(@NotNull SlicedInjectionPointSelector at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinTransformer<?> transformer) {
+            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinTransformer<?> transformer) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
+        this.allow = allow;
         this.transformer = transformer;
     }
 
@@ -60,6 +62,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         String[] targetSelectors = null;
         int require = -1;
         int expect = -1;
+        int allow = -1;
         MixinSliceAnnotation slice = null;
 
         for (int i = 0; i < annot.values.size(); i += 2) {
@@ -100,6 +103,8 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("allow")) {
+                allow = ((Integer) val).intValue();
             } else if (name.equals("slice")) {
                 assert val != null;
                 slice = MixinSliceAnnotation.parse(node, (AnnotationNode) val, transformer.getInjectionPointSelectors());
@@ -128,8 +133,12 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("Redirector Mixin " + node.name + "." + method.name + method.desc + " should define the at-value but does not. The mixin may be compiled for a future version of mixin.");
         }
 
+        if (allow < require) {
+            allow = -1;
+        }
+
         SlicedInjectionPointSelector slicedAt = MixinAtAnnotation.bake(at, slice);
-        return new MixinRedirectAnnotation(slicedAt, Collections.unmodifiableCollection(selectors), method, require, expect, transformer);
+        return new MixinRedirectAnnotation(slicedAt, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer);
     }
 
     @Override
@@ -168,6 +177,9 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         }
         if (matched.size() < this.expect) {
             this.transformer.getLogger().warn(MixinRedirectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, matched.size());
+        }
+        if (this.allow > 0 && matched.size() > this.allow) {
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " allows up to " + this.allow + " injection points but " + matched.size() + " injection points were selected.");
         }
 
         // IMPLEMENT @Redirect-chaining. The main part could be done through annotations.

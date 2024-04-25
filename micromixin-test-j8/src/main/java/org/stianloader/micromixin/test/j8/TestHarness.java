@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
+import org.stianloader.micromixin.test.j8.targets.AllowTest;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -43,7 +44,48 @@ public class TestHarness {
         runModifyConstantTest(report);
         runModifyConstantAuxTest(report);
         runStringTargetTest(report);
+        runAllowTest(report);
         return report;
+    }
+
+    public static void runAllowTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("AllowTest.testNegativeAllowInject", AllowTest::testNegativeAllowInject, true);
+        set.addUnitAssertEquals("AllowTest.testNegativeAllowModifyArg", AllowTest::testNegativeAllowModifyArg, true);
+        set.addUnitAssertEquals("AllowTest.testNegativeAllowModifyConstant", AllowTest::testNegativeAllowModifyConstant, true);
+        set.addUnitAssertEquals("AllowTest.testNegativeAllowModifyReturnValue", AllowTest::testNegativeAllowModifyReturnValue, true);
+        set.addUnitAssertEquals("AllowTest.testNegativeAllowRedirect", AllowTest::testNegativeAllowRedirect, true);
+
+        set.addUnitAssertEquals("AllowTest.testZeroAllowInject", AllowTest::testZeroAllowInject, true);
+        set.addUnitAssertEquals("AllowTest.testZeroAllowModifyArg", AllowTest::testZeroAllowModifyArg, true);
+        set.addUnitAssertEquals("AllowTest.testZeroAllowModifyConstant", AllowTest::testZeroAllowModifyConstant, true);
+        set.addUnitAssertEquals("AllowTest.testZeroAllowModifyReturnValue", AllowTest::testZeroAllowModifyReturnValue, true);
+        set.addUnitAssertEquals("AllowTest.testZeroAllowRedirect", AllowTest::testZeroAllowRedirect, true);
+
+        set.addUnitAssertEquals("AllowTest.testOneAllowInject", AllowTest::testOneAllowInject, true);
+        set.addUnitAssertEquals("AllowTest.testOneAllowModifyArg", AllowTest::testOneAllowModifyArg, true);
+        set.addUnitAssertEquals("AllowTest.testOneAllowModifyConstant", AllowTest::testOneAllowModifyConstant, true);
+        set.addUnitAssertEquals("AllowTest.testOneAllowModifyReturnValue", AllowTest::testOneAllowModifyReturnValue, true);
+        set.addUnitAssertEquals("AllowTest.testOneAllowRedirect", AllowTest::testOneAllowRedirect, true);
+
+        set.addUnit("AllowTest.testHigherExpectInject", () -> AllowTest.testHigherExpectInject(new MutableInt()));
+        set.addUnit("AllowTest.testHigherExpectModifyArg", () -> AllowTest.testHigherExpectModifyArg(new MutableInt()));
+        set.addUnit("AllowTest.testHigherExpectModifyConstant", () -> AllowTest.testHigherExpectModifyConstant(new MutableInt()));
+        set.addUnit("AllowTest.testHigherExpectRedirect", () -> AllowTest.testHigherExpectRedirect(new MutableInt()));
+
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooFewInject");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooFewModifyArg");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooFewModifyConstant");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooFewRedirect");
+
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooManyInject");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooManyModifyArg");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooManyModifyConstant");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.AllowTest$TooManyRedirect");
+
+        LoggerFactory.getLogger(TestHarness.class).info("AllowTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runStringTargetTest(@NotNull TestReport report) {

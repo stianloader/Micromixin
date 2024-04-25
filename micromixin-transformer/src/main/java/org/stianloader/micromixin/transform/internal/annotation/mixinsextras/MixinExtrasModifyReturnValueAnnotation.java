@@ -38,6 +38,7 @@ import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<MixinMethodStub> {
 
+    private final int allow;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> at;
     @NotNull
@@ -50,12 +51,13 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     private final MixinLoggingFacade logger;
 
     private MixinExtrasModifyReturnValueAnnotation(@NotNull Collection<SlicedInjectionPointSelector> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, @NotNull MixinLoggingFacade logger) {
+            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinLoggingFacade logger) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
+        this.allow = allow;
         this.logger = logger;
     }
 
@@ -63,7 +65,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, remapper, sharedBuilder, this.logger);
+        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
         String returnType = ASMUtil.getReturnType(this.injectSource.desc);
 
         for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
@@ -134,6 +136,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
         String[] targetSelectors = null;
         int require = -1;
         int expect = -1;
+        int allow = -1;
 
         for (int i = 0; i < annot.values.size(); i += 2) {
             String name = (String) annot.values.get(i);
@@ -178,6 +181,8 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("allow")) {
+                allow = ((Integer) val).intValue();
             } else if (name.equals("slice")) {
                 @SuppressWarnings("unchecked")
                 List<AnnotationNode> sliceValues = ((List<AnnotationNode>) val);
@@ -214,8 +219,12 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
 
+        if (allow < require) {
+            allow = -1;
+        }
+
         Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(at, slice));
 
-        return new MixinExtrasModifyReturnValueAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, transformer.getLogger());
+        return new MixinExtrasModifyReturnValueAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer.getLogger());
     }
 }

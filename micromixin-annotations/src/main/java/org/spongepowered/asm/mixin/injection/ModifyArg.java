@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.spongepowered.asm.mixin.Mixin;
+
 /**
  * The {@link ModifyArg} annotation allows to apply a function on a single
  * argument used to call a method. More specifically, the mixin implementation
@@ -56,6 +58,25 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface ModifyArg {
+
+    /**
+     * The maximum amount of injection points that should be allowed.
+     * If the value of this element is below 1 or if the value is below the {@link ModifyArg#require() minimum amount}
+     * of allowable injection points then the limit is not being enforced. However, {@link ModifyArg#expect()}
+     * has no influence on {@link ModifyArg#allow()}.
+     *
+     * <p>Furthermore this limit is only valid per target class. That is, if multiple target classes are
+     * defined as per {@link Mixin#value()} or {@link Mixin#targets()} then this limit is only applicable
+     * for all the injection points in the targeted class. This limitation is caused due to the fact
+     * that the targeted classes are not known until they are loaded in by the classloader, at which point
+     * all the injection logic occurs.
+     *
+     * <p>This limit is shared across all methods (as defined by {@link ModifyArg#method()} or {@link ModifyArg#target()})
+     * targeted by the handler within a class.
+     *
+     * @return The maximum amount targeted of injection points within the target class.
+     */
+    public int allow() default -1;
 
     /**
      * The injection point where the injection should occur.

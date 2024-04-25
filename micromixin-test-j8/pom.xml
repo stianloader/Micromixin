@@ -6,6 +6,10 @@
     <name>J8-Test-Sources</name>
     <description>Java 8 Test sources for Micromixin</description>
 
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
     <repositories>
         <repository>
             <id>sponge</id>
@@ -64,7 +68,7 @@
                 <configuration>
                     <target>1.8</target>
                     <source>1.8</source>
-                    <proc>none</proc>
+                    <proc>none</proc> <!-- Disable the mixin annotation processor (it does not work under maven by default) -->
                 </configuration>
             </plugin>
         </plugins>

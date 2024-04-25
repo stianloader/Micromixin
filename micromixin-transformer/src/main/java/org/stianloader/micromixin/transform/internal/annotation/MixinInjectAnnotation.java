@@ -56,6 +56,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     @NotNull
     private static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
 
+    private final int allow;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> at;
     @NotNull
@@ -72,13 +73,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     private final MixinTransformer<?> transformer;
 
     private MixinInjectAnnotation(@NotNull Collection<SlicedInjectionPointSelector> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, boolean cancellable, boolean denyVoids, @NotNull String locals,
+            @NotNull MethodNode injectSource, int require, int expect, int allow, boolean cancellable, boolean denyVoids, @NotNull String locals,
             @NotNull MixinTransformer<?> transformer) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
         this.require = require;
         this.expect = expect;
+        this.allow = allow;
         this.cancellable = cancellable;
         this.denyVoids = denyVoids;
         this.locals = locals;
@@ -96,6 +98,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         String[] targetSelectors = null;
         int require = -1;
         int expect = -1;
+        int allow = -1;
         boolean cancellable = false;
         boolean denyVoids = ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(ASMUtil.getLastType(method.desc));
         String locals = null;
@@ -141,6 +144,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 require = ((Integer) val).intValue();
             } else if (name.equals("expect")) {
                 expect = ((Integer) val).intValue();
+            } else if (name.equals("allow")) {
+                allow = ((Integer) val).intValue();
             } else if (name.equals("cancellable")) {
                 cancellable = (Boolean) val;
             } else if (name.equals("locals")) {
@@ -162,28 +167,37 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 throw new MixinParseException("Unimplemented key in @Inject: " + name);
             }
         }
+
         List<MixinTargetSelector> selectors = new ArrayList<MixinTargetSelector>();
+
         if (target != null) {
             for (MixinDescAnnotation desc : target) {
                 selectors.add(new DescSelector(Objects.requireNonNull(desc)));
             }
         }
+
         if (targetSelectors != null) {
             for (String s : targetSelectors) {
                 selectors.add(new StringSelector(Objects.requireNonNull(s)));
             }
         }
+
         if (selectors.isEmpty()) {
             // IMPLEMENT what about injector groups?
             throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
         }
+
         if (locals == null) {
             locals = "NO_CAPTURE";
         }
 
+        if (allow < require) {
+            allow = -1;
+        }
+
         Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(at, slice));
 
-        return new MixinInjectAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, cancellable, denyVoids, locals, transformer);
+        return new MixinInjectAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, cancellable, denyVoids, locals, transformer);
     }
 
     @Override
@@ -229,6 +243,9 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         }
         if (matched.size() < this.expect) {
             this.transformer.getLogger().warn(MixinInjectAnnotation.class, "Potentially outdated mixin: {}.{} {} expects {} injection points but only found {}.", sourceStub.sourceNode.name, this.injectSource.name, this.injectSource.desc, this.expect, matched.size());
+        }
+        if (this.allow > 0 && matched.size() > this.allow) {
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " allows up to " + this.allow + " injection points but " + matched.size() + " injection points were selected.");
         }
 
         // IMPLEMENT CallbackInfo-chaining. The main part could be done through annotations.

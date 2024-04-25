@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.spongepowered.asm.mixin.Mixin;
+
 /**
  * The {@link Redirect} annotation redirects a method call to the mixin implementation.
  * The method on whom the annotation is applied is referenced within the micromixin documentation as the redirect handler.
@@ -41,6 +43,25 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Redirect {
+
+    /**
+     * The maximum amount of injection points that should be allowed. If the value of this
+     * element is below 1 or if the value is below the {@link Redirect#require() minimum amount}
+     * of allowable injection points then the limit is not being enforced. However,
+     * {@link Redirect#expect()} has no influence on {@link Redirect#allow()}.
+     *
+     * <p>Furthermore this limit is only valid per target class. That is, if multiple target classes are
+     * defined as per {@link Mixin#value()} or {@link Mixin#targets()} then this limit is only applicable
+     * for all the injection points in the targeted class. This limitation is caused due to the fact
+     * that the targeted classes are not known until they are loaded in by the classloader, at which point
+     * all the injection logic occurs.
+     *
+     * <p>This limit is shared across all methods (as defined by {@link Redirect#method()} or
+     * {@link Redirect#target()}) targeted by the handler within a class.
+     *
+     * @return The maximum amount targeted of injection points within the target class.
+     */
+    public int allow() default -1;
 
     /**
      * The injection point where the injection should occur.

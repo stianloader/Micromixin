@@ -7,6 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -77,6 +78,25 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(METHOD)
 public @interface ModifyReturnValue {
+
+    /**
+     * The maximum amount of injection points that should be allowed. If the value of this
+     * element is below 1 or if the value is below the {@link ModifyReturnValue#require() minimum amount}
+     * of allowable injection points then the limit is not being enforced. However,
+     * {@link ModifyReturnValue#expect()} has no influence on {@link ModifyReturnValue#allow()}.
+     *
+     * <p>Furthermore this limit is only valid per target class. That is, if multiple target classes are
+     * defined as per {@link Mixin#value()} or {@link Mixin#targets()} then this limit is only applicable
+     * for all the injection points in the targeted class. This limitation is caused due to the fact
+     * that the targeted classes are not known until they are loaded in by the classloader, at which point
+     * all the injection logic occurs.
+     *
+     * <p>This limit is shared across all methods (as defined by {@link ModifyReturnValue#method()})
+     * targeted by the handler within a class.
+     *
+     * @return The maximum amount targeted of injection points within the target class.
+     */
+    public int allow() default -1;
 
     /**
      * The injection points where the injection should occur.

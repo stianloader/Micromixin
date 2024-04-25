@@ -39,4 +39,9 @@ public class MutableInt {
         this.val *= val.val;
         return this;
     }
+
+    public MutableInt set(int val) {
+        this.val = val;
+        return this;
+    }
 }
