@@ -9,32 +9,28 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A field or method in a mixin that is annotated with {@link Unique} will never overwrite a member
- * of the target class. This means that the name of the method or field is renamed should a collision occur.
+ * The {@link Unique} annotation guarantees, when applied to a class member, that the member it was
+ * applied on does not cause any modifications to class members of the target classes.
  *
- * <p>This includes any members added by mixins that were applied before, but does not include any
- * members that were added after the mixin.
+ * <p>When using micromixin-transformer, fields will always get renamed to a unique identifier, however
+ * this behaviour may be subject to change. If you wish to change the behaviour, please reach out to the
+ * micromixin-transformer maintainers.
  *
- * <p>However for reasons that are beyond me, the spongeian implementation imposes following restrictions:
- * <ul>
- *  <li>The method is discarded if it is public and collides with a member in the target class. Setting {@link Unique#silent()} to true
- *  will cause the method to overwrite the target instead.</li>
- * </ul>
- * Micromixin reproduces these restrictions as best as it can, however due to the obscure nature of the restrictions,
- * the reproduction may have issues.
+ * <p>When applied on methods, then the annotated method will be overlaid under the semantics of the
+ * Intrinsic annotation, that is it will overlay the method with the same name, but when a collision
+ * occurs, the method will instead be discarded (with the same semantics as {@link Shadow}). <b>HOWEVER,</b>
+ * if the annotated method is <code>private</code> or <code>protected</code>, then in case of a collision
+ * the annotated method will be renamed using a uniquely generated prefix.
  */
+// TODO If @Intrinsic is implemented, update link to Intrinsic
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ FIELD, METHOD })
 public @interface Unique {
-
     /**
-     * If the member that was annotated with {@link Unique} is a public method, a warning is sent to the log.
-     * The official Mixin implementation does not seem to follow that logic, but Micromixin does.
-     *
-     * <p>Regardless, setting silent to true will suppress that log. Furthermore it will explicitly avoid discarding
-     * the method if it collides with a member. That behaviour is not present if {@link Unique#silent()} is left empty
-     * or false.
+     * If the member that was annotated with {@link Unique} is a public method and a collision occurred
+     * which caused the member to be absorbed (using the same semantics as {@link Shadow}), then
+     * a warning will be printed to the log unless {@link Unique#silent()} is set to <code>true</code>.
      *
      * @return True for the annotation to be silent, false otherwise.
      */

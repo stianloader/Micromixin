@@ -17,6 +17,7 @@ import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
 import org.stianloader.micromixin.test.j8.targets.StringTargetTest;
+import org.stianloader.micromixin.test.j8.targets.UniqueTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest.IllegalPoison;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
@@ -44,8 +45,21 @@ public class TestHarness {
         runModifyConstantTest(report);
         runModifyConstantAuxTest(report);
         runStringTargetTest(report);
+        runUniqueTest(report);
         runAllowTest(report);
         return report;
+    }
+
+    public static void runUniqueTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("UniqueTest.isUniqueAbsorbed", new UniqueTest()::isUniqueAbsorbed, true);
+        set.addUnit("UniqueTest.assertUniqueStays", new UniqueTest()::assertUniqueStays);
+        set.addUnit("UniqueTest.assertUniqueRenamedPrivate", new UniqueTest()::assertUniqueRenamedPrivate);
+        set.addUnit("UniqueTest.assertUniqueRenamedPrivatePublicTarget", new UniqueTest()::assertUniqueRenamedPrivatePublicTarget);
+
+        LoggerFactory.getLogger(TestHarness.class).info("UniqueTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runAllowTest(@NotNull TestReport report) {

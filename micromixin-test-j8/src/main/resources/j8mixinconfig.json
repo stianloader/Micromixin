@@ -40,6 +40,7 @@
     "StringTargetTestMixins$WhitespaceDescriptorTarget4",
     "StringTargetTestMixins$WhitespaceMixinTarget",
     "StringTargetTestMixins$WhitespaceNameTarget",
+    "UniqueMixins",
     "redirect.ErroneousInstructionTargetMixin",
     "redirect.ErroneousMissingInstanceMixin",
     "redirect.ErroneousPublicRedirectMixin",

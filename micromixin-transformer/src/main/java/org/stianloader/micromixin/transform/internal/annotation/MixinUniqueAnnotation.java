@@ -27,7 +27,7 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     private final MixinLoggingFacade logger;
 
     @NotNull
-    private final String uniquePrefix = "$unique$" + Long.toHexString(UID_COUNTER.getAndIncrement());
+    private final String uniquePrefix = "$unique$" + Long.toHexString(UID_COUNTER.getAndIncrement()) + "$";
 
     private MixinUniqueAnnotation(boolean silent, @NotNull MixinLoggingFacade logger) {
         this.silent = silent;
@@ -62,8 +62,9 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     @Override
     public boolean handleCollision(@NotNull T source, @NotNull ClassNode target, int access) {
         if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
-            // TODO How are we supposed to react?
-            this.logger.error(MixinUniqueAnnotation.class, "{}.{} {} is public and annotated through @Unique. Furthermore, it collides with something already present in the class.", source.getOwner().name, source.getName(), source.getDesc());
+            if (!this.silent) {
+                this.logger.warn(MixinUniqueAnnotation.class, "{}.{} {} is public and annotated through @Unique. Furthermore, it collides with something already present in the class and as such the original mapping was discarded. Use silent=true in the @Unique annotation to supress this warning", source.getOwner().name, source.getName(), source.getDesc());
+            }
             return false;
         }
         // IMPLEMENT UID Regeneration.
@@ -80,13 +81,10 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
         if (desc.charAt(0) == '(') {
             // Method
             if ((source.getAccess() & Opcodes.ACC_PUBLIC) != 0) {
-                if (!this.silent) {
-                    this.logger.warn(MixinUniqueAnnotation.class, "@Unique-annotated method is public. @Unique will have no effect. Affected method: {}.{} {}", source.getOwner().name, source.getName(), source.getDesc());
-                }
+                // Collision handling is done in #handleCollision
                 return name;
             }
             desc = remapper.getRemappedMethodDescriptor(desc, sharedBuilder);
-            // TODO Is the prefix really optional?
             if (!ASMUtil.hasMethod(target, name, desc)) {
                 return name;
             }
