@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.MixinTransformer;
 import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinInjectAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinModifyArgAnnotation;
@@ -24,19 +25,6 @@ import org.stianloader.micromixin.transform.internal.annotation.VirtualConstruct
 import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasModifyReturnValueAnnotation;
 
 public class MixinMethodStub implements ClassMemberStub {
-
-    @NotNull
-    public final ClassNode owner;
-    @NotNull
-    public final MethodNode method;
-    @NotNull
-    public final Collection<MixinAnnotation<MixinMethodStub>> annotations;
-
-    public MixinMethodStub(@NotNull ClassNode owner, @NotNull MethodNode method, @NotNull Collection<MixinAnnotation<MixinMethodStub>> annotations) {
-        this.owner = owner;
-        this.method = method;
-        this.annotations = annotations;
-    }
 
     @NotNull
     public static MixinMethodStub parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
@@ -79,31 +67,34 @@ public class MixinMethodStub implements ClassMemberStub {
                 annotations.add(MixinOverwriteAnnotation.generateImplicit(node, method));
             }
         }
-        return new MixinMethodStub(node, method, Collections.unmodifiableCollection(annotations));
+
+        MixinMethodStub stub = new MixinMethodStub(node, method, Collections.unmodifiableCollection(annotations), transformer.getLogger());
+        for (MixinAnnotation<MixinMethodStub> annotation : annotations) {
+            annotation.validateMixin(stub, transformer.getLogger(), sharedBuilder);
+        }
+        return stub;
+    }
+
+    @NotNull
+    public final Collection<MixinAnnotation<MixinMethodStub>> annotations;
+    @NotNull
+    public final MixinLoggingFacade logger;
+    @NotNull
+    public final MethodNode method;
+    @NotNull
+    public final ClassNode owner;
+
+    public MixinMethodStub(@NotNull ClassNode owner, @NotNull MethodNode method, @NotNull Collection<MixinAnnotation<MixinMethodStub>> annotations, @NotNull MixinLoggingFacade logger) {
+        this.owner = owner;
+        this.method = method;
+        this.annotations = annotations;
+        this.logger = logger;
     }
 
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub stub, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinMethodStub> a : this.annotations) {
             a.apply(target, hctx, stub, this, remapper, sharedBuilder);
         }
-    }
-
-    @Override
-    @NotNull
-    public ClassNode getOwner() {
-        return this.owner;
-    }
-
-    @Override
-    @NotNull
-    public String getName() {
-        return this.method.name;
-    }
-
-    @Override
-    @NotNull
-    public String getDesc() {
-        return this.method.desc;
     }
 
     @Override
@@ -118,5 +109,29 @@ public class MixinMethodStub implements ClassMemberStub {
     @Override
     public int getAccess() {
         return this.method.access;
+    }
+
+    @Override
+    @NotNull
+    public String getDesc() {
+        return this.method.desc;
+    }
+
+    @Override
+    @NotNull
+    public MixinLoggingFacade getLogger() {
+        return this.logger;
+    }
+
+    @Override
+    @NotNull
+    public String getName() {
+        return this.method.name;
+    }
+
+    @Override
+    @NotNull
+    public ClassNode getOwner() {
+        return this.owner;
     }
 }

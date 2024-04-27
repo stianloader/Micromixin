@@ -22,9 +22,9 @@ public @interface Shadow {
 
     /**
      * <p><b>The spongeian implementation (and therefore the standard Micromixin implementation) does not support
-     * prefixes on static methods. That is "working as intended" and the bug does not exist - we of course know better.</b></p>
+     * prefixes on static methods.</b> This behaviour is subject to change in future versions of micromixin-transformer.</p>
      *
-     * A prefix that can be added to the name of the member.
+     * <p>A prefix that can be added to the name of the member.
      * The name of the member is not necessarily required to start with the prefix though.
      * But if the prefix is present, it will be removed allowing the member to match
      * with the proper name.
@@ -33,13 +33,21 @@ public @interface Shadow {
      * having the same name. The JVMS allows the existence of multiple methods with the same arguments and the same
      * name, as long as the return type differs. However the JLS does not allow the existence of such methods.
      *
+     * <p>While micromixin-transformer and micromixin-remapper permits it, the spongeian mixin implementation
+     * do not allow the usage of prefixes on fields. Doing so will cause the transformer to refuse apply
+     * under the spongeian implementation. Under micromixin, a warning is printed out instead, indicating that
+     * there are compatibility concerns that arise from such usage of prefixes. According to the spongeian
+     * documentation, the core point of prefixes have no application on fields. Why exactly that is the case is a bit
+     * beyond me as it is very well possible for fields to have the same name but different descriptors.
+     * In any case, use of {@link #aliases()} <em>may</em> be an appropriate workaround.
+     *
      * @return The prefix to use
      */
     public String prefix() default "shadow$";
 
     /**
      * <p><b>The spongeian implementation (and therefore the standard Micromixin implementation) does not support
-     * aliases on static methods. That is "working as intended" and the bug does not exist - we of course know better.</b></p>
+     * aliases on static methods.</b> This behaviour is subject to change in future versions of micromixin-transformer.</p>
      *
      * The aliases of the method. Only one alias is selected from the given list,
      * if none match an exception is thrown during transformation. The actual name of the method
@@ -51,6 +59,9 @@ public @interface Shadow {
      * According to them aliases should only be used if the name of the target
      * has changed. (The behaviour of aliases does not allow much more usecases
      * anyways)
+     *
+     * <p>Unlike prefixes, aliases are completely acceptable when the <code>&#64;Shadow</code>-Annotation
+     * targets a field in both micromixin and standard mixin.
      *
      * @return The aliases to use.
      */

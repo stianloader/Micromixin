@@ -3,6 +3,7 @@ package org.stianloader.micromixin.transform.internal;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 
 public interface ClassMemberStub {
 
@@ -14,6 +15,9 @@ public interface ClassMemberStub {
 
     @NotNull
     String getDesc();
+
+    @NotNull
+    MixinLoggingFacade getLogger();
 
     int getAccess();
 

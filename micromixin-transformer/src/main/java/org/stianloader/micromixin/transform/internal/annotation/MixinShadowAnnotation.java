@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.internal.ClassMemberStub;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinFieldStub;
@@ -127,18 +128,18 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
                       @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper,
                       @NotNull StringBuilder sharedBuilder) {
-        if (!this.isMutable) return;
-
-        if (source instanceof MixinFieldStub) {
-            for (FieldNode fn : to.fields) {
-                String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
-                String mappedName = remapper.fieldRenames.get(source.getOwner().name, source.getDesc(), source.getName());
-                if (fn.name.equals(mappedName) && fn.desc.equals(mappedDesc)) {
-                    fn.access &= ~Opcodes.ACC_FINAL;
+        if (this.isMutable) {
+            if (source instanceof MixinFieldStub) {
+                for (FieldNode fn : to.fields) {
+                    String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
+                    String mappedName = remapper.fieldRenames.get(source.getOwner().name, source.getDesc(), source.getName());
+                    if (fn.name.equals(mappedName) && fn.desc.equals(mappedDesc)) {
+                        fn.access &= ~Opcodes.ACC_FINAL;
+                    }
                 }
+            } else {
+                throw new UnsupportedOperationException("@Mutable is incompatible with @Shadow on methods. @Mutable may only be used in conjunction with accessors.");
             }
-        } else {
-            throw new UnsupportedOperationException("Annotating Shadow'ed members is only possible with fields");
         }
     }
 
@@ -151,6 +152,23 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
             apply((MixinFieldStub) source, target, remapper, sharedBuilder);
         } else {
             throw new UnsupportedOperationException("Unknown/Unsupported implementation of ClassMemberStub: " + source.getClass().getName());
+        }
+    }
+
+    @Override
+    public void validateMixin(@NotNull T source, @NotNull MixinLoggingFacade logger, @NotNull StringBuilder sharedBuilder) {
+        if (source instanceof MixinFieldStub) {
+            if (source.getName().startsWith(this.prefix) && !this.prefix.equals("")) {
+                logger.warn(MixinShadowAnnotation.class, "The @Shadow-annotated field {}.{} {} defines a prefix. However, the spongeian mixin implementation does not support using @Shadow prefixes on fields. For more information, see the javadocs on prefixes. A possible workaround would be getting rid of the prefix and if necessary use aliases instead.", source.getOwner().name, source.getName(), source.getDesc());
+            }
+        } else if (source instanceof MixinMethodStub) {
+            if ((source.getAccess() & Opcodes.ACC_STATIC) != 0) {
+                if (source.getName().startsWith(this.prefix)) {
+                    logger.error(MixinShadowAnnotation.class, "The @Shadow annotated method {}.{}{} defines a prefix and is static. However, due to a bug in the spongeian mixin implementation INVOKESTATIC calls will not be redirected to the non-prefixed member you are targetting, effectively causing a crash at runtime. At this point in time micromixin-transformer replicates this issue, but this behaviour is subject to change.", source.getOwner().name, source.getName(), source.getDesc());
+                } else if (!this.aliases.isEmpty()) {
+                    logger.error(MixinShadowAnnotation.class, "The @Shadow annotated method {}.{}{} defines an alias and is static. However, due to a bug in the spongeian mixin implementation INVOKESTATIC calls will not be redirected to the member you are targetting, effectively causing a crash at runtime. At this point in time micromixin-transformer replicates this issue, but this behaviour is subject to change.", source.getOwner().name, source.getName(), source.getDesc());
+                }
+            }
         }
     }
 }
