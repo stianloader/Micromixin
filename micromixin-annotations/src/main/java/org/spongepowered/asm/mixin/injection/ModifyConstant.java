@@ -6,6 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 
 import org.spongepowered.asm.mixin.Mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+
 /**
  * The {@link ModifyConstant} annotation allows to apply a function on a single constant
  * after pushing the constant onto the operand stack. More specifically,
@@ -39,7 +41,25 @@ import org.spongepowered.asm.mixin.Mixin;
  * For non-static targeted methods the handler MUST NOT be static, but otherwise the accessibility
  * modifiers are not of relevance.
  
-  <p>Locals and argument capture is not supported when using {@link ModifyConstant}.
+ * <p>The value that is modified must be the first argument of the constant value modifier handler
+ * method. All other arguments are there for argument capture.
+ *
+ * <h3>Argument and local capture</h3>
+ *
+ * <p>At this point in time, local capture is not supported.
+ *
+ * <p>Argument capture behaves the same way as {@link ModifyReturnValue}. The arguments that can be captured
+ * are the arguments with whom the target method was called with (do note that it is permissible for the
+ * values to be reassigned - so while it guarantees the argument was captured, the value of the argument
+ * may have been altered) - or more plainly, argument capture means that the arguments of the target method
+ * are captured and passed to the return value modifier handler method.
+ *
+ * <p>Captured arguments must be defined in the same order as the target method.
+ * It is not permissible to "skip" arguments, but it is permissible to not capture trailing arguments
+ * - leading arguments need to be captured however under the premise of the "no skipping" requirement.
+ *
+ * <p>Reassigning captured arguments in the constant value modifier method has no effect on the target method.
+ * As such, the behaviour is quite similar to the argument and local variable capture behaviour of {@link Inject}.
  *
  * <h3>Example use and produced bytecode</h3>
  *

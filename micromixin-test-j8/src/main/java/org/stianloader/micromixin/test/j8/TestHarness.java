@@ -607,6 +607,56 @@ public class TestHarness {
         set.addUnit("ArgumentCaptureTest.<clinit>", () -> {
             ArgumentCaptureTest.class.toString();
         });
+        set.addUnit("ArgumentCaptureTest.captureModifyReturnValue", () -> {
+            if (!new ArgumentCaptureTest().captureModifyReturnValue(true)) {
+                throw new AssertionError("captureModifyReturnValue == false; expected opposite");
+            }
+        });
+        set.addUnit("ArgumentCaptureTest.captureModifyReturnValueMulti", () -> {
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti0(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti0(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti1(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti1(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti2(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti2(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti3(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti3(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti4(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti4(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyReturnValueMulti5(9, 3) != 6) {
+                throw new AssertionError("captureModifyReturnValueMulti5(9, 3) != 6; expected opposite");
+            }
+        });
+        set.addUnit("ArgumentCaptureTest.captureModifyConstant", () -> {
+            if (!new ArgumentCaptureTest().captureModifyConstant(true)) {
+                throw new AssertionError("captureModifyConstant == false; expected opposite");
+            }
+        });
+        set.addUnit("ArgumentCaptureTest.captureModifyConstantMulti", () -> {
+            if (new ArgumentCaptureTest().captureModifyConstantMulti0(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti0(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyConstantMulti1(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti1(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyConstantMulti2(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti2(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyConstantMulti3(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti3(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyConstantMulti4(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti4(9, 3) != 6; expected opposite");
+            }
+            if (new ArgumentCaptureTest().captureModifyConstantMulti5(9, 3) != 6) {
+                throw new AssertionError("captureModifyConstantMulti5(9, 3) != 6; expected opposite");
+            }
+        });
         LoggerFactory.getLogger(TestHarness.class).info("ArgumentCaptureTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

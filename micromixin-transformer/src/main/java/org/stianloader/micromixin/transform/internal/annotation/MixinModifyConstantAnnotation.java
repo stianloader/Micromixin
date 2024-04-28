@@ -31,11 +31,13 @@ import org.stianloader.micromixin.transform.internal.selectors.constant.Wildcard
 import org.stianloader.micromixin.transform.internal.selectors.inject.ConstantInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
-import org.stianloader.micromixin.transform.internal.util.DescString;
 import org.stianloader.micromixin.transform.internal.util.Objects;
+import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
 
 public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodStub> {
     private final int allow;
+    @NotNull
+    private final ArgumentCaptureContext capturedArgs;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> slicedAts;
     @NotNull
@@ -48,7 +50,8 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
     private final MixinLoggingFacade logger;
 
     private MixinModifyConstantAnnotation(@NotNull Collection<SlicedInjectionPointSelector> slicedAts, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinLoggingFacade logger) {
+            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinLoggingFacade logger,
+            @NotNull ArgumentCaptureContext capturedArgs) {
         this.slicedAts = slicedAts;
         this.selectors = selectors;
         this.injectSource = injectSource;
@@ -56,6 +59,7 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
         this.expect = expect;
         this.allow = allow;
         this.logger = logger;
+        this.capturedArgs = capturedArgs;
     }
 
     @Override
@@ -85,6 +89,7 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
                 handlerInvokeOpcode = Opcodes.INVOKESTATIC;
             }
 
+            this.capturedArgs.appendCaptures(to, Objects.requireNonNull(method, "method may not be null"), source, Objects.requireNonNull(insn, "insn may not be null"), inject);
             inject.add(new MethodInsnNode(handlerInvokeOpcode, to.name, handlerNode.name, handlerNode.desc));
             method.instructions.insert(insn, inject);
         }
@@ -103,26 +108,7 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("The constant value modifier method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
 
-        String argType;
-
-        {
-            DescString descString = new DescString(method.desc);
-
-            if (!descString.hasNext()) {
-                throw new MixinParseException("The constant value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyConstant but it does not consume the original constant value. Constant modifiers may not be no-args methods!");
-            }
-
-            argType = descString.nextType();
-
-            if (descString.hasNext()) {
-                throw new MixinParseException("The constant value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyConstant but it has more than a single argument! Note that constant modifiers are ineligble for argument and local capture.");
-            }
-
-            if (!ASMUtil.getReturnType(method.desc).equals(argType)) {
-                throw new MixinParseException("The constant value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyConstant but has an invalid descriptor! Constant modifiers must return the same type as they consume - irrespective of class hierarchy.");
-            }
-        }
-
+        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyConstant");
         List<MixinAtAnnotation> constantAts = new ArrayList<MixinAtAnnotation>();
         List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;
@@ -212,7 +198,8 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
         }
 
         if (constantAts.isEmpty()) {
-            constantAts.add(new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(new WildcardConstantSelector(argType)), ""));
+            ConstantSelector selector = new WildcardConstantSelector(ASMUtil.getReturnType(method.desc));
+            constantAts.add(new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), ""));
         }
 
         if (allow < require) {
@@ -221,6 +208,6 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
 
         Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(constantAts, slice));
 
-        return new MixinModifyConstantAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer.getLogger());
+        return new MixinModifyConstantAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer.getLogger(), argCapture);
     }
 }

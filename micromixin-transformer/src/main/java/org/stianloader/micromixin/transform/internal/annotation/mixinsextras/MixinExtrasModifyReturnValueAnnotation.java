@@ -33,14 +33,16 @@ import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelect
 import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
-import org.stianloader.micromixin.transform.internal.util.DescString;
 import org.stianloader.micromixin.transform.internal.util.Objects;
+import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
 
 public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<MixinMethodStub> {
 
     private final int allow;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> at;
+    @NotNull
+    private final ArgumentCaptureContext capturedArguments;
     @NotNull
     public final Collection<MixinTargetSelector> selectors;
     @NotNull
@@ -51,7 +53,8 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     private final MixinLoggingFacade logger;
 
     private MixinExtrasModifyReturnValueAnnotation(@NotNull Collection<SlicedInjectionPointSelector> at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinLoggingFacade logger) {
+            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinLoggingFacade logger,
+            @NotNull ArgumentCaptureContext capturedArguments) {
         this.at = at;
         this.selectors = selectors;
         this.injectSource = injectSource;
@@ -59,6 +62,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
         this.expect = expect;
         this.allow = allow;
         this.logger = logger;
+        this.capturedArguments = capturedArguments;
     }
 
     @Override
@@ -92,6 +96,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             } else {
                 opcode = Opcodes.INVOKESTATIC;
             }
+            this.capturedArguments.appendCaptures(to, method, source, insn, inject);
             inject.add(new MethodInsnNode(opcode, to.name, handlerNode.name, handlerNode.desc));
             method.instructions.insertBefore(insn, inject);
         }
@@ -110,26 +115,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             throw new MixinParseException("The return value modifier method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
 
-        String returnType;
-
-        {
-            DescString descString = new DescString(method.desc);
-
-            if (!descString.hasNext()) {
-                throw new MixinParseException("The return value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyReturnValue but it does not consume the original return value. Return value modifiers may not be no-args methods!");
-            }
-
-            returnType = descString.nextType();
-
-            if (descString.hasNext()) {
-                throw new MixinParseException("The return value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyReturnValue but it has more than a single argument! Note that return value modifiers are ineligble for argument and local capture.");
-            }
-
-            if (!ASMUtil.getReturnType(method.desc).equals(returnType)) {
-                throw new MixinParseException("The return value modifier method " + node.name + "." + method.name + method.desc + " is annotated with @ModifyReturnValue but has an invalid descriptor! Return value modifiers must return the same type as they consume - irrespective of class hierarchy.");
-            }
-        }
-
+        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyReturnValue");
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;
@@ -225,6 +211,6 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
 
         Collection<SlicedInjectionPointSelector> slicedAts = Collections.unmodifiableCollection(MixinAtAnnotation.bake(at, slice));
 
-        return new MixinExtrasModifyReturnValueAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer.getLogger());
+        return new MixinExtrasModifyReturnValueAnnotation(slicedAts, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer.getLogger(), argCapture);
     }
 }
