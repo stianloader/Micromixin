@@ -723,6 +723,8 @@ public class TestHarness {
         set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedMultiA", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedMultiA, 1);
         set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedMultiB", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedMultiB, 0);
         set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedPriorityAlias", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedPriorityAlias, 2);
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.invalid.InvalidIntrinsic$InvalidIntrinsicNoInterface");
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.invalid.InvalidIntrinsic$InvalidIntrinsicNoInterfacePrefixed");
         LoggerFactory.getLogger(TestHarness.class).info("MixinOverwriteTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
