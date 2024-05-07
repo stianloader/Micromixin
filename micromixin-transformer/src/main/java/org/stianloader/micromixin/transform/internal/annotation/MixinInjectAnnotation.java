@@ -204,7 +204,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.handlerPrefix + hctx.handlerCounter++ + "$" + this.injectSource.name, remapper, hctx.lineAllocator);
+        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
         for (MixinTargetSelector selector : this.selectors) {
             for (SlicedInjectionPointSelector at : this.at) {

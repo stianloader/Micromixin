@@ -91,12 +91,6 @@ public class MixinStub implements Comparable<MixinStub> {
             throw (RuntimeException) rethrown;
         }
 
-        // Perform basic validation
-        for (MixinMethodStub methodStub : this.methods) {
-            if (methodStub.method.name.startsWith(hctx.handlerPrefix)) {
-                throw new IllegalStateException("Names of Mixin methods may not start with the handler prefix (which is " + hctx.handlerPrefix + ")");
-            }
-        }
         SimpleRemapper remapper = getRemapper(target, hctx, sharedBuilder);
         for (MixinFieldStub stub : this.fields) {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);
