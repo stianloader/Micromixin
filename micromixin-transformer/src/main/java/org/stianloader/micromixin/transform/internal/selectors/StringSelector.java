@@ -25,19 +25,30 @@ public class StringSelector implements MixinTargetSelector, InjectionPointTarget
         // Explicit target selectors can contain whitespace characters (such as space or tab)
         // which are completely ignored. While we probably could use a regular expressions for that, I don't
         // think that performance would be much better due to the associated overhead.
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < text.length(); i++) {
-            int codepoint = text.codePointAt(i);
-            if (!Character.isWhitespace(codepoint)) {
-                builder.appendCodePoint(codepoint);
+        {
+            StringBuilder purged = new StringBuilder();
+            for (int i = 0; i < text.length(); i++) {
+                int codepoint = text.codePointAt(i);
+                if (!Character.isWhitespace(codepoint)) {
+                    purged.appendCodePoint(codepoint);
+                }
             }
+            text = purged.toString();
         }
-        text = builder.toString();
-        // TODO parse that stuff with equals. And apparently regex is also supported?
+
+        int colonIndex = text.indexOf(':');
         int semicolonIndex = text.indexOf(';');
         int descStartIndex = text.indexOf('(');
         int endName;
         int startName;
+
+        if (colonIndex >= 0) {
+            if (descStartIndex >= 0) {
+                throw new IllegalArgumentException("The usage of the colon (':') indicates a field string, but the target selector contains a '(', which is an illegal character within field selectors.");
+            }
+            descStartIndex = colonIndex + 1;
+        }
+
         if (semicolonIndex != -1 && (descStartIndex == -1 || semicolonIndex < descStartIndex)) {
             this.owner = text.substring(1, semicolonIndex);
             startName = semicolonIndex + 1;
@@ -51,6 +62,9 @@ public class StringSelector implements MixinTargetSelector, InjectionPointTarget
         } else {
             this.desc = text.substring(descStartIndex);
             endName = descStartIndex;
+            if (colonIndex >= 0) {
+                endName--;
+            }
         }
         if (endName > startName) {
             this.name = text.substring(startName, endName);

@@ -26,14 +26,44 @@ import org.spongepowered.asm.mixin.Mixin;
  *
  * <h2>Field redirects</h2>
  * Aside from redirecting methods which is the main use of this annotation, {@link Redirect} is also capable of redirecting
- * read as well as write references to fields - static or not. However, this is not yet supported within micromixin at
- * the point of writing (28th of January 2024). Regardless, the signature of the handler would behave much as if the GETFIELD,
+ * read as well as write references to fields - static or not. Regardless, the signature of the handler would behave much as if the GETFIELD,
  * GETSTATIC, PUTFIELD or PUTSTATIC were replaced with appropriate getter or setter methods. The integrity of the
  * operand stack must be preserved.
  *
+ * <table>
+ *   <caption>Field redirect handler signature matrix</caption>
+ *   <thead>
+ *     <tr>
+ *       <th>Target method static</th><th>Field static</th><th>Instruction opcode</th><th>Signature</th>
+ *     </tr>
+ *   </thead>
+ *   <tbody>
+ *     <tr>
+ *       <td>Yes</td><td>Yes</td><td>GETSTATIC</td><td>static {type} handler()</td>
+ *      </tr><tr>
+ *       <td>Yes</td><td>Yes</td><td>PUTSTATIC</td><td>static void handler({type})</td>
+ *      </tr><tr>
+ *       <td>No</td><td>Yes</td><td>GETSTATIC</td><td>{type} handler()</td>
+ *      </tr><tr>
+ *       <td>No</td><td>Yes</td><td>PUTSTATIC</td><td>void handler({type})</td>
+ *      </tr><tr>
+ *       <td>Yes</td><td>No</td><td>GETFIELD</td><td>static {type} handler({owner})</td>
+ *      </tr><tr>
+ *       <td>Yes</td><td>No</td><td>PUTFIELD</td><td>static void handler({owner}, {type})</td>
+ *      </tr><tr>
+ *       <td>No</td><td>No</td><td>GETFIELD</td><td>{type} handler({owner})</td>
+ *      </tr><tr>
+ *       <td>No</td><td>No</td><td>PUTFIELD</td><td>void handler({owner}, {type})</td>
+ *     </tr>
+ *   </tbody>
+ * </table>
+ *
+ * For a call such as <code>object.field = ...</code> the type of <code>object</code>
+ * will generally be the <code>{owner}</code> type.
+ *
  * <h2>Array access redirects</h2>
  * Furthermore {@link Redirect} is capable of redirecting array accesses via the xALOAD and xASTORE opcode families.
- * Like field access redirects, this is also not yet implemented in micromixin at the point of writing (28th of January 2024).
+ * This is also not yet implemented in micromixin at the point of writing (8th of May 2024).
  *
  * <p>When redirecting read access to an array of type <code>{type}</code>, the signature of the redirect handler is as
  * follows: <code>private static {type} handlerName({type}[] array, int index)</code>. Likewise write access would have

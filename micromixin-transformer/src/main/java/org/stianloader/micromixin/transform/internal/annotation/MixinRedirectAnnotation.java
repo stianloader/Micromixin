@@ -12,6 +12,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -151,7 +152,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + at.getSelector().fullyQualifiedName + "\") which does not support usage within a @Redirect context.");
         }
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + "redirect$" + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<MethodInsnNode, MethodNode> matched = new HashMap<MethodInsnNode, MethodNode>();
+        Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
             MethodNode targetMethod = selector.selectMethod(to, sourceStub);
             if (targetMethod != null) {
@@ -165,10 +166,10 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                 }
                 for (AbstractInsnNode insn : this.at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
-                    if (!(insn instanceof MethodInsnNode)) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
+                    if (!(insn instanceof MethodInsnNode || insn instanceof FieldInsnNode)) {
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode or FieldInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL, GETSTATIC, GETFIELD, PUTSTATIC, PUTFIELD]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
                     }
-                    matched.put((MethodInsnNode) insn, targetMethod);
+                    matched.put(insn, targetMethod);
                 }
             }
         }
@@ -182,16 +183,12 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " allows up to " + this.allow + " injection points but " + matched.size() + " injection points were selected.");
         }
 
-        // IMPLEMENT @Redirect-chaining. The main part could be done through annotations.
-        // Note: The Spongeian mixin impl probably does not support that anyways - so is there a point implementing such
-        // behaviour anyways? Besides - what is the point of chaining redirects? Wouldn't that cause unending hazard?
-        // I think yes. Instead one ought to use @ModifyX anyways
-        for (Map.Entry<MethodInsnNode, MethodNode> entry : matched.entrySet()) {
-            MethodInsnNode insn = entry.getKey();
-            // IMPLEMENT verify arguments.
+        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
+            AbstractInsnNode insn = entry.getKey();
+            // IMPLEMENT verify arguments or types.
             // TODO test whether argument capture is a thing with @Redirect
             MethodNode targetMethod = entry.getValue();
-            InsnList instructions =  targetMethod.instructions;
+            InsnList instructions = targetMethod.instructions;
             int insertedOpcode;
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                 VarInsnNode preInsert = new VarInsnNode(Opcodes.ALOAD, 0);

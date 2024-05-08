@@ -46,6 +46,7 @@
     "redirect.ErroneousInstructionTargetMixin",
     "redirect.ErroneousMissingInstanceMixin",
     "redirect.ErroneousPublicRedirectMixin",
+    "redirect.FieldRedirectTestMixins",
     "redirect.GenericInvokerMixins",
     "mixinextra.ModifyReturnValueCompanionMixins",
     "mixinextra.ModifyReturnValueInvalidTargetInsnMixins$TargetHead",

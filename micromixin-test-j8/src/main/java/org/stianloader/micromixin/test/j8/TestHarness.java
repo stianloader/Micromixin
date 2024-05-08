@@ -23,6 +23,7 @@ import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioning
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueInvalidTargetInsnTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueTest;
 import org.stianloader.micromixin.test.j8.targets.mixinextra.ModifyReturnValueVisibilityTest;
+import org.stianloader.micromixin.test.j8.targets.redirect.FieldRedirectTest;
 import org.stianloader.micromixin.test.j8.targets.redirect.GenericInvoker;
 
 public class TestHarness {
@@ -47,7 +48,35 @@ public class TestHarness {
         runStringTargetTest(report);
         runUniqueTest(report);
         runAllowTest(report);
+        runFieldRedirectTest(report);
         return report;
+    }
+
+    public static void runFieldRedirectTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectB", FieldRedirectTest::staticRedirectB, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectC", FieldRedirectTest::staticRedirectC, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectD", FieldRedirectTest::staticRedirectD, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectF", FieldRedirectTest::staticRedirectF, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectI", FieldRedirectTest::staticRedirectI, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectJ", FieldRedirectTest::staticRedirectJ, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectL", FieldRedirectTest::staticRedirectL, Boolean.TRUE);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectS", FieldRedirectTest::staticRedirectS, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectZ", FieldRedirectTest::staticRedirectZ, true);
+
+        set.addUnitAssertEquals("FieldRedirectTest.redirectB", new FieldRedirectTest()::redirectB, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectC", new FieldRedirectTest()::redirectC, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectD", new FieldRedirectTest()::redirectD, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectF", new FieldRedirectTest()::redirectF, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectI", new FieldRedirectTest()::redirectI, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectJ", new FieldRedirectTest()::redirectJ, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectL", new FieldRedirectTest()::redirectL, Boolean.TRUE);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectS", new FieldRedirectTest()::redirectS, 1);
+        set.addUnitAssertEquals("FieldRedirectTest.redirectZ", new FieldRedirectTest()::redirectZ, true);
+
+        LoggerFactory.getLogger(TestHarness.class).info("FieldRedirectTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runUniqueTest(@NotNull TestReport report) {
