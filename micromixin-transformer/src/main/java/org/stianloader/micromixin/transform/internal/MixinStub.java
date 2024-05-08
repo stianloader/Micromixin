@@ -79,7 +79,11 @@ public class MixinStub implements Comparable<MixinStub> {
 
     @Override
     public int compareTo(MixinStub o) {
-        return this.header.priority - o.header.priority; // TODO is this correct?
+        int priority = this.header.priority - o.header.priority;
+        if (priority != 0) {
+            return priority;
+        }
+        return this.sourceNode.name.compareTo(o.sourceNode.name); // Under rather rare circumstances this check doesn't suffice, so we will need to improve that check eventually
     }
 
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
@@ -119,5 +123,10 @@ public class MixinStub implements Comparable<MixinStub> {
             method.collectMappings(targetClass, hctx, this, r, sharedBuilder);
         }
         return r;
+    }
+
+    @Override
+    public String toString() {
+        return "MixinStub '" + this.sourceNode.name + "'";
     }
 }

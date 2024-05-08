@@ -85,6 +85,7 @@ public class MixinTransformer<M> {
             throw new IllegalStateException("Two mixin configurations within the same modularity attachment (" + attachment + ") target the same package (" + config.mixinPackage + ").");
         }
         this.packageDeclarations.put(new ModularityAttached<M, String>(attachment, config.mixinPackage), config);
+        this.getLogger().debug(MixinTransformer.class, "Registering mixin package {} under modularity attachment {}", config.mixinPackage, attachment);
         StringBuilder sharedBuilder = new StringBuilder();
         // FIXME unregister registered stuff if it fails
         for (String mixin : config.mixins) {
@@ -94,7 +95,7 @@ public class MixinTransformer<M> {
             }
             this.mixins.put(mixinRef, config);
             try {
-                ClassNode node = bytecodeProvider.getClassNode(attachment, mixinRef.value);
+                ClassNode node = this.bytecodeProvider.getClassNode(attachment, mixinRef.value);
                 MixinStub stub = MixinStub.parse(config.priority, node, this, sharedBuilder);
                 this.mixinNodes.put(mixinRef, node);
                 this.mixinStubs.put(mixinRef, stub);
@@ -110,6 +111,7 @@ public class MixinTransformer<M> {
                     }
                     val.add(stub);
                 }
+                this.getLogger().debug(MixinTransformer.class, "Registering mixin {} under modularity attachment {}, the mixin target following classes: {}", mixinRef.value, attachment, targets);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException("Broken mixin: " + mixinRef.value + " (attached via " + attachment + ")", e);
             } catch (MixinParseException e) {
@@ -196,20 +198,22 @@ public class MixinTransformer<M> {
     }
 
     public void transform(@NotNull ClassNode in) {
-        Iterable<MixinStub> mixins = mixinTargets.get(in.name);
+        Iterable<MixinStub> mixins = this.mixinTargets.get(in.name);
         if (mixins == null) {
             return;
         }
+        this.logger.debug(MixinTransformer.class, "Transforming class {} using following stubs: {}", in.name, mixins);
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
         StringBuilder sharedBuilder = new StringBuilder();
         for (MixinStub stub : mixins) {
             try {
+                this.logger.debug(MixinTransformer.class, "Applying mixin {} to transforming classnode {}.", stub.sourceNode.name, in.name);
                 stub.applyTo(in, hctx, sharedBuilder);
             } catch (Throwable t) {
                 if (t instanceof Error && !(t instanceof AssertionError)) {
                     throw (Error) t;
                 }
-                if (DEBUG) {
+                if (MixinTransformer.DEBUG) {
                     StringWriter sw = new StringWriter();
                     TraceClassVisitor tcv = new TraceClassVisitor(null, new Textifier(), new PrintWriter(sw));
                     in.accept(tcv);
@@ -233,7 +237,7 @@ public class MixinTransformer<M> {
             }
         }
         hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder);
-        if (DEBUG) {
+        if (MixinTransformer.DEBUG) {
             try {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
                 in.accept(cca);
