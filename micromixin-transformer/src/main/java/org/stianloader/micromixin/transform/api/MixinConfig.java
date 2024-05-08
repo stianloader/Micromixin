@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform;
+package org.stianloader.micromixin.transform.api;
 
 import java.util.Collection;
 import java.util.Collections;

@@ -7,10 +7,10 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinStub;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 
 public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStub> {

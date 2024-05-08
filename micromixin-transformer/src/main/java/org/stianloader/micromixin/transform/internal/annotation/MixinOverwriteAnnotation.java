@@ -8,9 +8,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<MixinMethodStub> {

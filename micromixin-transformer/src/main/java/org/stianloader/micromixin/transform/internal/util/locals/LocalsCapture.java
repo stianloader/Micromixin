@@ -11,7 +11,7 @@ import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Value;
-import org.stianloader.micromixin.transform.supertypes.ClassWrapperPool;
+import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 
 public class LocalsCapture {
 

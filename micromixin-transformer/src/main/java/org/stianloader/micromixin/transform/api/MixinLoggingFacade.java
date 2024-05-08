@@ -15,7 +15,10 @@ package org.stianloader.micromixin.transform.api;
  * <p>In order to appeal to everyone the simple decision of simply
  * allowing the API consumer to choose what they want was made.
  * By default logging will happen entirely via {@link System#out}
- * or {@link System#err}.
+ * or {@link System#err}. In the default implementation, debug logging
+ * only occurs if the debug flag is set - otherwise the debug statements
+ * are not logged. However, other implementations may ignore the debug
+ * system property <code>org.stianloader.micromixin.debug</code>.
  *
  * <p>This facade should support "standard" SLF4J placeholders via "{}".
  * Not all arguments may map to a placeholder. They should simply be appended
@@ -26,6 +29,7 @@ package org.stianloader.micromixin.transform.api;
  * {@link Throwable}, it's stacktrace should be logged.
  */
 public interface MixinLoggingFacade {
+    void debug(Class<?> clazz, String message, Object...args);
     void error(Class<?> clazz, String message, Object... args);
     void info(Class<?> clazz, String message, Object... args);
     void warn(Class<?> clazz, String message, Object... args);

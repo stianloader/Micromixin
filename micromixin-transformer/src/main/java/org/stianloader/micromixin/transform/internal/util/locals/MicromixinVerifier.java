@@ -6,8 +6,8 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.SimpleVerifier;
-import org.stianloader.micromixin.transform.supertypes.ClassWrapper;
-import org.stianloader.micromixin.transform.supertypes.ClassWrapperPool;
+import org.stianloader.micromixin.transform.api.supertypes.ClassWrapper;
+import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 
 class MicromixinVerifier extends SimpleVerifier {
 

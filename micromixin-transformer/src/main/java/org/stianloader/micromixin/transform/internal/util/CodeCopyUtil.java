@@ -32,8 +32,8 @@ import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.MixinStub;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.util.smap.MultiplexLineNumberAllocator;
 
 public class CodeCopyUtil {
@@ -121,8 +121,8 @@ public class CodeCopyUtil {
             Handle handle = (Handle) bsmArg;
             String oldName = handle.getName();
             String hOwner = handle.getOwner();
-            String newName = remapper.methodRenames.optGet(hOwner, handle.getDesc(), oldName);
-            String newOwner = remapper.oldToNewClassName.get(hOwner);
+            String newOwner = remapper.getRemappedClassNameFast(hOwner);
+            String newName = remapper.getRemappedMethodName(hOwner, oldName, handle.getDesc());
             boolean modified = oldName != newName;
             if (newOwner != null) {
                 hOwner = newOwner;
@@ -162,7 +162,7 @@ public class CodeCopyUtil {
             FieldInsnNode fieldInsn = (FieldInsnNode) in;
             return new FieldInsnNode(fieldInsn.getOpcode(),
                     remapper.remapInternalName(fieldInsn.owner, sharedBuilder),
-                    remapper.fieldRenames.optGet(fieldInsn.owner, fieldInsn.desc, fieldInsn.name),
+                    remapper.getRemappedFieldName(fieldInsn.owner, fieldInsn.name, fieldInsn.desc),
                     remapper.getRemappedFieldDescriptor(fieldInsn.desc, sharedBuilder));
         }
         case AbstractInsnNode.METHOD_INSN: {
@@ -179,7 +179,7 @@ public class CodeCopyUtil {
             }
             return new MethodInsnNode(methodInsn.getOpcode(),
                     remapper.remapInternalName(methodInsn.owner, sharedBuilder),
-                    remapper.methodRenames.optGet(methodInsn.owner, methodInsn.desc, methodInsn.name),
+                    remapper.getRemappedMethodName(methodInsn.owner, methodInsn.name, methodInsn.desc),
                     remapper.getRemappedMethodDescriptor(methodInsn.desc, sharedBuilder),
                     methodInsn.itf);
         }

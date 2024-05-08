@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform;
+package org.stianloader.micromixin.transform.api;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -15,8 +15,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceClassVisitor;
-import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory;
-import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
+import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 import org.stianloader.micromixin.transform.internal.DefaultMixinLogger;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
@@ -28,7 +27,6 @@ import org.stianloader.micromixin.transform.internal.selectors.inject.InvokeInje
 import org.stianloader.micromixin.transform.internal.selectors.inject.ReturnInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.Objects;
-import org.stianloader.micromixin.transform.supertypes.ClassWrapperPool;
 
 /**
  * The central brain of Micromixin.
@@ -55,7 +53,7 @@ public class MixinTransformer<M> {
     @NotNull
     private final InjectionPointSelectorFactory injectionPointSelectors = new InjectionPointSelectorFactory();
     @NotNull
-    private MixinLoggingFacade logger = new DefaultMixinLogger();
+    private MixinLoggingFacade logger = new DefaultMixinLogger(MixinTransformer.DEBUG);
     private boolean mergeClassFileVersions = true;
     @NotNull
     private final Map<ModularityAttached<M, String>, ClassNode> mixinNodes = new HashMap<ModularityAttached<M, String>, ClassNode>();

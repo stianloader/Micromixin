@@ -10,7 +10,6 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.internal.ClassMemberStub;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
@@ -18,6 +17,7 @@ import org.stianloader.micromixin.transform.internal.MixinFieldStub;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
@@ -130,9 +130,9 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                       @NotNull StringBuilder sharedBuilder) {
         if (this.isMutable) {
             if (source instanceof MixinFieldStub) {
+                String mappedName = remapper.getRemappedFieldName(source.getOwner().name, source.getName(), source.getDesc());
+                String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
                 for (FieldNode fn : to.fields) {
-                    String mappedDesc = remapper.getRemappedFieldDescriptor(source.getDesc(), sharedBuilder);
-                    String mappedName = remapper.fieldRenames.get(source.getOwner().name, source.getDesc(), source.getName());
                     if (fn.name.equals(mappedName) && fn.desc.equals(mappedDesc)) {
                         fn.access &= ~Opcodes.ACC_FINAL;
                     }

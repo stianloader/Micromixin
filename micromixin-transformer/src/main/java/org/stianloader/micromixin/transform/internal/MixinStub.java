@@ -10,8 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.MixinTransformer;
-import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.api.MixinTransformer;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public class MixinStub implements Comparable<MixinStub> {

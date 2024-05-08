@@ -3,7 +3,7 @@ package org.stianloader.micromixin.transform.internal;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.MixinTransformer;
+import org.stianloader.micromixin.transform.api.MixinTransformer;
 import org.stianloader.micromixin.transform.internal.util.smap.MultiplexLineNumberAllocator;
 
 public class HandlerContextHelper {

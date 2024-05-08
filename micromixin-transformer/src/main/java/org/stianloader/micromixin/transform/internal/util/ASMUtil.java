@@ -24,14 +24,14 @@ import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
+import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
-import org.stianloader.micromixin.transform.supertypes.ClassWrapperPool;
 
 public class ASMUtil {
 

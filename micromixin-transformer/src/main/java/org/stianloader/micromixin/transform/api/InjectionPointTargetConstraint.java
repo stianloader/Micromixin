@@ -2,7 +2,7 @@ package org.stianloader.micromixin.transform.api;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 
 /**
  * A constraint that is applied on every injection point before it can be considered a valid injection point.

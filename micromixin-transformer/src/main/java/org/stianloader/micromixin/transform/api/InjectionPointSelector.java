@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.stianloader.micromixin.transform.SimpleRemapper;
+import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 
 public abstract class InjectionPointSelector {
 

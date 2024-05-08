@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform;
+package org.stianloader.micromixin.transform.api;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

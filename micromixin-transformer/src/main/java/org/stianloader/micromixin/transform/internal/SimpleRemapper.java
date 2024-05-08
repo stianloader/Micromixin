@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform;
+package org.stianloader.micromixin.transform.internal;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -13,9 +14,9 @@ import org.stianloader.micromixin.transform.internal.util.MemberRenameMap;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class SimpleRemapper {
-    public final MemberRenameMap fieldRenames = new MemberRenameMap();
-    public final MemberRenameMap methodRenames = new MemberRenameMap();
-    public final Map<String, String> oldToNewClassName = new HashMap<String, String>();
+    private final MemberRenameMap fieldRenames = new MemberRenameMap();
+    private final MemberRenameMap methodRenames = new MemberRenameMap();
+    private final Map<String, String> oldToNewClassName = new HashMap<String, String>();
 
     /**
      * Remaps a class name.
@@ -25,11 +26,16 @@ public final class SimpleRemapper {
      */
     @NotNull
     public String getRemappedClassName(@NotNull String name) {
-        String s = oldToNewClassName.get(name);
+        String s = this.oldToNewClassName.get(name);
         if (s == null) {
             return name;
         }
         return s;
+    }
+
+    @Nullable
+    public String getRemappedClassNameFast(@NotNull String name) {
+        return this.oldToNewClassName.get(name);
     }
 
     /**
@@ -46,6 +52,11 @@ public final class SimpleRemapper {
         return remapSingleDesc(fieldDesc, sharedBuilder);
     }
 
+    @NotNull
+    public String getRemappedFieldName(@NotNull String ownerName, @NotNull String fieldName, @NotNull String fieldDesc) {
+        return this.fieldRenames.optGet(ownerName, fieldDesc, fieldName);
+    }
+
     /**
      * Remaps a method descriptor.
      *
@@ -56,10 +67,15 @@ public final class SimpleRemapper {
     @NotNull
     public String getRemappedMethodDescriptor(@NotNull String methodDesc, @NotNull StringBuilder sharedBuilder) {
         sharedBuilder.setLength(0);
-        if (!remapSignature(methodDesc, sharedBuilder)) {
+        if (!this.remapSignature(methodDesc, sharedBuilder)) {
             return methodDesc;
         }
         return sharedBuilder.toString();
+    }
+
+    @NotNull
+    public String getRemappedMethodName(@NotNull String ownerName, @NotNull String methodName, @NotNull String methodDesc) {
+        return this.methodRenames.optGet(ownerName, methodDesc, methodName);
     }
 
     private void remapAnnotation(AnnotationNode annotation, StringBuilder sharedStringBuilder) {

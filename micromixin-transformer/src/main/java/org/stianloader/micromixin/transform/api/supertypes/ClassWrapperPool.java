@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform.supertypes;
+package org.stianloader.micromixin.transform.api.supertypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;

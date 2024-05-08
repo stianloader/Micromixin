@@ -2,7 +2,6 @@ package org.stianloader.micromixin.transform.internal;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.stianloader.micromixin.transform.SimpleRemapper;
 
 public class MemberDesc {
 
@@ -43,7 +42,7 @@ public class MemberDesc {
     public static MemberDesc remappedMethod(@NotNull String owner, @NotNull String name,
             @NotNull String desc, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         return new MemberDesc(remapper.getRemappedClassName(owner),
-                remapper.methodRenames.optGet(owner, desc, name),
+                remapper.getRemappedMethodName(owner, name, desc),
                 remapper.getRemappedMethodDescriptor(desc, sharedBuilder));
     }
 
@@ -52,7 +51,7 @@ public class MemberDesc {
     public static MemberDesc remappedField(@NotNull String owner, @NotNull String name,
             @NotNull String desc, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         return new MemberDesc(remapper.getRemappedClassName(owner),
-                remapper.fieldRenames.optGet(owner, desc, name),
+                remapper.getRemappedFieldName(owner, name, desc),
                 remapper.getRemappedFieldDescriptor(desc, sharedBuilder));
     }
 
