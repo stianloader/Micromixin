@@ -27,12 +27,12 @@ public class DescSelector implements MixinTargetSelector, InjectionPointTargetCo
     @Override
     @Nullable
     public MethodNode selectMethod(@NotNull ClassNode within, @NotNull MixinStub source) {
-        if (this.desc.target.desc.codePointAt(0) != '(' || !(this.desc.target.owner.equals(within.name) || this.desc.target.owner.equals(source.sourceNode.name))) {
+        if (this.desc.targetMethod.desc.codePointAt(0) != '(' || !(this.desc.targetMethod.owner.equals(within.name) || this.desc.targetMethod.owner.equals(source.sourceNode.name))) {
             return null;
         }
         for (MethodNode method : within.methods) {
-            if (this.desc.target.desc.equals(method.desc)
-                    && this.desc.target.name.equals(method.name)) {
+            if (this.desc.targetMethod.desc.equals(method.desc)
+                    && this.desc.targetMethod.name.equals(method.name)) {
                 return method;
             }
         }
@@ -46,8 +46,8 @@ public class DescSelector implements MixinTargetSelector, InjectionPointTargetCo
 
     @Override
     public boolean isValid(@NotNull AbstractInsnNode insn, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        MemberDesc target = this.desc.target.remap(remapper, sharedBuilder);
         if (insn instanceof MethodInsnNode) {
+            MemberDesc target = this.desc.targetMethod.remap(remapper, sharedBuilder);
             MethodInsnNode mInsn = (MethodInsnNode) insn;
             return target.owner.equals(mInsn.owner)
                     && target.name.equals(mInsn.name)
@@ -58,6 +58,7 @@ public class DescSelector implements MixinTargetSelector, InjectionPointTargetCo
                     || remapper.remapSingleDesc(this.desc.value, sharedBuilder).equals(((TypeInsnNode)insn).desc)
                     || ('L' + remapper.remapInternalName(this.desc.value, sharedBuilder) + ';').equals(((TypeInsnNode)insn).desc);
         } else if (insn instanceof FieldInsnNode) {
+            MemberDesc target = this.desc.targetField.remap(remapper, sharedBuilder);
             FieldInsnNode fInsn = (FieldInsnNode) insn;
             return target.owner.equals(fInsn.owner)
                     && target.name.equals(fInsn.name)

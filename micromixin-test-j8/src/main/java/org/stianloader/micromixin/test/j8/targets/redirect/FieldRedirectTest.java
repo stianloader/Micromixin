@@ -35,6 +35,10 @@ public class FieldRedirectTest {
         return FieldRedirectTest.fieldJS;
     }
 
+    public static long staticRedirectJI() {
+        return new FieldRedirectTest().fieldJ;
+    }
+
     public static Object staticRedirectL() {
         return FieldRedirectTest.fieldLS;
     }

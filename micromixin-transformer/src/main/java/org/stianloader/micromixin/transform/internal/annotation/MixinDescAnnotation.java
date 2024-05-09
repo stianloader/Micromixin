@@ -22,14 +22,17 @@ public class MixinDescAnnotation {
     @Nullable
     public final Type ret;
     @NotNull
-    public final MemberDesc target;
+    public final MemberDesc targetMethod;
+    @NotNull
+    public final MemberDesc targetField;
 
-    private MixinDescAnnotation(@Nullable Type owner, @NotNull String value, @Nullable Type[] args, @Nullable Type ret, @NotNull MemberDesc target) {
+    private MixinDescAnnotation(@Nullable Type owner, @NotNull String value, @Nullable Type[] args, @Nullable Type ret, @NotNull MemberDesc targetMethod, @NotNull MemberDesc targetField) {
         this.owner = owner;
         this.value = value;
         this.args = args;
         this.ret = ret;
-        this.target = target;
+        this.targetMethod = targetMethod;
+        this.targetField = targetField;
     }
 
     @NotNull
@@ -79,8 +82,9 @@ public class MixinDescAnnotation {
         } else {
             ownerName = node.name;
         }
-        MemberDesc target = new MemberDesc(ownerName, value, splicedMethodDesc);
-        return new MixinDescAnnotation(owner, value, args, ret, target);
+        MemberDesc targetMethod = new MemberDesc(ownerName, value, splicedMethodDesc);
+        MemberDesc targetField = new MemberDesc(ownerName, value, ret == null ? "V" : ret.getDescriptor());
+        return new MixinDescAnnotation(owner, value, args, ret, targetMethod, targetField);
     }
 
     @Override
@@ -88,6 +92,7 @@ public class MixinDescAnnotation {
         return "MixinDescAnnotation[value = \"" + this.value
                 + "\", args = " + Arrays.toString(args)
                 + ", ret = \"" + this.ret
-                + "\", target = \"" + this.target + "\"]";
+                + ", targetField = \"" + this.targetField
+                + "\", targetMethod = \"" + this.targetMethod + "\"]";
     }
 }

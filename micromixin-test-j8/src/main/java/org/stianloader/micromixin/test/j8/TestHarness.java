@@ -75,6 +75,8 @@ public class TestHarness {
         set.addUnitAssertEquals("FieldRedirectTest.redirectS", new FieldRedirectTest()::redirectS, 1);
         set.addUnitAssertEquals("FieldRedirectTest.redirectZ", new FieldRedirectTest()::redirectZ, true);
 
+        set.addUnitAssertEquals("FieldRedirectTest.staticRedirectJI", FieldRedirectTest::staticRedirectJI, 2);
+
         LoggerFactory.getLogger(TestHarness.class).info("FieldRedirectTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

@@ -2,6 +2,7 @@ package org.stianloader.micromixin.test.j8.mixin.redirect;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.stianloader.micromixin.test.j8.targets.redirect.FieldRedirectTest;
 
@@ -35,6 +36,11 @@ public class FieldRedirectTestMixins {
     @Redirect(method = "staticRedirectJ", at = @At(value = "FIELD", target = "fieldJS"))
     private static long staticRedirectJ() {
         return 1;
+    }
+
+    @Redirect(method = "staticRedirectJI", at = @At(value = "FIELD", desc = @Desc(value = "fieldJ", ret = long.class)))
+    private static long staticRedirectJI(FieldRedirectTest ownerInstance) {
+        return 2;
     }
 
     @Redirect(method = "staticRedirectL", at = @At(value = "FIELD", target = "fieldLS"))
