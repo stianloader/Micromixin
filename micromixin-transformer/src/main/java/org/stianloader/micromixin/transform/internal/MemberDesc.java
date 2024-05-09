@@ -2,6 +2,7 @@ package org.stianloader.micromixin.transform.internal;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 
 public class MemberDesc {
 

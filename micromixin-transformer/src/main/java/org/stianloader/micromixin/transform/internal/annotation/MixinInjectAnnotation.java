@@ -2,9 +2,11 @@ package org.stianloader.micromixin.transform.internal.annotation;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,12 +33,12 @@ import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.util.Textifier;
 import org.objectweb.asm.util.TraceMethodVisitor;
 import org.stianloader.micromixin.transform.api.MixinTransformer;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.selectors.DescSelector;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
@@ -228,6 +230,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                         // Technically that one could be doable, but it'd be nasty.
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
+
+                    {
+                        Deque<String> path = new ArrayDeque<String>();
+                        path.add(sourceStub.sourceNode.name);
+                        path.add(source.getName() + source.getDesc());
+                        at.verifySlices(Collections.asLifoQueue(path), targetMethod, remapper, sharedBuilder);
+                    }
+
                     for (AbstractInsnNode insn : at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
                         if (insn.getOpcode() == -1) {
                             throw new IllegalStateException("Selector " + at + " matched virtual instruction " + insn.getClass() + ". Declaring mixin " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc);

@@ -5,9 +5,9 @@ import java.util.Collection;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 
 public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T>> {
     public abstract void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);

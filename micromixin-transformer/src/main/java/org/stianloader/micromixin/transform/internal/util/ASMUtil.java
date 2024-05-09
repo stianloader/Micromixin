@@ -1,7 +1,10 @@
 package org.stianloader.micromixin.transform.internal.util;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -25,11 +28,11 @@ import org.objectweb.asm.tree.VarInsnNode;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
 
@@ -76,6 +79,14 @@ public class ASMUtil {
                         // Technically that one could be doable, but it'd be nasty.
                         throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
+
+                    {
+                        Deque<String> path = new ArrayDeque<String>();
+                        path.add(mixinSource.sourceNode.name);
+                        path.add(injectMethodSource.name + injectMethodSource.desc);
+                        at.verifySlices(Collections.asLifoQueue(path), targetMethod, remapper, sharedBuilder);
+                    }
+
                     for (AbstractInsnNode insn : at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
                         if (insn.getOpcode() == -1) {
                             throw new IllegalStateException("Selector " + at + " matched virtual instruction " + insn.getClass() + ". Declaring mixin " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc);

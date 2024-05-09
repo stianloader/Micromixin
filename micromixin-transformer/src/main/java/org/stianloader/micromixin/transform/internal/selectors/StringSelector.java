@@ -9,8 +9,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.MixinStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 
 public class StringSelector implements MixinTargetSelector, InjectionPointTargetConstraint {
 

@@ -12,9 +12,9 @@ import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
 import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
 import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class TailInjectionPointSelector extends InjectionPointSelector implements InjectionPointSelectorProvider {

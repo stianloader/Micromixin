@@ -11,6 +11,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.MixinTransformer;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.annotation.MixinAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinInjectAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinModifyArgAnnotation;

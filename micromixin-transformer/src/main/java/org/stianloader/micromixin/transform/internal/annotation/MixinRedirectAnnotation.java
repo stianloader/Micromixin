@@ -1,8 +1,10 @@
 package org.stianloader.micromixin.transform.internal.annotation;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,12 +20,12 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.transform.api.MixinTransformer;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.selectors.DescSelector;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
@@ -165,6 +167,14 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     // Technically that one could be doable, but it'd be nasty.
                     throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                 }
+
+                {
+                    Deque<String> path = new ArrayDeque<String>();
+                    path.add(sourceStub.sourceNode.name);
+                    path.add(source.getName() + source.getDesc());
+                    this.at.verifySlices(Collections.asLifoQueue(path), targetMethod, remapper, sharedBuilder);
+                }
+
                 for (AbstractInsnNode insn : this.at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
                     if (!(insn instanceof MethodInsnNode || insn instanceof FieldInsnNode)) {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode or FieldInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL, GETSTATIC, GETFIELD, PUTSTATIC, PUTFIELD]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");

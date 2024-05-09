@@ -1,4 +1,4 @@
-package org.stianloader.micromixin.transform.internal;
+package org.stianloader.micromixin.transform.api;
 
 import java.util.Arrays;
 import java.util.HashMap;

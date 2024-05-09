@@ -2,8 +2,8 @@ package org.stianloader.micromixin.transform.internal.annotation;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.tree.ClassNode;
+import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.MixinFieldStub;
-import org.stianloader.micromixin.transform.internal.SimpleRemapper;
 
 public class VirtualFieldOverlayAnnotation extends AbstractOverlayAnnotation<MixinFieldStub> {
 
