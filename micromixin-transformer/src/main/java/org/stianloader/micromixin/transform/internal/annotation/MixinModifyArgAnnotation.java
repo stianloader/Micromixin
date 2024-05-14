@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
@@ -30,6 +29,7 @@ import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 import org.stianloader.micromixin.transform.internal.util.DescString;
+import org.stianloader.micromixin.transform.internal.util.InjectionPointReference;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public class MixinModifyArgAnnotation extends MixinAnnotation<MixinMethodStub> {
@@ -63,16 +63,15 @@ public class MixinModifyArgAnnotation extends MixinAnnotation<MixinMethodStub> {
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
+        Collection<InjectionPointReference> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
         String argumentType = ASMUtil.getReturnType(this.injectSource.desc);
 
-        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
-            AbstractInsnNode insn = entry.getKey();
-            MethodNode method = entry.getValue();
-            if (insn.getType() != AbstractInsnNode.METHOD_INSN) {
+        for (InjectionPointReference entry : matched) {
+            MethodNode method = entry.targetedMethod;
+            if (entry.shiftedInstruction.getType() != AbstractInsnNode.METHOD_INSN) {
                 throw new IllegalStateException("The argument modifier method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets an instruction that isn't in the INVOKEx (except INVOKEDYNAMIC) family of instructions. The targeted instruction is in " + to.name + "." + method.name + method.desc);
             }
-            String targetDesc = ((MethodInsnNode) insn).desc;
+            String targetDesc = ((MethodInsnNode) entry.shiftedInstruction).desc;
             InsnList inject = new InsnList();
             int handlerInvokeOpcode;
 
@@ -105,7 +104,7 @@ public class MixinModifyArgAnnotation extends MixinAnnotation<MixinMethodStub> {
             InsnList rollbackInsns = new InsnList();
             int uniformDepth = arguments.size() - argIndex - 1;
             if (uniformDepth != 0) {
-                ASMUtil.moveStackHead(method, insn, insn, arguments, uniformDepth, inject, rollbackInsns);
+                ASMUtil.moveStackHead(method, entry.shiftedInstruction, entry.shiftedInstruction, arguments, uniformDepth, inject, rollbackInsns);
             }
 
             if ((handlerNode.access & Opcodes.ACC_STATIC) == 0) {
@@ -123,7 +122,7 @@ public class MixinModifyArgAnnotation extends MixinAnnotation<MixinMethodStub> {
 
             inject.add(new MethodInsnNode(handlerInvokeOpcode, to.name, handlerNode.name, handlerNode.desc));
             inject.add(rollbackInsns);
-            method.instructions.insertBefore(insn, inject);
+            method.instructions.insertBefore(entry.shiftedInstruction, inject);
         }
     }
 

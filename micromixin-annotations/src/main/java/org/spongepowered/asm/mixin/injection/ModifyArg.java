@@ -190,7 +190,7 @@ public @interface ModifyArg {
     public Slice slice() default @Slice;
 
     /**
-     * The targeted methods.Only one method is picked from the list of provided methods.
+     * The targeted methods. Only one method is picked from the list of provided methods.
      * As such the list should generally only be used to mark method aliases among others.
      *
      * @return The target selectors that define the target method of the handler.

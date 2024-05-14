@@ -25,6 +25,8 @@
     "ModifyArgMixins",
     "ModifyConstantMixins",
     "ModifyConstantAuxiliaryTestMixins",
+    "ModifyVariableMixins",
+    "ModifyVariableMixins$InvalidExtraneousArg",
     "MultiInjectTestMixins",
     "SliceTestMixins",
     "SliceTestMixins$AmbigiousSliceTestMixin",

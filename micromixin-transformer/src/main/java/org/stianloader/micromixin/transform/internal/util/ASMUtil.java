@@ -60,8 +60,8 @@ public class ASMUtil {
     }
 
     @NotNull
-    public static Map<AbstractInsnNode, MethodNode> enumerateTargets(@NotNull Collection<MixinTargetSelector> selectors, @NotNull Collection<SlicedInjectionPointSelector> ats, @NotNull ClassNode target, @NotNull MixinStub mixinSource, @NotNull MethodNode injectMethodSource, int require, int expect, int allow, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder, @NotNull MixinLoggingFacade logger) {
-        Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
+    public static Collection<InjectionPointReference> enumerateTargets(@NotNull Collection<MixinTargetSelector> selectors, @NotNull Collection<SlicedInjectionPointSelector> ats, @NotNull ClassNode target, @NotNull MixinStub mixinSource, @NotNull MethodNode injectMethodSource, int require, int expect, int allow, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder, @NotNull MixinLoggingFacade logger) {
+        Map<AbstractInsnNode, InjectionPointReference> matched = new HashMap<AbstractInsnNode, InjectionPointReference>();
         for (MixinTargetSelector selector : selectors) {
             for (SlicedInjectionPointSelector at : ats) {
                 MethodNode targetMethod = selector.selectMethod(target, mixinSource);
@@ -91,7 +91,7 @@ public class ASMUtil {
                         if (insn.getOpcode() == -1) {
                             throw new IllegalStateException("Selector " + at + " matched virtual instruction " + insn.getClass() + ". Declaring mixin " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc);
                         }
-                        matched.put(insn, targetMethod);
+                        matched.put(insn, new InjectionPointReference(insn, insn, targetMethod, at));
                     }
                 }
             }
@@ -107,7 +107,9 @@ public class ASMUtil {
             throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " allows up to " + allow + " injection points but " + matched.size() + " injection points were selected.");
         }
 
-        return matched;
+        Collection<InjectionPointReference> refs = matched.values();
+        assert refs != null;
+        return refs;
     }
 
     /**
@@ -204,6 +206,10 @@ public class ASMUtil {
         }
     }
 
+    public static int getLoadOpcodeFromMethodDesc(@NotNull String methodDesc) {
+        return ASMUtil.getLoadOpcode(ASMUtil.getReturnComputationalType(methodDesc));
+    }
+
     @Nullable
     public static MethodNode getMethod(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
         for (MethodNode method : node.methods) {
@@ -221,6 +227,10 @@ public class ASMUtil {
             next = next.getNext();
         }
         return next;
+    }
+
+    public static int getReturnComputationalType(@NotNull String methodDesc) {
+        return methodDesc.codePointAt(methodDesc.lastIndexOf(')') + 1);
     }
 
     public static int getReturnOpcode(int descReturnType) {
@@ -245,6 +255,10 @@ public class ASMUtil {
         default:
             throw new IllegalStateException("Unknown return type: " + descReturnType + " (" + ((char) descReturnType) + ")");
         }
+    }
+
+    public static int getReturnOpcode(@NotNull String methodDesc) {
+        return ASMUtil.getReturnOpcode(ASMUtil.getReturnComputationalType(methodDesc));
     }
 
     /**
@@ -320,6 +334,10 @@ public class ASMUtil {
         }
     }
 
+    public static int getStoreOpcodeFromMethodDesc(@NotNull String methodDesc) {
+        return ASMUtil.getStoreOpcode(ASMUtil.getReturnComputationalType(methodDesc));
+    }
+
     @NotNull
     public static String getTargetDesc(@NotNull MethodNode method, @NotNull StringBuilder sharedBuilder) {
         // To be fair, I am not really honest if argument capture has any effect on the selected method.
@@ -362,6 +380,16 @@ public class ASMUtil {
             // Package-protected
             return (testAccess & Opcodes.ACC_PRIVATE) != 0;
         }
+    }
+
+    public static boolean isBetween(AbstractInsnNode start, AbstractInsnNode end, @NotNull AbstractInsnNode insn) {
+        AbstractInsnNode walkerInsn = start;
+        while ((walkerInsn = walkerInsn.getNext()) != null && walkerInsn != insn);
+        if (walkerInsn == null) {
+            return false;
+        }
+        while ((walkerInsn = walkerInsn.getNext()) != null && walkerInsn != end);
+        return walkerInsn != null;
     }
 
     public static boolean isCategory2(int descType) {

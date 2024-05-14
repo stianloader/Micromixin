@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -33,6 +31,7 @@ import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelect
 import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
+import org.stianloader.micromixin.transform.internal.util.InjectionPointReference;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
 
@@ -69,16 +68,15 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
+        Collection<InjectionPointReference> matched = ASMUtil.enumerateTargets(this.selectors, this.at, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
         String returnType = ASMUtil.getReturnType(this.injectSource.desc);
 
-        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
-            AbstractInsnNode insn = entry.getKey();
-            MethodNode method = entry.getValue();
+        for (InjectionPointReference entry : matched) {
+            MethodNode method = entry.targetedMethod;
             if (!ASMUtil.getReturnType(method.desc).equals(returnType)) {
                 throw new IllegalStateException("The return value modifier method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " is annotated with @ModifyReturnValue but does not consume the return type of the method it targets (" + to.name + "." + method.name + method.desc + ")");
             }
-            if (!ASMUtil.isReturn(insn.getOpcode())) {
+            if (!ASMUtil.isReturn(entry.shiftedInstruction.getOpcode())) {
                 throw new IllegalStateException("The return value modifier method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets an instruction that isn't in the xRETURN family of instructions. The targeted instruction is in " + to.name + "." + method.name + method.desc);
             }
             InsnList inject = new InsnList();
@@ -96,9 +94,9 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             } else {
                 opcode = Opcodes.INVOKESTATIC;
             }
-            this.capturedArguments.appendCaptures(to, method, source, insn, inject);
+            this.capturedArguments.appendCaptures(to, method, source, entry.shiftedInstruction, inject);
             inject.add(new MethodInsnNode(opcode, to.name, handlerNode.name, handlerNode.desc));
-            method.instructions.insertBefore(insn, inject);
+            method.instructions.insertBefore(entry.shiftedInstruction, inject);
         }
     }
 

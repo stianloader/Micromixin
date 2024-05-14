@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
@@ -31,6 +30,7 @@ import org.stianloader.micromixin.transform.internal.selectors.constant.Wildcard
 import org.stianloader.micromixin.transform.internal.selectors.inject.ConstantInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
+import org.stianloader.micromixin.transform.internal.util.InjectionPointReference;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
 
@@ -66,12 +66,12 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator);
-        Map<AbstractInsnNode, MethodNode> matched = ASMUtil.enumerateTargets(this.selectors, this.slicedAts, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
+        Collection<InjectionPointReference> matched = ASMUtil.enumerateTargets(this.selectors, this.slicedAts, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
         String argumentType = ASMUtil.getReturnType(this.injectSource.desc);
 
-        for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
-            AbstractInsnNode insn = entry.getKey();
-            MethodNode method = entry.getValue();
+        for (InjectionPointReference entry : matched) {
+            AbstractInsnNode insn = entry.shiftedInstruction;
+            MethodNode method = entry.targetedMethod;
             // TODO Perform constant type sanity handling (for example when capturing a BIPUSH, one may not have a descriptor of (J)J)
             InsnList inject = new InsnList();
             int handlerInvokeOpcode;

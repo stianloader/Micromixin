@@ -13,6 +13,7 @@ import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyArgTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyConstantAuxiliaryTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyConstantTest;
+import org.stianloader.micromixin.test.j8.targets.ModifyVariableTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
@@ -49,7 +50,48 @@ public class TestHarness {
         runUniqueTest(report);
         runAllowTest(report);
         runFieldRedirectTest(report);
+        runModifyVariableTest(report);
         return report;
+    }
+
+    public static void runModifyVariableTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("ModifyVariableTest.modifySD()", () -> ModifyVariableTest.modifySD(), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySF()", () -> ModifyVariableTest.modifySF(), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySI()", () -> ModifyVariableTest.modifySI(), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySJ()", () -> ModifyVariableTest.modifySJ(), 1L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVD()", () -> new ModifyVariableTest().modifyVD(), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVF()", () -> new ModifyVariableTest().modifyVF(), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVI()", () -> new ModifyVariableTest().modifyVI(), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ()", () -> new ModifyVariableTest().modifyVJ(), 1L);
+
+        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)A", () -> ModifyVariableTest.modifySD(true), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)A", () -> ModifyVariableTest.modifySF(true), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)A", () -> ModifyVariableTest.modifySI(true), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)A", () -> ModifyVariableTest.modifySJ(true), 1L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)A", () -> new ModifyVariableTest().modifyVD(true), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)A", () -> new ModifyVariableTest().modifyVF(true), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)A", () -> new ModifyVariableTest().modifyVI(true), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)A", () -> new ModifyVariableTest().modifyVJ(true), 1L);
+
+        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)B", () -> ModifyVariableTest.modifySD(false), 0D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)B", () -> ModifyVariableTest.modifySF(false), 0F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)B", () -> ModifyVariableTest.modifySI(false), 0);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)B", () -> ModifyVariableTest.modifySJ(false), 0L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)B", () -> new ModifyVariableTest().modifyVD(false), 0D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)B", () -> new ModifyVariableTest().modifyVF(false), 0F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)B", () -> new ModifyVariableTest().modifyVI(false), 0);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)B", () -> new ModifyVariableTest().modifyVJ(false), 0L);
+
+        set.addUnitAssertEquals("ModifyVariableTest.modifySDNoShift", () -> ModifyVariableTest.modifySDNoShift(), 0L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyNamed", () -> ModifyVariableTest.modifyNamed(), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyNamedMulti", () -> ModifyVariableTest.modifyNamedMulti(), 1);
+
+        set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.ModifyVariableTest$InvalidExtraneousArg");
+
+        LoggerFactory.getLogger(TestHarness.class).info("ModifyVariableTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runFieldRedirectTest(@NotNull TestReport report) {
