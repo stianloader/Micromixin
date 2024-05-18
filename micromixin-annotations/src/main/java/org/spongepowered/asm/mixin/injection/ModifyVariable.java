@@ -74,12 +74,11 @@ import org.spongepowered.asm.mixin.Mixin;
  * point selectors can be used by setting the appropriate {@link At#value()} to either
  * <code>LOAD</code> or <code>STORE</code>.
  *
- * <p>As injection point selectors select the instruction immediately before
- * the chosen instruction, using an {@link At#value()} of STORE without
- * defining an instruction shift means that the assignment performed by the
- * modifyVariableHandler is ignored. This includes cases where the
- * variable performs an assignment which includes itself as an operand,
- * e.g. <code>variable *= 4</code>.
+ * <p><b>Unlike any other injection point selectors, <code>STORE</code> selects the instruction after
+ * the <code>xSTORE</code> instruction.</b> Please be aware of this when using an {@link At#value()}
+ * of STORE. This behaviour exists as otherwise modifications to the variable will be immediately overwritten,
+ * even in cases of <code>variable = variable * 4;</code>. Note that <code>LOAD</code> behaves like most other
+ * injection point selectors and targets the instruction before the <code>xLOAD</code> instruction(-s).
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -124,6 +123,12 @@ public @interface ModifyVariable {
      * <code>xSTORE</code> instructions using <code>LOAD</code> and <code>STORE</code>). These injection
      * point selectors can be used by setting the appropriate {@link At#value()} to either
      * <code>LOAD</code> or <code>STORE</code>.
+     *
+     * <p><b>Unlike any other injection point selectors, <code>STORE</code> selects the instruction after
+     * the <code>xSTORE</code> instruction.</b> Please be aware of this when using an {@link At#value()}
+     * of STORE. This behaviour exists as otherwise modifications to the variable will be immediately overwritten,
+     * even in cases of <code>variable = variable * 4;</code>. Note that <code>LOAD</code> behaves like most other
+     * injection point selectors and targets the instruction before the <code>xLOAD</code> instruction(-s).
      *
      * @return The injection point targeted by this {@link ModifyVariable} handler.
      */

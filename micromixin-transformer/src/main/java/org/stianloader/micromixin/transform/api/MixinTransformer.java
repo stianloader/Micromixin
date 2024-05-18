@@ -24,7 +24,9 @@ import org.stianloader.micromixin.transform.internal.selectors.inject.ConstantIn
 import org.stianloader.micromixin.transform.internal.selectors.inject.FieldInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.HeadInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.InvokeInjectionPointSelector;
+import org.stianloader.micromixin.transform.internal.selectors.inject.LoadInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.ReturnInjectionPointSelector;
+import org.stianloader.micromixin.transform.internal.selectors.inject.StoreInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
@@ -77,6 +79,8 @@ public class MixinTransformer<M> {
         this.injectionPointSelectors.register(ReturnInjectionPointSelector.INSTANCE);
         this.injectionPointSelectors.register(TailInjectionPointSelector.INSTANCE);
         this.injectionPointSelectors.register(FieldInjectionPointSelector.PROVIDER);
+        this.injectionPointSelectors.register(LoadInjectionPointSelector.INSTANCE);
+        this.injectionPointSelectors.register(StoreInjectionPointSelector.INSTANCE);
     }
 
     public void addMixin(M attachment, @NotNull MixinConfig config) {

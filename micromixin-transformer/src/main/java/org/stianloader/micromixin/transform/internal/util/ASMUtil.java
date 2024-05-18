@@ -403,8 +403,16 @@ public class ASMUtil {
                 || opcode == Opcodes.LSTORE;
     }
 
+    public static boolean isLoad(int opcode) {
+        return Opcodes.ILOAD <= opcode && opcode <= Opcodes.ALOAD;
+    }
+
     public static boolean isReturn(int opcode) {
         return Opcodes.IRETURN <= opcode && opcode <= Opcodes.RETURN;
+    }
+
+    public static boolean isStore(int opcode) {
+        return Opcodes.ISTORE <= opcode && opcode <= Opcodes.ASTORE;
     }
 
     /**
