@@ -151,7 +151,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("The redirect handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " is static, but isn't private. Consider making the method private, as both access modifiers cannot be present at the same time.");
         }
         if (!this.at.supportsRedirect()) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + at.getSelector().fullyQualifiedName + "\") which does not support usage within a @Redirect context.");
+            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + this.at.getQualifiedSelectorName() + "\") which does not support usage within a @Redirect context.");
         }
         MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + "redirect$" + this.injectSource.name, remapper, hctx.lineAllocator);
         Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
@@ -177,7 +177,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
 
                 for (AbstractInsnNode insn : this.at.getMatchedInstructions(targetMethod, remapper, sharedBuilder)) {
                     if (!(insn instanceof MethodInsnNode || insn instanceof FieldInsnNode)) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode or FieldInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL, GETSTATIC, GETFIELD, PUTSTATIC, PUTFIELD]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getSelector().fullyQualifiedName + ")");
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " selects an instruction in target method " + to.name + "." + targetMethod.name + targetMethod.desc + " that isn't a MethodInsnNode or FieldInsnNode (should be any of [INVOKESTATIC, INVOKEVIRTUAL, INVOKESPECIAL, GETSTATIC, GETFIELD, PUTSTATIC, PUTFIELD]) but rather is a " + insn.getClass().getName() + ". This issue is most likely caused by an erroneous @At-value (or an invalid shift). Using @At(" + this.at.getQualifiedSelectorName() + ")");
                     }
                     matched.put(insn, targetMethod);
                 }

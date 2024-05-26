@@ -3,8 +3,10 @@ package org.stianloader.micromixin.transform.api;
 import java.util.Collection;
 import java.util.Queue;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
@@ -12,17 +14,51 @@ import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class SlicedInjectionPointSelector {
 
+    @Nullable
+    private final SlicedInjectionPointSelector from;
+
+    /**
+     * The offset (also commonly referred to as "shift") that the sliced injection point
+     * selector has compared to the target provided by the origin {@link InjectionPointSelector}.
+     *
+     * <p>This offset is counted in "real" instructions. A positive value means that
+     * the injection point is {@link #offset} instructions after the instruction
+     * initially targeted by the {@link #selector}. A negative value means that the
+     * instruction of the {@link SlicedInjectionPointSelector} is shifted before the
+     * instruction of {@link #selector}. An offset of 0 means no shift occurs. Real
+     * instructions are instructions where {@link AbstractInsnNode#getOpcode()} is
+     * a value above 0.
+     *
+     * <p>The offset does not have any effect on the slices at this point in time,
+     * but this behaviour could change in the future if deemed necessary.
+     * Note: The offset of the slices themselves do still matter.
+     */
+    private final int offset;
+
     @NotNull
     private final InjectionPointSelector selector;
     @Nullable
-    private final SlicedInjectionPointSelector from;
-    @Nullable
     private final SlicedInjectionPointSelector to;
 
-    public SlicedInjectionPointSelector(@NotNull InjectionPointSelector selector, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to) {
+    /**
+     * Whether this {@link SlicedInjectionPointSelector} allows use in an unsafe context,
+     * that is whether it can match instructions that when they are transformed unsafe
+     * behaviour could be the result therein.
+     *
+     * <p>Unsafe injection points generally refer to injection points targeting
+     * instructions within the constructor before the final {@link Opcodes#RETURN RETURN} instruction,
+     * meaning that only the <code>TAIL</code> injection point can safely target instructions
+     * in a constructor. All other injection points must set the unsafe flag in order
+     * to correctly target a constructor.
+     */
+    private final boolean unsafe;
+
+    public SlicedInjectionPointSelector(@NotNull InjectionPointSelector selector, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, int shift, boolean unsafe) {
         this.selector = selector;
         this.from = from;
         this.to = to;
+        this.offset = shift;
+        this.unsafe = unsafe;
     }
 
     /**
@@ -73,6 +109,7 @@ public class SlicedInjectionPointSelector {
     }
 
     @Nullable
+    @Deprecated
     public SlicedInjectionPointSelector getFrom() {
         return this.from;
     }
@@ -96,20 +133,97 @@ public class SlicedInjectionPointSelector {
         return this.selector.getMatchedInstructions(method, this.from, this.to, remapper, sharedBuilder);
     }
 
+    /**
+     * The offset (also commonly referred to as "shift") that the sliced injection point
+     * selector has compared to the target provided by the origin {@link InjectionPointSelector}.
+     *
+     * <p>This offset is counted in "real" instructions. A positive value means that
+     * the injection point is {@link #offset} instructions after the instruction
+     * initially targeted by the {@link #selector}. A negative value means that the
+     * instruction of the {@link SlicedInjectionPointSelector} is shifted before the
+     * instruction of {@link #selector}. An offset of 0 means no shift occurs. Real
+     * instructions are instructions where {@link AbstractInsnNode#getOpcode()} is
+     * a value above 0.
+     *
+     * <p>The offset does not have any effect on the slices at this point in time,
+     * but this behaviour could change in the future if deemed necessary.
+     * Note: The offset of the slices themselves do still matter.
+     *
+     * @return The shift of this {@link SlicedInjectionPointSelector} from the
+     * underlying {@link SlicedInjectionPointSelector#selector injection point selector}
+     * @since 0.6.0
+     */
+    @Contract(pure = true)
+    public int getOffset() {
+        return this.offset;
+    }
+
+    /**
+     * Obtains the fully qualified name of the selector that is backing this {@link SlicedInjectionPointSelector}
+     * as per {@link InjectionPointSelector#fullyQualifiedName}.
+     *
+     * <p>Note that the fully qualified name of the selectors that mark the {@link #from} and {@link #to} selectors
+     * are considered irrelevant. Further, {@link #getOffset()} and {@link #isUnsafe()} are ignored
+     * in the fully qualified name. As such, the returned string is insufficient of clearly denoting
+     * which &#64;At annotation this {@link SlicedInjectionPointSelector} belongs to.
+     *
+     * @return The {@link InjectionPointSelector#fullyQualifiedName fully qualified name} of the injection point
+     * selector used by this instance.
+     * @since 0.6.0
+     */
     @NotNull
+    @Contract(pure = true)
+    public String getQualifiedSelectorName() {
+        return this.selector.fullyQualifiedName;
+    }
+
+    @NotNull
+    @Deprecated
     public InjectionPointSelector getSelector() {
         return this.selector;
     }
 
     @Nullable
+    @Deprecated
     public SlicedInjectionPointSelector getTo() {
         return this.to;
     }
 
-    @Deprecated
+    /**
+     * Get whether this {@link SlicedInjectionPointSelector} allows use in an unsafe context,
+     * that is whether it can match instructions that when they are transformed unsafe
+     * behaviour could be the result therein.
+     *
+     * <p>Unsafe injection points generally refer to injection points targeting
+     * instructions within the constructor before the final {@link Opcodes#RETURN RETURN} instruction,
+     * meaning that only the <code>TAIL</code> injection point can safely target instructions
+     * in a constructor. All other injection points must set the unsafe flag in order
+     * to correctly target a constructor.
+     *
+     * <p>If a injection point selector targets an unsafe instruction while not being
+     * allowed to do so via {@link #isUnsafe()}, then an error will be emitted.
+     *
+     * @return True if unsafe targets are permitted, false otherwise.
+     * @since 0.6.0
+     */
+    @Contract(pure = true)
+    public boolean isUnsafe() {
+        return this.unsafe;
+    }
+
+    /**
+     * Get whether this {@link SlicedInjectionPointSelector} can be used to target instructions
+     * within a constructor.
+     *
+     * <p>If a injection point selector targets an instruction within a constructor while not being
+     * allowed to do so via {@link #supportsConstructors()}, then an error will be emitted.
+     *
+     * @return True to allow injection in a constructor, false otherwise.
+     * @see #isUnsafe()
+     */
+    @Contract(pure = true)
     public boolean supportsConstructors() {
-        // FIXME This is completely bogus behaviour!
-        return this.selector == TailInjectionPointSelector.INSTANCE;
+        return this.unsafe || this.selector == TailInjectionPointSelector.INSTANCE;
     }
 
     /**
@@ -130,7 +244,7 @@ public class SlicedInjectionPointSelector {
     @Override
     @NotNull
     public String toString() {
-        return "SlicedInjectionPointSelector[" + this.selector.fullyQualifiedName + ", from = " + this.from + ", to = " + this.to + "]";
+        return "SlicedInjectionPointSelector[" + this.selector.fullyQualifiedName + ", from = " + this.from + ", to = " + this.to + ", off = " + this.offset + ", unsafe = " + this.unsafe + "]";
     }
 
     /**

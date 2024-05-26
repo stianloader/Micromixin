@@ -38,10 +38,10 @@ import org.stianloader.micromixin.transform.internal.util.Objects;
 public class MixinAtAnnotation {
 
     @NotNull
-    public static final MixinAtAnnotation HEAD = new MixinAtAnnotation("HEAD", HeadInjectionPointSelector.INSTANCE, "");
+    public static final MixinAtAnnotation HEAD = new MixinAtAnnotation("HEAD", HeadInjectionPointSelector.INSTANCE, "", 0, false);
 
     @NotNull
-    public static final MixinAtAnnotation TAIL = new MixinAtAnnotation("TAIL", TailInjectionPointSelector.INSTANCE, "");
+    public static final MixinAtAnnotation TAIL = new MixinAtAnnotation("TAIL", TailInjectionPointSelector.INSTANCE, "", 0, true);
 
     @NotNull
     public static List<SlicedInjectionPointSelector> bake(@NotNull List<MixinAtAnnotation> ats, @NotNull List<MixinSliceAnnotation> slices) throws MixinParseException {
@@ -181,12 +181,12 @@ public class MixinAtAnnotation {
             if (sliceAnnot.from != MixinAtAnnotation.HEAD) {
                 SlicedInjectionPointSelector fromFrom = sliceFrom.get(sliceAnnot.from.slice);
                 SlicedInjectionPointSelector fromTo = sliceTo.get(sliceAnnot.from.slice);
-                from = new SlicedInjectionPointSelector(sliceAnnot.from.injectionPointSelector, fromFrom, fromTo);
+                from = new SlicedInjectionPointSelector(sliceAnnot.from.injectionPointSelector, fromFrom, fromTo, sliceAnnot.from.shift, sliceAnnot.from.unsafe);
             }
             if (sliceAnnot.to != MixinAtAnnotation.TAIL) {
                 SlicedInjectionPointSelector toFrom = sliceFrom.get(sliceAnnot.to.slice);
                 SlicedInjectionPointSelector toTo = sliceTo.get(sliceAnnot.to.slice);
-                to = new SlicedInjectionPointSelector(sliceAnnot.to.injectionPointSelector, toFrom, toTo);
+                to = new SlicedInjectionPointSelector(sliceAnnot.to.injectionPointSelector, toFrom, toTo, sliceAnnot.to.shift, sliceAnnot.to.unsafe);
             }
             sliceFrom.put(slice, from);
             sliceTo.put(slice, to);
@@ -195,7 +195,7 @@ public class MixinAtAnnotation {
         for (MixinAtAnnotation annot : ats) {
             SlicedInjectionPointSelector from = sliceFrom.get(annot.slice);
             SlicedInjectionPointSelector to = sliceTo.get(annot.slice);
-            baked.add(new SlicedInjectionPointSelector(annot.injectionPointSelector, from, to));
+            baked.add(new SlicedInjectionPointSelector(annot.injectionPointSelector, from, to, annot.shift, annot.unsafe));
         }
 
         return baked;
@@ -204,21 +204,21 @@ public class MixinAtAnnotation {
     @NotNull
     public static SlicedInjectionPointSelector bake(@NotNull MixinAtAnnotation at, @Nullable MixinSliceAnnotation slice) {
         if (slice == null) {
-            return new SlicedInjectionPointSelector(at.injectionPointSelector, null, null);
+            return new SlicedInjectionPointSelector(at.injectionPointSelector, null, null, at.shift, at.unsafe);
         }
 
         SlicedInjectionPointSelector from = null;
         SlicedInjectionPointSelector to = null;
 
         if (slice.from != MixinAtAnnotation.HEAD) {
-            from = new SlicedInjectionPointSelector(slice.from.injectionPointSelector, null, null);
+            from = new SlicedInjectionPointSelector(slice.from.injectionPointSelector, null, null, at.shift, at.unsafe);
         }
 
         if (slice.to != MixinAtAnnotation.TAIL) {
-            to = new SlicedInjectionPointSelector(slice.to.injectionPointSelector, null, null);
+            to = new SlicedInjectionPointSelector(slice.to.injectionPointSelector, null, null, at.shift, at.unsafe);
         }
 
-        return new SlicedInjectionPointSelector(at.injectionPointSelector, from, to);
+        return new SlicedInjectionPointSelector(at.injectionPointSelector, from, to, at.shift, at.unsafe);
     }
 
     @NotNull
@@ -249,7 +249,8 @@ public class MixinAtAnnotation {
         if (value == null) {
             throw new MixinParseException("The required field \"value\" is missing.");
         }
-        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice);
+        // TODO implement shifts and unsafe
+        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice, 0, false);
     }
 
     @NotNull
@@ -319,19 +320,23 @@ public class MixinAtAnnotation {
 
         // TODO @Constant, like @At has an ordinal.
         // However, this key and the underlying functionality has not yet been implemented in micromixin-transformer.
-        return new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), slice);
+        return new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), slice, 0, false);
     }
 
     @NotNull
     public final InjectionPointSelector injectionPointSelector;
+    private final int shift;
     @NotNull
     public final String slice;
+    private final boolean unsafe;
     @NotNull
     public final String value;
 
-    public MixinAtAnnotation(@NotNull String value, @NotNull InjectionPointSelector selector, @NotNull String slice) {
+    public MixinAtAnnotation(@NotNull String value, @NotNull InjectionPointSelector selector, @NotNull String slice, int shift, boolean unsafe) {
         this.value = value;
         this.injectionPointSelector = selector;
         this.slice = slice;
+        this.shift = shift;
+        this.unsafe = unsafe;
     }
 }

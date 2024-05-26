@@ -67,7 +67,7 @@ public class ASMUtil {
                 MethodNode targetMethod = selector.selectMethod(target, mixinSource);
                 if (targetMethod != null) {
                     if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getSelector().fullyQualifiedName + "\") does not support usage within a constructor.");
+                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getQualifiedSelectorName() + "\") does not support usage within a constructor.");
                     }
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
                         if (((injectMethodSource.access & Opcodes.ACC_STATIC) == 0)) {

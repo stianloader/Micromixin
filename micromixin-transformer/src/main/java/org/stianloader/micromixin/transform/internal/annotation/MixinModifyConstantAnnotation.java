@@ -199,7 +199,7 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
 
         if (constantAts.isEmpty()) {
             ConstantSelector selector = new WildcardConstantSelector(ASMUtil.getReturnType(method.desc));
-            constantAts.add(new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), ""));
+            constantAts.add(new MixinAtAnnotation("CONSTANT", new ConstantInjectionPointSelector(selector), "", 0, false));
         }
 
         if (allow < require) {
