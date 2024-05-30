@@ -82,6 +82,14 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
  - `@ModifyArg` (Sponge)
  - `@ModifyConstant` (Sponge)
  - `@ModifyReturnValue` (MixinExtras)
+ - `@ModifyVariable` (Sponge)
+
+## Partially supported features
+
+These features might have been implemented, but either aren't correctly implemented
+or are improperly tested, if at all. Avoid their use, if you can.
+
+ - `@Mutable` (Sponge) 
 
 ## Notable unsupported features
 
@@ -91,11 +99,13 @@ feature compatibility with the spongeian mixin implementation.
  - Refmaps. This feature will not be implemented by myself in the forseeable future,
    if you absolutely need that feature: PR it. The underlying infrastructure probably
    already exists so it won't be a herculean task.
- - `@Coerce`
- - `@ModifyArgs`
- - `@ModifyVariable`
- - `@Inject` usage in constructors before `super()` call
- - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar
+ - `@Coerce` (Sponge)
+ - `@ModifyArgs` (Sponge)
+ - `@Local`, `@Share` (MixinExtras)
+ - `@At` targets in constructors before final return (Fabric)
+ - `@At` targets in constructors bfeore final return via unsafe (Sponge)
+ - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar (???)
+ - Redirecting fields, array loads, array stores, array length operations, etc. (Sponge)
 
 ## Contributing
 

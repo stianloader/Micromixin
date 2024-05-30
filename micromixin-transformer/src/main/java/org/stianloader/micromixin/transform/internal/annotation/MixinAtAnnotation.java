@@ -1,6 +1,7 @@
 package org.stianloader.micromixin.transform.internal.annotation;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -227,6 +228,8 @@ public class MixinAtAnnotation {
         String value = null;
         List<String> args = null;
         InjectionPointTargetConstraint constraint = null;
+        int shift = 0;
+
         for (int i = 0; i < atValue.values.size(); i += 2) {
             String name = (String) atValue.values.get(i);
             Object val = atValue.values.get(i + 1);
@@ -242,6 +245,20 @@ public class MixinAtAnnotation {
                 slice = (String) Objects.requireNonNull(val);
             } else if (name.equals("desc")) {
                 constraint = new DescSelector(MixinDescAnnotation.parse(mixinSource, Objects.requireNonNull((AnnotationNode) val)));
+            } else if (name.equals("shift")) {
+                String[] enumValue = (String[]) val;
+                if (!enumValue[0].equals("Lorg/spongepowered/asm/mixin/injection/At$Shift;")) {
+                    throw new MixinParseException("Unimplemented enum type for @At.shift: " + Arrays.toString(enumValue));
+                }
+                if (enumValue[1].equals("NONE")) {
+                    shift = 0;
+                } else if (enumValue[1].equals("BEFORE")){
+                    shift = -1;
+                } else if (enumValue[2].equals("AFTER")) {
+                    shift = 1;
+                } else {
+                    throw new MixinParseException("Unimplemented enum value for @At.shift: " + Arrays.toString(enumValue));
+                }
             } else {
                 throw new MixinParseException("Unimplemented key in @At: " + name);
             }
@@ -249,8 +266,9 @@ public class MixinAtAnnotation {
         if (value == null) {
             throw new MixinParseException("The required field \"value\" is missing.");
         }
-        // TODO implement shifts and unsafe
-        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice, 0, false);
+
+        // TODO implement unsafe
+        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice, shift, false);
     }
 
     @NotNull

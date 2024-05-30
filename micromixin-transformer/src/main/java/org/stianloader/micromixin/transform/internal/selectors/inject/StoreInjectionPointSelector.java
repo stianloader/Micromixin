@@ -61,7 +61,7 @@ public class StoreInjectionPointSelector extends InjectionPointSelector implemen
 
         for (; insn != null && insn != guard; insn = insn.getNext()) {
             if (ASMUtil.isStore(insn.getOpcode())) {
-                matched.add(insn.getNext());
+                matched.add(ASMUtil.getNext(insn));
             }
         }
 

@@ -1,6 +1,8 @@
 package org.stianloader.micromixin.transform.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 
 import org.jetbrains.annotations.Contract;
@@ -105,7 +107,12 @@ public class SlicedInjectionPointSelector {
      */
     @Nullable
     public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        return this.selector.getFirstInsn(method, this.from, this.to, remapper, sharedBuilder);
+        AbstractInsnNode insn = this.selector.getFirstInsn(method, this.from, this.to, remapper, sharedBuilder);
+        if (this.offset == 0) {
+            return insn;
+        } else {
+            return ASMUtil.shiftInsn(insn, this.offset);
+        }
     }
 
     @Nullable
@@ -130,7 +137,15 @@ public class SlicedInjectionPointSelector {
      */
     @NotNull
     public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        return this.selector.getMatchedInstructions(method, this.from, this.to, remapper, sharedBuilder);
+        Collection<? extends AbstractInsnNode> nodes = this.selector.getMatchedInstructions(method, this.from, this.to, remapper, sharedBuilder);
+        if (this.offset == 0 || nodes.isEmpty()) {
+            return nodes;
+        }
+        List<AbstractInsnNode> shiftedInsns = new ArrayList<AbstractInsnNode>();
+        for (AbstractInsnNode insn : nodes) {
+            shiftedInsns.add(ASMUtil.shiftInsn(insn, this.offset));
+        }
+        return shiftedInsns;
     }
 
     /**

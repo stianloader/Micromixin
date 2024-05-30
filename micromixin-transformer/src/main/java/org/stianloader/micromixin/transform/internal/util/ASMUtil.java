@@ -660,6 +660,28 @@ public class ASMUtil {
         target.instructions.insert(previousInsn, inject);
     }
 
+    public static AbstractInsnNode shiftInsn(AbstractInsnNode insn, int offset) {
+        if (offset == 0) {
+            return insn;
+        } else if (offset < 0) {
+            while (offset++ != 0 && insn != null) {
+                insn = insn.getPrevious();
+                while (insn != null && insn.getOpcode() == -1) {
+                    insn = insn.getPrevious();
+                }
+            }
+        } else {
+            while (offset-- != 0 && insn != null) {
+                insn = ASMUtil.getNext(insn);
+            }
+        }
+
+        if (insn == null) {
+            throw new IllegalStateException("Instruction shifted out of bounds. Perhaps the offset is too large?");
+        }
+        return insn;
+    }
+
     public static int toOperandDepth(List<String> headTypes, int uniformDepth) {
         int operandDepth = 0;
         for (int i = 0; i < uniformDepth; i++) {

@@ -14,6 +14,32 @@ import java.lang.annotation.RetentionPolicy;
 public @interface At {
 
     /**
+     * An enumeration defining the available modes of shifting as consumed by {@link At#shift()}.
+     */
+    public enum Shift {
+
+        /**
+         * No shift. The instruction defined by the injection point selector of the {@link At}
+         * will be used as-is.
+         */
+        NONE,
+
+        /**
+         * Use the instruction that is immediately before the instruction selected by the injection
+         * point selector defined by {@link At#value()} (with the corresponding injection point
+         * constraints).
+         */
+        BEFORE,
+
+        /**
+         * Use the instruction that is immediately after the instruction selected by the injection
+         * point selector defined by {@link At#value()} (with the corresponding injection point
+         * constraints).
+         */
+        AFTER;
+    }
+
+    /**
      * A list of arguments that can be consumed by the injection point provider.
      * These arguments are used if {@link #target()} and {@link #desc()} either do not apply
      * or are not descriptive enough.
@@ -52,6 +78,29 @@ public @interface At {
      * @see At#target()
      */
     public Desc desc() default @Desc("");
+
+    /**
+     * At times the injection point selector defined by {@link #value()} points to an instruction adjacent
+     * to the instruction that should actually be targeted, yet in some circumstances it can be infeasible
+     * or even impossible to target the intended instruction directly. In this case, the instruction targeted
+     * by the injection point selector defined by {@link #value()} can be "shifted" by a limited amount.
+     *
+     * <p>This annotation element only modifies the selection of this {@link At}, but will not mutate the
+     * originally selected instruction, nor will it modify or move any other instruction. This annotation element
+     * is primarily used to inject code after an injection point selector, e.g. after an <code>INVOKEVIRTUAL</code>
+     * instruction matched by <code>INVOKE</code>.
+     *
+     * <p>By default, the instruction is not shifted. This corresponds to the behaviour of {@link Shift#NONE}.
+     *
+     * <p>It is not defined whether "virtual" instructions (for example LineInsnNodes, FrameInsnNodes
+     * and LabelNodes)  are counted towards the shift or whether they are ignored.
+     * This behaviour may be subject to change depending on the behaviour of other mixin implementations
+     * as well as the (un-)intuitive semantics of such counting. The spongeian mixin documentation
+     * implicitly leaves this as an implementation detail.
+     *
+     * @return The type of shift to perform.
+     */
+    public Shift shift() default Shift.NONE;
 
     /**
      * The id of the {@link Slice} that should be passed to the injection point to narrow down the amount of
