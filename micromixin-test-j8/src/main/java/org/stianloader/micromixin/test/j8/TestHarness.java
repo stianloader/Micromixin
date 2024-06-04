@@ -66,23 +66,23 @@ public class TestHarness {
         set.addUnitAssertEquals("ModifyVariableTest.modifyVI()", () -> new ModifyVariableTest().modifyVI(), 1);
         set.addUnitAssertEquals("ModifyVariableTest.modifyVJ()", () -> new ModifyVariableTest().modifyVJ(), 1L);
 
-        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)A", () -> ModifyVariableTest.modifySD(true), 1D);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)A", () -> ModifyVariableTest.modifySF(true), 1F);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)A", () -> ModifyVariableTest.modifySI(true), 1);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)A", () -> ModifyVariableTest.modifySJ(true), 1L);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)A", () -> new ModifyVariableTest().modifyVD(true), 1D);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)A", () -> new ModifyVariableTest().modifyVF(true), 1F);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)A", () -> new ModifyVariableTest().modifyVI(true), 1);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)A", () -> new ModifyVariableTest().modifyVJ(true), 1L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)D (1)", () -> ModifyVariableTest.modifySD(true), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)F (1)", () -> ModifyVariableTest.modifySF(true), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)I (1)", () -> ModifyVariableTest.modifySI(true), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)J (1)", () -> ModifyVariableTest.modifySJ(true), 1L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)D (1)", () -> new ModifyVariableTest().modifyVD(true), 1D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)F (1)", () -> new ModifyVariableTest().modifyVF(true), 1F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)I (1)", () -> new ModifyVariableTest().modifyVI(true), 1);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)J (1)", () -> new ModifyVariableTest().modifyVJ(true), 1L);
 
-        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)B", () -> ModifyVariableTest.modifySD(false), 0D);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)B", () -> ModifyVariableTest.modifySF(false), 0F);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)B", () -> ModifyVariableTest.modifySI(false), 0);
-        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)B", () -> ModifyVariableTest.modifySJ(false), 0L);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)B", () -> new ModifyVariableTest().modifyVD(false), 0D);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)B", () -> new ModifyVariableTest().modifyVF(false), 0F);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)B", () -> new ModifyVariableTest().modifyVI(false), 0);
-        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)B", () -> new ModifyVariableTest().modifyVJ(false), 0L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySD(Z)D (0)", () -> ModifyVariableTest.modifySD(false), 0D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySF(Z)F (0)", () -> ModifyVariableTest.modifySF(false), 0F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySI(Z)I (0)", () -> ModifyVariableTest.modifySI(false), 0);
+        set.addUnitAssertEquals("ModifyVariableTest.modifySJ(Z)J (0)", () -> ModifyVariableTest.modifySJ(false), 0L);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVD(Z)D (0)", () -> new ModifyVariableTest().modifyVD(false), 0D);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVF(Z)F (0)", () -> new ModifyVariableTest().modifyVF(false), 0F);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVI(Z)I (0)", () -> new ModifyVariableTest().modifyVI(false), 0);
+        set.addUnitAssertEquals("ModifyVariableTest.modifyVJ(Z)J (0)", () -> new ModifyVariableTest().modifyVJ(false), 0L);
 
         set.addUnitAssertEquals("ModifyVariableTest.modifySDNoShift", () -> ModifyVariableTest.modifySDNoShift(), 0L);
         set.addUnitAssertEquals("ModifyVariableTest.modifyNamed", () -> ModifyVariableTest.modifyNamed(), 1);

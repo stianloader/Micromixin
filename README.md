@@ -36,9 +36,6 @@ Painpoints of the official Mixin implementation that this implementation seeks t
    <https://discord.com/channels/142425412096491520/626802111455297538/1075864621589733387>
    ). Micromixin rejects that practice and will POP/POP2 such operands as that leads
    to unstable behaviour.
- - Mixin using Java 8 (Micromixin uses Java 6, making it usable for some more niche
-   purposes. However thanks to multi-release jars API consumers for Java 9+ will see
-   little difference)
 
 ## Modules
 
@@ -122,3 +119,7 @@ which can make use of both sponge's mixin implementation and micromixin.
 However, you can also indirectly contribute to micromixin by simply making use of it
 and reporting any bugs you find along the way! (though please don't make use of micromixin
 in gigantic projects and expect it to work fine)
+
+## Sister projects
+
+- Micromixin-remapper: https://github.com/stianloader/micromixin-remapper

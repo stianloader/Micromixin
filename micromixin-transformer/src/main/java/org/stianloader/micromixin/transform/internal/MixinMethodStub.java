@@ -96,7 +96,11 @@ public class MixinMethodStub implements ClassMemberStub {
 
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull MixinStub stub, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinMethodStub> a : this.annotations) {
-            a.apply(target, hctx, stub, this, remapper, sharedBuilder);
+            try {
+                a.apply(target, hctx, stub, this, remapper, sharedBuilder);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Unable to apply annotation '" + a.toString() + "' fom method " + this.owner.name + "." + this.method.name + this.method.desc + " to the target class.", e);
+            }
         }
     }
 

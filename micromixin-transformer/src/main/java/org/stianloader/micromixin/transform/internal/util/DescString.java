@@ -38,7 +38,7 @@ public class DescString {
                     break;
                 }
             }
-            if (asArray[typePosition] == 'L') {
+            if (this.asArray[typePosition] == 'L') {
                 this.startIndex = this.desc.indexOf(';', this.startIndex) + 1;
             } else {
                 this.startIndex = ++typePosition;
@@ -72,7 +72,7 @@ public class DescString {
                     break;
                 }
             }
-            if (asArray[typePosition] == 'L') {
+            if (this.asArray[typePosition] == 'L') {
                 int endPos = this.desc.indexOf(';', this.startIndex) + 1;
                 String ret = this.desc.substring(this.startIndex, endPos);
                 this.startIndex = endPos;

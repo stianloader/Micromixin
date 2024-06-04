@@ -102,7 +102,7 @@ public class MultiplexLineNumberAllocator {
         }
         FileSection fileSection = new FileSection(fileEntries);
         LineSection lineSection = new LineSection(lineInfos);
-        smap.appendStratum(stratum, fileSection, lineSection, "Starloader-project MicroMixin");
+        smap.appendStratum(stratum, fileSection, lineSection, "Stianloader Micromixin");
         return smap;
     }
 
@@ -139,7 +139,7 @@ public class MultiplexLineNumberAllocator {
     public LineNumberNode reserve(@NotNull ClassNode allocator, @NotNull LineNumberNode originNode, @NotNull LabelNode copiedStart) {
         if (this.currentAllocatorNode != allocator) {
             this.currentAllocatorNode = Objects.requireNonNull(allocator, "allocator may not be null");
-            flushFrame();
+            this.flushFrame();
         }
         if (this.currentAllocationSize == -1) {
             this.currentAllocatorStart = originNode.line;
