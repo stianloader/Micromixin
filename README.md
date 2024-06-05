@@ -56,14 +56,18 @@ micromixin-annotations should strictly be used for compilation only,
 micromixin-transformer should strictly be used for runtime transformation only,
 micromixin-runtime should most likely always be used.
 
+Another project under the micromixin umbrella is micromixin-remapper, which is an
+add-on library for stianloader-remapper in order to be able remap mixin classes.
+It is developed under https://github.com/stianloader/micromixin-remapper
+
 ## Maven
 
 This project is available at https://stianloader.org/maven/ with following coordinates:
  - groupid: org.stianloader
  - artifactid:
-  - micromixin-transformer
-  - or micromixin-runtime
-  - or micromixin-annotations
+   * micromixin-transformer
+   * or micromixin-runtime
+   * or micromixin-annotations
 
  Available versions are listed under
  https://stianloader.org/maven/org/stianloader/micromixin-runtime/
@@ -98,11 +102,13 @@ feature compatibility with the spongeian mixin implementation.
    already exists so it won't be a herculean task.
  - `@Coerce` (Sponge)
  - `@ModifyArgs` (Sponge)
- - `@Local`, `@Share` (MixinExtras)
+ - `@Local`, `@Share`, `@Cancellable` (MixinExtras)
  - `@At` targets in constructors before final return (Fabric)
- - `@At` targets in constructors bfeore final return via unsafe (Sponge)
+ - `@At` targets in constructors before final return via unsafe (Sponge)
  - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar (???)
  - Redirecting fields, array loads, array stores, array length operations, etc. (Sponge)
+ - Usage of static injection handlers when targetting non-static methods (Sponge)
+ - `@WrapOperation`, `@WrapMethod`, et al. (MixinExtras)
 
 ## Contributing
 

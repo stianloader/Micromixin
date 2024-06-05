@@ -170,5 +170,9 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                 }
             }
         }
+
+        if ((source.getAccess() & Opcodes.ACC_PRIVATE) == 0 && !this.aliases.isEmpty()) {
+            logger.warn(MixinShadowAnnotation.class, "The @Shadow annotated member {}.{} {} defines an alias and is not private. While this behaviour is supported in micromixin-transformer, it isn't supported in the spongeian mixin implementation. This may represent a compatibility hazard. For more information, see the javadocs on aliases for the Shadow annotation. In most cases, the access modifiers of your mixin member can be 'private' (even if the shadowed member in the target class has a higher access modifier like 'public').", source.getOwner().name, source.getName(), source.getDesc());
+        }
     }
 }

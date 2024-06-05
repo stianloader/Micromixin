@@ -306,12 +306,14 @@ public class TestSet {
         this.units.add(new TestUnit(name, () -> {
             PrintStream originOut = System.out;
             try {
-                System.setOut(new PrintStream(new OutputStream() {
-                    @Override
-                    public void write(int b) throws IOException {
-                        // NOP
-                    }
-                }));
+                if (!Boolean.getBoolean("org.stianloader.micromixin.test.cnfe.noRedirectSysout")) {
+                    System.setOut(new PrintStream(new OutputStream() {
+                        @Override
+                        public void write(int b) throws IOException {
+                            // NOP
+                        }
+                    }));
+                }
                 getClass().getClassLoader().loadClass(name);
             } catch (ClassNotFoundException cnfe) {
                 return;
