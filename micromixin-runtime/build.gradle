@@ -142,6 +142,42 @@ publishing {
             from components['java']
             artifact sourcesJar
             artifact javadocJar
+
+            pom {
+                name = 'Micromixin Runtime classes'
+                description = 'Classes required to execute mixins at runtime (even if transformation occured ahead of time).'
+                url = 'https://github.com/stianloader/Micromixin'
+                inceptionYear = '2023'
+
+                licenses {
+                    license {
+                        name = 'BSD-2-Clause'
+                        url = 'https://opensource.org/license/bsd-2-clause/'
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'geolykt'
+                        name = 'Emeric "Geolykt" Werner'
+                        email = 'mail@geolykt.de'
+                        timezone = 'Europe/Berlin'
+                        url = 'https://geolykt.de/'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/stianloader/Micromixin.git'
+                    developerConnection = 'scm:git:ssh://github.com:stianloader/Micromixin.git'
+                    url = 'https://github.com/stianloader/Micromixin/tree/main'
+                }
+
+                issueManagement {
+                    system = 'Github'
+                    url = 'https://github.com/stianloader/Micromixin/issues'
+                }
+            }
         }
     }
 
