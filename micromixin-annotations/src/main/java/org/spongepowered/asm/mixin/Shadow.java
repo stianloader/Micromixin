@@ -63,14 +63,13 @@ public @interface Shadow {
      * <p>Unlike prefixes, aliases are completely acceptable when the <code>&#64;Shadow</code>-Annotation
      * targets a field in both micromixin and standard mixin.
      *
-     * <p>In the spongeian mixin implementation, <b>aliases are not supported on non-private members</b>.
-     * The cited reason for this is that other mixins could add fields that would match the alias and thus
+     * <p>In the spongeian mixin implementation, <b>aliases are not supported on non-private members</b>
+     * (for this, the access modifier of the target member is being used, not the one of the member in the mixin
+     * class). The cited reason for this is that other mixins could add fields that would match the alias and thus
      * invalidate caches. It is unclear why this is an issue in the spongeian implementation, but for compatibility
-     * reasons it is recommended to ensure that shadowed members with aliases are private. Note: For this comparison,
-     * only the access modifier of the member in the mixin class is considered, the access modifier in the target
-     * class is not of relevance and may be higher than that of the mixin class.
+     * reasons it is recommended to ensure that shadowed members with aliases are private.
      * While micromixin-transformer  and micromixin-remapper support the usage of aliases on non-private members,
-     * it will log a warning at validation time when doing so and may in the future refuse to apply such mixins.
+     * it will log a warning at application time when doing so and may in the future refuse to apply such mixins.
      * Proceed with care.
      *
      * @return The aliases to use.

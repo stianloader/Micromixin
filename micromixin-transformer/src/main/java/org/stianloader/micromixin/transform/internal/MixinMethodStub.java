@@ -36,9 +36,9 @@ public class MixinMethodStub implements ClassMemberStub {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Inject;")) {
                         annotations.add(MixinInjectAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Overwrite;")) {
-                        annotations.add(MixinOverwriteAnnotation.parse(node, method, annot));
+                        annotations.add(MixinOverwriteAnnotation.parse(node, method, annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot, null));
+                        annotations.add(MixinShadowAnnotation.<MixinMethodStub>parse(annot, null, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinMethodStub>parse(annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/injection/Redirect;")) {
@@ -67,7 +67,7 @@ public class MixinMethodStub implements ClassMemberStub {
             } else if (method.name.equals("<clinit>") && method.desc.equals("()V")) {
                 annotations.add(new VirtualClInitMergeAnnotation(method));
             } else {
-                annotations.add(MixinOverwriteAnnotation.generateImplicit(node, method));
+                annotations.add(MixinOverwriteAnnotation.generateImplicit(node, method, transformer.getLogger()));
             }
         }
 

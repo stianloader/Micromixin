@@ -26,7 +26,7 @@ public class MixinFieldStub implements ClassMemberStub {
             for (AnnotationNode annot : field.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
                     if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Shadow;")) {
-                        annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot, field.visibleAnnotations));
+                        annotations.add(MixinShadowAnnotation.<MixinFieldStub>parse(annot, field.visibleAnnotations, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Unique;")) {
                         annotations.add(MixinUniqueAnnotation.<MixinFieldStub>parse(annot, transformer.getLogger()));
                     } else if (annot.desc.equals("Lorg/spongepowered/asm/mixin/Mutable;")) {

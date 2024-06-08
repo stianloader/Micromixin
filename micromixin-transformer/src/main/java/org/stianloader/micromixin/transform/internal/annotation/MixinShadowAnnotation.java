@@ -22,19 +22,22 @@ import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class MixinShadowAnnotation<T extends ClassMemberStub> extends MixinAnnotation<T> {
     @NotNull
-    private final String prefix;
-    @NotNull
     private final List<String> aliases;
     private final boolean isMutable;
+    @NotNull
+    private final MixinLoggingFacade logger;
+    @NotNull
+    private final String prefix;
 
-    private MixinShadowAnnotation(@NotNull String prefix, @NotNull List<String> aliases, boolean isMutable) {
+    private MixinShadowAnnotation(@NotNull String prefix, @NotNull List<String> aliases, boolean isMutable, @NotNull MixinLoggingFacade logger) {
         this.prefix = prefix;
         this.aliases = aliases;
         this.isMutable = isMutable;
+        this.logger = logger;
     }
 
     @NotNull
-    public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation, @Nullable List<AnnotationNode> allAnnotations) {
+    public static <T0 extends ClassMemberStub> MixinShadowAnnotation<T0> parse(@NotNull AnnotationNode annotation, @Nullable List<AnnotationNode> allAnnotations, @NotNull MixinLoggingFacade logger) {
         boolean isMutable = false;
         if (allAnnotations != null) {
             for (AnnotationNode currAnn : allAnnotations) {
@@ -51,7 +54,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
         List<String> aliases = Collections.emptyList();
 
         if (annotation.values == null) {
-            return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable);
+            return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable, logger);
         }
 
         for (int i = 0; i < annotation.values.size(); i += 2) {
@@ -71,7 +74,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
             }
         }
 
-        return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable);
+        return new MixinShadowAnnotation<T0>(prefix, aliases, isMutable, logger);
     }
 
     private void apply(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull SimpleRemapper out, @NotNull StringBuilder sharedBuilder) {
@@ -141,6 +144,10 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                 throw new UnsupportedOperationException("@Mutable is incompatible with @Shadow on methods. @Mutable may only be used in conjunction with accessors.");
             }
         }
+
+        if ((source.getAccess() & Opcodes.ACC_PRIVATE) == 0 && !this.aliases.isEmpty()) {
+            this.logger.warn(MixinShadowAnnotation.class, "The @Shadow annotated member {}.{} {} defines an alias for a non-private method. While this behaviour is supported in micromixin-transformer, it isn't supported in the spongeian mixin implementation. This may represent a compatibility hazard. For more information, see the javadocs on aliases for the Shadow annotation. Note that the modifier of your mixin member is not of relevance, just the modifier of the member that is being aliased.", source.getOwner().name, source.getName(), source.getDesc());
+        }
     }
 
     @Override
@@ -169,10 +176,6 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                     logger.error(MixinShadowAnnotation.class, "The @Shadow annotated method {}.{}{} defines an alias and is static. However, due to a bug in the spongeian mixin implementation INVOKESTATIC calls will not be redirected to the member you are targetting, effectively causing a crash at runtime. At this point in time micromixin-transformer replicates this issue, but this behaviour is subject to change.", source.getOwner().name, source.getName(), source.getDesc());
                 }
             }
-        }
-
-        if ((source.getAccess() & Opcodes.ACC_PRIVATE) == 0 && !this.aliases.isEmpty()) {
-            logger.warn(MixinShadowAnnotation.class, "The @Shadow annotated member {}.{} {} defines an alias and is not private. While this behaviour is supported in micromixin-transformer, it isn't supported in the spongeian mixin implementation. This may represent a compatibility hazard. For more information, see the javadocs on aliases for the Shadow annotation. In most cases, the access modifiers of your mixin member can be 'private' (even if the shadowed member in the target class has a higher access modifier like 'public').", source.getOwner().name, source.getName(), source.getDesc());
         }
     }
 }
