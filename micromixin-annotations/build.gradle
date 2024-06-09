@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'eclipse'
+    id 'signing'
 }
 
 group = 'org.stianloader'
@@ -186,14 +187,21 @@ publishing {
     }
 
     repositories {
-        if (System.getProperty('publishRepo') != null) {
+        if (providers.gradleProperty('publishRepo').isPresent()) {
             maven {
-                url System.getProperty('publishRepo')
+                url providers.gradleProperty('publishRepo').get()
                 allowInsecureProtocol = true
             }
         } else {
             mavenLocal()
         }
+    }
+}
+
+if (providers.gradleProperty('signedPublish').isPresent() && Boolean.parseBoolean(providers.gradleProperty('signedPublish').get())) {
+    signing {
+        useGpgCmd()
+        sign publishing.publications.maven
     }
 }
 

@@ -2,3 +2,9 @@
 */generated/
 .*
 */build/
+
+# The gradle properties file is used to control deployment to OSSRH,
+# but beware that our CI infrastructure will not make use of the
+# gradle properties file and instead pass the necessary arguments using
+# arguments passed to gradle.
+gradle.properties
