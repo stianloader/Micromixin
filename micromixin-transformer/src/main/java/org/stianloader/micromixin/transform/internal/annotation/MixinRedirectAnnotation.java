@@ -16,6 +16,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -195,15 +196,29 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
 
         for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
             AbstractInsnNode insn = entry.getKey();
+            assert insn != null;
             // IMPLEMENT verify arguments or types.
             // TODO test whether argument capture is a thing with @Redirect
             MethodNode targetMethod = entry.getValue();
             InsnList instructions = targetMethod.instructions;
             int insertedOpcode;
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
-                VarInsnNode preInsert = new VarInsnNode(Opcodes.ALOAD, 0);
-                instructions.insertBefore(insn, preInsert);
-                ASMUtil.shiftDownByDesc(handlerNode.desc, false, to, targetMethod, preInsert, this.transformer.getPool());
+                List<String> argTypes = ASMUtil.getInputOperandTypes(insn);
+                InsnList preRollback = new InsnList();
+                InsnList rollback = new InsnList();
+                ASMUtil.moveStackHead(targetMethod, insn, insn, argTypes, argTypes.size(), preRollback, rollback);
+                instructions.insertBefore(insn, preRollback);
+                instructions.insertBefore(insn, new VarInsnNode(Opcodes.ALOAD, 0));
+                if (!argTypes.isEmpty()) {
+                    if (ASMUtil.isCategory2(argTypes.get(0).codePointAt(0))
+                            || (argTypes.size() > 1 && !ASMUtil.isCategory2(argTypes.get(1).codePointAt(0)))) {
+                        instructions.insertBefore(insn, new InsnNode(Opcodes.DUP_X2));
+                        instructions.insertBefore(insn, new InsnNode(Opcodes.POP));
+                    } else {
+                        instructions.insertBefore(insn, new InsnNode(Opcodes.SWAP));
+                    }
+                }
+                instructions.insertBefore(insn, rollback);
                 insertedOpcode = Opcodes.INVOKEVIRTUAL;
             } else {
                 insertedOpcode = Opcodes.INVOKESTATIC;

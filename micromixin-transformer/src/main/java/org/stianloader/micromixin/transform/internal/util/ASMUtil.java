@@ -2,6 +2,7 @@ package org.stianloader.micromixin.transform.internal.util;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -18,23 +19,21 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.TypeReference;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.objectweb.asm.tree.analysis.BasicValue;
-import org.objectweb.asm.tree.analysis.Frame;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
-import org.stianloader.micromixin.transform.api.supertypes.ClassWrapperPool;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
-import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
 
 public class ASMUtil {
 
@@ -44,8 +43,8 @@ public class ASMUtil {
     public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_NAME + ";";
     public static final int CI_LEN = CALLBACK_INFO_NAME.length();
     public static final int CIR_LEN = CALLBACK_INFO_RETURNABLE_NAME.length();
-    public static final String ROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Roll;";
-    public static final String UNROLL_ANNOT_DESC = "Lde/geolykt/micromixin/internal/Unroll;";
+    public static final String ROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Roll;";
+    public static final String UNROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Unroll;";
 
     @NotNull
     public static AbstractInsnNode afterInstruction(@NotNull AbstractInsnNode insn) {
@@ -152,6 +151,71 @@ public class ASMUtil {
             }
         }
         return initialFrameSize;
+    }
+
+    /**
+     * Obtain the types of the input operands of a given instruction.
+     * The returned list does not contain any null values, that is doubles
+     * are a single value within the return list.
+     *
+     * <p>The values within the list are descriptor strings (e.g. Ljava/lang/Object;)
+     *
+     * @param insn The instruction
+     * @return The input operand types
+     */
+    @NotNull
+    public static List<String> getInputOperandTypes(AbstractInsnNode insn) {
+        if (insn instanceof MethodInsnNode) {
+            List<String> list = new ArrayList<String>();
+            if (insn.getOpcode() != Opcodes.INVOKESTATIC) {
+                list.add("L" + ((MethodInsnNode) insn).owner + ";");
+            }
+            DescString dString = new DescString(((MethodInsnNode) insn).desc);
+            while (dString.hasNext()) {
+                list.add(dString.nextType());
+            }
+            return list;
+        } else if (insn instanceof FieldInsnNode) {
+            if (insn.getOpcode() == Opcodes.GETSTATIC) {
+                return Collections.emptyList();
+            } else if (insn.getOpcode() == Opcodes.PUTSTATIC) {
+                return Collections.singletonList(((FieldInsnNode) insn).desc);
+            } else if (insn.getOpcode() == Opcodes.GETFIELD) {
+                return Collections.singletonList("L" + ((FieldInsnNode) insn).owner + ";");
+            } else {
+                List<String> list = Arrays.asList("L" + ((FieldInsnNode) insn).owner + ";", ((FieldInsnNode) insn).desc);
+                if (list == null) {
+                    throw new AssertionError();
+                }
+                return list;
+            }
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented.");
+        }
+    }
+
+    /**
+     * Obtain the amount of input operands of a given instruction, irrespective
+     * of how much space those input operands occupy on the operand stack.
+     *
+     * @param insn The instruction to analyze
+     * @return The amount of input operands
+     */
+    public static int getInputOperandCount(@NotNull AbstractInsnNode insn) {
+        if (insn instanceof MethodInsnNode) {
+            return ASMUtil.getArgumentCount(((MethodInsnNode) insn).desc) + (insn.getOpcode() == Opcodes.INVOKESTATIC ? 0 : 1);
+        } else if (insn instanceof FieldInsnNode) {
+            if (insn.getOpcode() == Opcodes.GETSTATIC) {
+                return 0;
+            } else if (insn.getOpcode() == Opcodes.PUTSTATIC || insn.getOpcode() == Opcodes.GETFIELD) {
+                return 1;
+            } else {
+                // PUTFIELD
+                return 2;
+            }
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented.");
+        }
     }
 
     @NotNull
@@ -282,6 +346,9 @@ public class ASMUtil {
         // DUP_X2, POP <-> DUP2_X1, POP2
         int foregroundBeginIndex = headTypes.size() - uniformDepth;
         if (foregroundBeginIndex == 0) {
+            if (uniformDepth == 0) {
+                return 0;
+            }
             // No background operands, only compute the foreground operand amount.
             if (ASMUtil.isCategory2(headTypes.get(0).codePointAt(0))
                     || (uniformDepth >= 2 && !ASMUtil.isCategory2(headTypes.get(1).codePointAt(0)))) {
@@ -441,6 +508,17 @@ public class ASMUtil {
     public static void moveStackHead(MethodNode method, @NotNull AbstractInsnNode beginMoveInsn,
             @NotNull AbstractInsnNode endRollbackInsn, @NotNull List<String> headTypes, int uniformDepth,
             @NotNull InsnList moveOut, @NotNull InsnList rollbackOut) {
+
+        int shallowStashConfig = ASMUtil.getShallowStashConfiguration(headTypes, uniformDepth);
+
+        if (shallowStashConfig == 0) {
+            return; // There is nothing to move the stack with
+        }
+
+        int shallowStashedElements = shallowStashConfig & 0x03 /* = 0b11 */;
+        boolean cat2StashedElem = shallowStashedElements == 2 && ASMUtil.isCategory2(headTypes.get(headTypes.size() - uniformDepth).codePointAt(0));
+        int deepStashedElementIndex = headTypes.size() - uniformDepth + (cat2StashedElem ? 1 : shallowStashedElements);
+
         Set<Integer> reusableLocals = new LinkedHashSet<Integer>();
 
         int highestLVTIndex = 0;
@@ -488,11 +566,6 @@ public class ASMUtil {
 
         // TODO Nested roll/unroll not yet supported. As of now this method assumes that this is never the case
 
-        int shallowStashConfig = ASMUtil.getShallowStashConfiguration(headTypes, uniformDepth);
-        int shallowStashedElements = shallowStashConfig & 0x03 /* = 0b11 */;
-        boolean cat2StashedElem = shallowStashedElements == 2 && ASMUtil.isCategory2(headTypes.get(headTypes.size() - uniformDepth).codePointAt(0));
-        int deepStashedElementIndex = headTypes.size() - uniformDepth + (cat2StashedElem ? 1 : shallowStashedElements);
-
         for (int i = headTypes.size() - 1; i >= deepStashedElementIndex; i--) {
             int type = headTypes.get(i).codePointAt(0);
             boolean cat2 = ASMUtil.isCategory2(type);
@@ -511,7 +584,7 @@ public class ASMUtil {
                 break;
             }
 
-            if (localIndex == -1) {
+            if (localIndex < 0) {
                 localIndex = ++highestLVTIndex;
                 if (cat2) {
                     highestLVTIndex++;
@@ -522,7 +595,7 @@ public class ASMUtil {
             VarInsnNode loadInsn = new VarInsnNode(ASMUtil.getLoadOpcode(type), localIndex);
             loadInsn.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
             storeInsn.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
-            // the type reference is not really right and rather made-up, but at least noone in the eco-system should complain about it
+            // the type reference is not really right and rather made-up, but at least noone in the ecosystem should complain about it
             loadInsn.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT << 24, null, ROLL_ANNOT_DESC));
             storeInsn.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.METHOD_INVOCATION_TYPE_ARGUMENT << 24, null, UNROLL_ANNOT_DESC));
             rollbackOut.insert(loadInsn);
@@ -581,83 +654,6 @@ public class ASMUtil {
         default:
             throw new IllegalStateException("Unable to infer the required pop opcode corresponding to the return type of method descriptor: " + methodDesc);
         }
-    }
-
-    public static void shiftDownByDesc(@NotNull String desc, boolean category2, @NotNull ClassNode owner, @NotNull MethodNode target, @NotNull AbstractInsnNode previousInsn, @NotNull ClassWrapperPool cwPool) {
-        InsnList inject = new InsnList();
-        Frame<BasicValue> frame = LocalsCapture.captureLocals(owner, target, previousInsn, cwPool).frame;
-        int startIndex;
-        if (frame == null) {
-            AbstractInsnNode insn = target.instructions.getFirst();
-            startIndex = ASMUtil.getInitialFrameSize(target);
-            while (insn != null) {
-                if (insn instanceof VarInsnNode) {
-                    int var = ((VarInsnNode) insn).var;
-                    if (insn.getOpcode() == Opcodes.DSTORE
-                            || insn.getOpcode() == Opcodes.LSTORE
-                            || insn.getOpcode() == Opcodes.DLOAD
-                            || insn.getOpcode() == Opcodes.LLOAD) {
-                        var++;
-                    }
-                    startIndex = Math.max(var, startIndex);
-                }
-                insn = insn.getNext();
-            }
-        } else {
-            startIndex = frame.getLocals();
-        }
-
-        int[] typesReverse;
-
-        {
-            int i = 0;
-            DescString dString = new DescString(desc);
-            while (dString.hasNext()) {
-                i++;
-                dString.nextReferenceType();
-            }
-            typesReverse = new int[i];
-            dString.reset();
-            while (dString.hasNext()) {
-                typesReverse[--i] = dString.nextReferenceType();
-            }
-        }
-
-        int storeIndex = startIndex;
-        for (int type : typesReverse) {
-            if (ASMUtil.isCategory2(type)) {
-                if (category2) {
-                    inject.add(new InsnNode(Opcodes.DUP2_X2));
-                    inject.add(new InsnNode(Opcodes.POP2));
-                } else {
-                    inject.add(new InsnNode(Opcodes.DUP_X2));
-                    inject.add(new InsnNode(Opcodes.POP));
-                }
-                storeIndex += 2;
-            } else {
-                if (category2) {
-                    inject.add(new InsnNode(Opcodes.DUP2_X1));
-                    inject.add(new InsnNode(Opcodes.POP2));
-                } else {
-                    inject.add(new InsnNode(Opcodes.DUP_X1));
-                    inject.add(new InsnNode(Opcodes.POP));
-                }
-                storeIndex++;
-            }
-            inject.add(new VarInsnNode(ASMUtil.getStoreOpcode(type), storeIndex));
-        }
-        target.maxLocals = Math.max(target.maxLocals, storeIndex);
-        target.maxStack = Math.max(target.maxStack, storeIndex - startIndex + (category2 ? 2 : 1));
-        for (int i = typesReverse.length; i > 0;) {
-            int type = typesReverse[--i];
-            inject.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), storeIndex));
-            if (ASMUtil.isCategory2(type)) {
-                storeIndex -= 2;
-            } else {
-                storeIndex--;
-            }
-        }
-        target.instructions.insert(previousInsn, inject);
     }
 
     public static AbstractInsnNode shiftInsn(AbstractInsnNode insn, int offset) {

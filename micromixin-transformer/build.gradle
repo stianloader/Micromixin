@@ -187,11 +187,13 @@ publishing {
 
     repositories {
         if (providers.gradleProperty('publishRepo').isPresent()) {
+            System.out.println("Publishing to " + providers.gradleProperty('publishRepo').get())
             maven {
                 url providers.gradleProperty('publishRepo').get()
                 allowInsecureProtocol = true
             }
         } else {
+            System.out.println("Publishing to the local maven repository")
             mavenLocal()
         }
     }
