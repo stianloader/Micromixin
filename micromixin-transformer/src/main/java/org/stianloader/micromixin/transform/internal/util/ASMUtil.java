@@ -38,11 +38,11 @@ import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelect
 public class ASMUtil {
 
     public static final String CALLBACK_INFO_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
-    public static final String CALLBACK_INFO_DESC = "L" + CALLBACK_INFO_NAME + ";";
+    public static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
     public static final String CALLBACK_INFO_RETURNABLE_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
-    public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + CALLBACK_INFO_RETURNABLE_NAME + ";";
-    public static final int CI_LEN = CALLBACK_INFO_NAME.length();
-    public static final int CIR_LEN = CALLBACK_INFO_RETURNABLE_NAME.length();
+    public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + ASMUtil.CALLBACK_INFO_RETURNABLE_NAME + ";";
+    public static final int CI_LEN = ASMUtil.CALLBACK_INFO_NAME.length();
+    public static final int CIR_LEN = ASMUtil.CALLBACK_INFO_RETURNABLE_NAME.length();
     public static final String ROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Roll;";
     public static final String UNROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Unroll;";
 
@@ -154,6 +154,30 @@ public class ASMUtil {
     }
 
     /**
+     * Obtain the amount of input operands of a given instruction, irrespective
+     * of how much space those input operands occupy on the operand stack.
+     *
+     * @param insn The instruction to analyze
+     * @return The amount of input operands
+     */
+    public static int getInputOperandCount(@NotNull AbstractInsnNode insn) {
+        if (insn instanceof MethodInsnNode) {
+            return ASMUtil.getArgumentCount(((MethodInsnNode) insn).desc) + (insn.getOpcode() == Opcodes.INVOKESTATIC ? 0 : 1);
+        } else if (insn instanceof FieldInsnNode) {
+            if (insn.getOpcode() == Opcodes.GETSTATIC) {
+                return 0;
+            } else if (insn.getOpcode() == Opcodes.PUTSTATIC || insn.getOpcode() == Opcodes.GETFIELD) {
+                return 1;
+            } else {
+                // PUTFIELD
+                return 2;
+            }
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented.");
+        }
+    }
+
+    /**
      * Obtain the types of the input operands of a given instruction.
      * The returned list does not contain any null values, that is doubles
      * are a single value within the return list.
@@ -188,30 +212,6 @@ public class ASMUtil {
                     throw new AssertionError();
                 }
                 return list;
-            }
-        } else {
-            throw new UnsupportedOperationException("Not yet implemented.");
-        }
-    }
-
-    /**
-     * Obtain the amount of input operands of a given instruction, irrespective
-     * of how much space those input operands occupy on the operand stack.
-     *
-     * @param insn The instruction to analyze
-     * @return The amount of input operands
-     */
-    public static int getInputOperandCount(@NotNull AbstractInsnNode insn) {
-        if (insn instanceof MethodInsnNode) {
-            return ASMUtil.getArgumentCount(((MethodInsnNode) insn).desc) + (insn.getOpcode() == Opcodes.INVOKESTATIC ? 0 : 1);
-        } else if (insn instanceof FieldInsnNode) {
-            if (insn.getOpcode() == Opcodes.GETSTATIC) {
-                return 0;
-            } else if (insn.getOpcode() == Opcodes.PUTSTATIC || insn.getOpcode() == Opcodes.GETFIELD) {
-                return 1;
-            } else {
-                // PUTFIELD
-                return 2;
             }
         } else {
             throw new UnsupportedOperationException("Not yet implemented.");
@@ -291,6 +291,36 @@ public class ASMUtil {
             next = next.getNext();
         }
         return next;
+    }
+
+    @NotNull
+    public static String getRedirectHandlerSignature(@NotNull AbstractInsnNode insn) {
+        switch (insn.getType()) {
+            case AbstractInsnNode.METHOD_INSN: {
+                MethodInsnNode minsn = (MethodInsnNode) insn;
+                if (minsn.getOpcode() == Opcodes.INVOKESTATIC) {
+                    return minsn.desc;
+                } else {
+                    return "(L" + minsn.owner + ";" + minsn.desc.substring(1);
+                }
+            }
+            case AbstractInsnNode.FIELD_INSN: {
+                FieldInsnNode fInsn = (FieldInsnNode) insn;
+                if (fInsn.getOpcode() == Opcodes.GETSTATIC) {
+                    return "()" + fInsn.desc;
+                } else if (fInsn.getOpcode() == Opcodes.PUTSTATIC) {
+                    return "(" + fInsn.desc + ")V";
+                } else if (fInsn.getOpcode() == Opcodes.PUTFIELD) {
+                    return "(L" + fInsn.owner + ";" + fInsn.desc + ")V";
+                } else if (fInsn.getOpcode() == Opcodes.GETFIELD) {
+                    return "(L" + fInsn.owner + ";)" + fInsn.desc;
+                } else {
+                    throw new AssertionError("Unknown opcode: " + fInsn.getOpcode());
+                }
+            }
+            default:
+                throw new UnsupportedOperationException("Instruction cannot be redirected (yet): " + insn + " of type " + insn.getType() + " (opcode " + insn.getOpcode() + ")");
+        }
     }
 
     public static int getReturnComputationalType(@NotNull String methodDesc) {

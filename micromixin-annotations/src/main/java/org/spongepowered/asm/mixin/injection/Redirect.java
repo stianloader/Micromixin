@@ -22,7 +22,14 @@ import org.spongepowered.asm.mixin.Mixin;
  * These steps are required as {@link Redirect} does not modify the stack and replaces a single instruction
  * with another single instruction.
  *
-  <p>Locals and argument capture is not supported when using {@link Redirect}.
+ * <p>Locals capture in the style of {@link Inject} is not supported when using {@link Redirect}.
+ * Capture of the arguments of the target method can be performed by appending the arguments of the target
+ * method to the arguments of the handler method. Trailing arguments may be omitted, however there may
+ * be no 'jumps' in the arguments nor may leading arguments be omitted. Note that internally redirect uses
+ * a different scheme for handling argument capture than with other injectors such as {@link ModifyVariable},
+ * which is why more sophisticated argument capture using &#64;Local or &#64;Share is not supported in the
+ * micromixin-transform implementation (although at the point of writing, so 2024-07-03 such capture
+ * is not supported regardless of injector).
  *
  * <h2>Field redirects</h2>
  * Aside from redirecting methods which is the main use of this annotation, {@link Redirect} is also capable of redirecting

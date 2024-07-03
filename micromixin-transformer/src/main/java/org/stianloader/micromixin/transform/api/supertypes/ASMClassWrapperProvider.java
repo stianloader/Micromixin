@@ -6,7 +6,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
 public abstract class ASMClassWrapperProvider implements ClassWrapperProvider {
-
     @Nullable
     public abstract ClassNode getNode(@NotNull String name);
 

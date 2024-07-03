@@ -32,6 +32,7 @@ import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelect
 import org.stianloader.micromixin.transform.internal.selectors.StringSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
+import org.stianloader.micromixin.transform.internal.util.DescString;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
@@ -196,15 +197,60 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
 
         for (Map.Entry<AbstractInsnNode, MethodNode> entry : matched.entrySet()) {
             AbstractInsnNode insn = entry.getKey();
+
+            // TODO test whether different arguments are captured if two instructions with different signatures
+            // are redirected.
+
             assert insn != null;
-            // IMPLEMENT verify arguments or types.
-            // TODO test whether argument capture is a thing with @Redirect
+
+            // Validate the handler method's signature
+            String expectedDesc = ASMUtil.getRedirectHandlerSignature(insn);
+            // Validate return type
+            int handlerArgumentEnd = handlerNode.desc.lastIndexOf(')');
+            if (!expectedDesc.regionMatches(expectedDesc.lastIndexOf(')'), handlerNode.desc, handlerArgumentEnd, handlerNode.desc.length() - handlerArgumentEnd)) {
+                throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (return type mismatch). The expected descriptor would be follows: " + expectedDesc);
+            }
+
+            DescString expectedSignature = new DescString(expectedDesc);
+            DescString actualSignature = new DescString(handlerNode.desc);
+
+            while (expectedSignature.hasNext()) {
+                if (!actualSignature.hasNext()) {
+                    throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument count mismatch). The expected descriptor would be follows: " + expectedDesc);
+                }
+                if (!expectedSignature.nextType().equals(actualSignature.nextType())) {
+                    throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument type mismatch). The expected descriptor would be follows: " + expectedDesc);
+                }
+            }
+
             MethodNode targetMethod = entry.getValue();
             InsnList instructions = targetMethod.instructions;
             int insertedOpcode;
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                 List<String> argTypes = ASMUtil.getInputOperandTypes(insn);
                 InsnList preRollback = new InsnList();
+
+                // Argument capture
+                if (actualSignature.hasNext()) {
+                    DescString targetMethodDesc = new DescString(targetMethod.desc);
+                    int capturedArgIndex = 1;
+                    do {
+                        if (!targetMethodDesc.hasNext()) {
+                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                        }
+                        String capturedType = actualSignature.nextType();
+                        if (!capturedType.equals(targetMethodDesc.nextType())) {
+                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                        }
+                        argTypes.add(capturedType);
+                        int type = capturedType.codePointAt(0);
+                        preRollback.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
+                        if (ASMUtil.isCategory2(type)) {
+                            capturedArgIndex++;
+                        }
+                    } while (actualSignature.hasNext());
+                }
+
                 InsnList rollback = new InsnList();
                 ASMUtil.moveStackHead(targetMethod, insn, insn, argTypes, argTypes.size(), preRollback, rollback);
                 instructions.insertBefore(insn, preRollback);
@@ -222,6 +268,24 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 insertedOpcode = Opcodes.INVOKEVIRTUAL;
             } else {
                 insertedOpcode = Opcodes.INVOKESTATIC;
+                if (actualSignature.hasNext()) {
+                    DescString targetMethodDesc = new DescString(targetMethod.desc);
+                    int capturedArgIndex = 0;
+                    do {
+                        if (!targetMethodDesc.hasNext()) {
+                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                        }
+                        String capturedType = actualSignature.nextType();
+                        if (!capturedType.equals(targetMethodDesc.nextType())) {
+                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                        }
+                        int type = capturedType.codePointAt(0);
+                        instructions.insertBefore(insn, new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
+                        if (ASMUtil.isCategory2(type)) {
+                            capturedArgIndex++;
+                        }
+                    } while (actualSignature.hasNext());
+                }
             }
             MethodInsnNode inserted = new MethodInsnNode(insertedOpcode, to.name, handlerNode.name, handlerNode.desc);
             instructions.insertBefore(insn, inserted);

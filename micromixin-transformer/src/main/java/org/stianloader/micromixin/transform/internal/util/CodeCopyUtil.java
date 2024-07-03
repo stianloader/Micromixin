@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -303,21 +304,24 @@ public class CodeCopyUtil {
             }
         } while (inInsn != endInInsn);
 
-        for (TryCatchBlockNode node : source.tryCatchBlocks) {
-            boolean start = labelMap.containsKey(node.start);
-            boolean end = labelMap.containsKey(node.end);
-            boolean handler = labelMap.containsKey(node.handler);
-            if (start != end || end != handler) {
-                throw new AssertionError("Attmpted to chop of a try-catch block of " + sourceStub.sourceNode.name + "." + source.name + source.desc + ". Start chopped: " + (!start) + ", end chopped: " + (!end) + ", handler chopped: " + (!handler) + ". This is likely a bug in the micromixin library.");
-            } else if (start) {
-                String htype = node.type;
-                if (htype != null) {
-                    remapper.remapInternalName(htype, sharedBuilder);
+        List<TryCatchBlockNode> tryCatchBlocks = source.tryCatchBlocks;
+        if (tryCatchBlocks != null) {
+            for (TryCatchBlockNode node : tryCatchBlocks) {
+                boolean start = labelMap.containsKey(node.start);
+                boolean end = labelMap.containsKey(node.end);
+                boolean handler = labelMap.containsKey(node.handler);
+                if (start != end || end != handler) {
+                    throw new AssertionError("Attempted to chop of a try-catch block of " + sourceStub.sourceNode.name + "." + source.name + source.desc + ". Start chopped: " + (!start) + ", end chopped: " + (!end) + ", handler chopped: " + (!handler) + ". This is likely a bug in the micromixin library.");
+                } else if (start) {
+                    String htype = node.type;
+                    if (htype != null) {
+                        remapper.remapInternalName(htype, sharedBuilder);
+                    }
+                    if (output.tryCatchBlocks == null) {
+                        output.tryCatchBlocks = new ArrayList<TryCatchBlockNode>();
+                    }
+                    output.tryCatchBlocks.add(new TryCatchBlockNode(labelMap.get(node.start), labelMap.get(node.end), labelMap.get(node.handler), htype));
                 }
-                if (output.tryCatchBlocks == null) {
-                    output.tryCatchBlocks = new ArrayList<TryCatchBlockNode>();
-                }
-                output.tryCatchBlocks.add(new TryCatchBlockNode(labelMap.get(node.start), labelMap.get(node.end), labelMap.get(node.handler), htype));
             }
         }
 
