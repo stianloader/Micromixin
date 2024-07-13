@@ -254,7 +254,7 @@ public class MixinAtAnnotation {
                     shift = 0;
                 } else if (enumValue[1].equals("BEFORE")){
                     shift = -1;
-                } else if (enumValue[2].equals("AFTER")) {
+                } else if (enumValue[1].equals("AFTER")) {
                     shift = 1;
                 } else {
                     throw new MixinParseException("Unimplemented enum value for @At.shift: " + Arrays.toString(enumValue));
