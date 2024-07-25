@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
@@ -35,6 +36,7 @@ import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelector;
 
+@ApiStatus.Internal
 public class ASMUtil {
 
     public static final String CALLBACK_INFO_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";

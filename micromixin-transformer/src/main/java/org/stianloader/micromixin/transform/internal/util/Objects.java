@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,7 +15,14 @@ import org.jetbrains.annotations.Nullable;
  * that is not present on java 6.
  *
  * <p>Also includes other unavailable methods that didn't fit elsewhere.
+ *
+ * <p>This class may appear as deprecated for external consumers
+ * of micromixin-transformer, however for internal use this class can still be safely
+ * used. For external use, you probably meant to use the Object class
+ * provided by the java runtime - please configure your IDE to ignore
+ * the internal packages of micromixin-transformer.
  */
+@ApiStatus.Internal
 public final class Objects {
 
     @SuppressWarnings("unchecked")

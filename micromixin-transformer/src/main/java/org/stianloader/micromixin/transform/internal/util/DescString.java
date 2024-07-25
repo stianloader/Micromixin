@@ -1,10 +1,12 @@
 package org.stianloader.micromixin.transform.internal.util;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility for dissecting a method descriptor string.
  */
+@ApiStatus.Internal
 public class DescString {
 
     private char[] asArray;

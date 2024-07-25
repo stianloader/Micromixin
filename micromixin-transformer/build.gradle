@@ -1,3 +1,7 @@
+buildscript {
+    dependencies.classpath 'org.ow2.asm:asm-tree:9.7'
+}
+
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -7,7 +11,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-transformer'
-version = '0.6.1'
+version = '0.6.2'
 
 repositories {
     mavenLocal()
@@ -96,10 +100,48 @@ compileJava9moduleJava {
     modularity.inferModulePath.set(true)
 }
 
+// Eclipse will every frequently use micromixin-transformer's Objects class instead
+// of the Object class provided by the JDK. By deprecating the micromixin-transformer
+// class before publication, we can ensure that internals are less likely to be used
+// by dependent artifacts.
+// As we assume that JPMS is used for J9+ environments, this is not performed for
+// the Java 9 MRJ variant, although in theory it's still an environment where it is an issue.
+task virtualDeprecationJ6(type: Copy) {
+    dependsOn compileJava
+
+    from sourceSets.main.output
+    into 'build/classes/java/virtualdepr6'
+
+    eachFile {
+        if (it.getPath().equals("org/stianloader/micromixin/transform/internal/util/Objects.class")) {
+            it.exclude()
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            it.copyTo(baos);
+            org.objectweb.asm.ClassReader reader = new org.objectweb.asm.ClassReader(baos.toByteArray());
+            org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
+            reader.accept(node, 0);
+            node.access |= org.objectweb.asm.Opcodes.ACC_DEPRECATED;
+            org.objectweb.asm.ClassWriter writer = new org.objectweb.asm.ClassWriter(0);
+            node.accept(writer);
+            java.nio.file.Files.write(destinationDir.toPath().resolve(it.path), writer.toByteArray());
+        }
+    }
+}
+
 jar {
     dependsOn compileJava9Java
     dependsOn compileJava9moduleJava
     dependsOn test
+    dependsOn virtualDeprecationJ6
+
+    // Remove yeah, this is getting a bit cursed
+    eachFile {
+        if (compileJava.destinationDirectory.asFileTree.contains(it.getFile())) {
+            it.exclude()
+        }
+    }
+
+    from tasks.virtualDeprecationJ6.destinationDir
 
     into('META-INF/versions/9') {
         from sourceSets.java9.output

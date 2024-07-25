@@ -124,7 +124,7 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
                 }
             }
         }
-        throw new IllegalStateException("Unresolved @Shadow-annotated field: " + source.owner.name + "." + source.field.name + " " + source.field.desc + " (remapped as \"" + name + "\".\"" + desc + "\", targetting \"" + target.name + "\")");
+        throw new IllegalStateException("Unresolved @Shadow-annotated field: " + source.owner.name + "." + source.field.name + " " + source.field.desc + " (remapped as '" + target.name + "'.'" + name + "':'" + desc + "')");
     }
 
     @Override
