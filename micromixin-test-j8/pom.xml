@@ -37,9 +37,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>de.geolykt.starloader</groupId>
+            <groupId>org.stianloader</groupId>
             <artifactId>launcher-sponge</artifactId>
-            <version>4.0.0-a20240110</version>
+            <version>4.0.0-a20240730</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

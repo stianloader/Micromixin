@@ -134,7 +134,8 @@ jar {
     dependsOn test
     dependsOn virtualDeprecationJ6
 
-    // Remove yeah, this is getting a bit cursed
+    // Remove original jar sources - yeah, this is getting a bit cursed and there is probably
+    // a better way out, but I don't know that way; Or do I?
     eachFile {
         if (compileJava.destinationDirectory.asFileTree.contains(it.getFile())) {
             it.exclude()
