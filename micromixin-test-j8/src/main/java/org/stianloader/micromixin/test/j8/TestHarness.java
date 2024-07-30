@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
 import org.stianloader.micromixin.test.j8.targets.AllowTest;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
+import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
 import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
@@ -51,7 +52,20 @@ public class TestHarness {
         runAllowTest(report);
         runFieldRedirectTest(report);
         runModifyVariableTest(report);
+        runConstructorInjectionTest(report);
         return report;
+    }
+
+    public static void runConstructorInjectionTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$IllegalSuperconstructorRedirect");
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$IllegalSuperconstructorRedirect2");
+
+        set.addUnitAssertEquals("ModifySuperconstructorArg", () -> new ConstructorInjectionTest.ModifySuperconstructorArg().intValue(), 8);
+
+        LoggerFactory.getLogger(TestHarness.class).info("ConstructorInjectiontest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runModifyVariableTest(@NotNull TestReport report) {

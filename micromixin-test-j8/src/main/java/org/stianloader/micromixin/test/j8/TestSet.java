@@ -292,6 +292,25 @@ public class TestSet {
         }));
     }
 
+    public void addUnitExpectTransformationFailure(String name) {
+        this.units.add(new TestUnit(name, () -> {
+            boolean logFailures = MinestomRootClassLoader.getInstance().isThreadLoggingClassloadingFailures();
+            try {
+                MinestomRootClassLoader.getInstance().setThreadLoggingClassloadingFailures(false);
+                TestSet.class.getClassLoader().loadClass(name);
+            } catch (ClassNotFoundException cnfe) {
+                if (TestSet.isVerifyError(cnfe)) {
+                    throw new IllegalStateException("Class " + name + " loaded wrongly", cnfe);
+                }
+                return;
+            } finally {
+                MinestomRootClassLoader.getInstance().setThreadLoggingClassloadingFailures(logFailures);
+            }
+
+            throw new IllegalStateException("Class " + name + " loaded without any issues, but issues were expected!");
+        }));
+    }
+
     public void addUnitExpectTransformationFailureOrAssert(String name, BooleanSupplier test) {
         this.units.add(new TestUnit(name, () -> {
             boolean logFailures = MinestomRootClassLoader.getInstance().isThreadLoggingClassloadingFailures();
@@ -301,8 +320,8 @@ public class TestSet {
             } catch (ClassNotFoundException cnfe) {
                 if (TestSet.isVerifyError(cnfe)) {
                     throw new IllegalStateException("Class " + name + " loaded wrongly", cnfe);
-                } else if (!test.getAsBoolean()) {
-                    throw new IllegalStateException("Class " + name + " failed to pass test (after generic CL failure)", cnfe);
+                } else if (test.getAsBoolean()) {
+                    throw new IllegalStateException("Class " + name + " passed test but a classloading failure occured", cnfe);
                 }
                 return;
             } finally {
