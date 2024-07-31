@@ -66,9 +66,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>The {@link ModifyReturnValue} handler (also known as the "return value modifier") MUST
  * declare the same return type (subtypes are not supported) as the return type of the targeted
- * method. If the targeted method is static, the handler MUST be static and private.
- * For non-static targeted methods the handler MUST NOT be static, but otherwise the accessibility
- * modifiers are not of relevance.
+ * method. If the targeted method is <code>static</code>, the handler MUST be <code>static</code>
+ * and <code>private</code>. For non-<code>static</code> targets the access modifiers are
+ * not of relevance.
  *
  * <p>The handler should furthermore also have the original return type (supertypes are not supported)
  * as it's argument.

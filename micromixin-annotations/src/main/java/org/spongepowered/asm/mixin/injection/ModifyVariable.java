@@ -25,9 +25,9 @@ import org.spongepowered.asm.mixin.Mixin;
  *
  * <p>The {@link ModifyVariable} handler (also known as the "variable modifier") MUST
  * declare the same return type (subtypes are not supported) as the type of the variable
- * is modifies  (supertypes are not supported). If the targeted method is static,
- * the handler MUST be static and private. For non-static targeted methods the handler
- * MUST NOT be static, but otherwise the accessibility modifiers are not of relevance.
+ * it modifies (supertypes are not supported). If the targeted method is <code>static</code>,
+ * the handler MUST be <code>static</code> and <code>private</code>. For non-<code>static</code>
+ * targets the access modifiers are not of relevance.
  *
  * <p>Locals capture is not supported when using {@link ModifyVariable}.
  * However, arguments may be captured by appending them to the list of arguments

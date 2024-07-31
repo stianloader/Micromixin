@@ -212,8 +212,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             for (SlicedInjectionPointSelector at : this.at) {
                 MethodNode targetMethod = selector.selectMethod(to, sourceStub);
                 if (targetMethod != null) {
-                    if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getQualifiedSelectorName() + "\") does not support usage within a constructor.");
+                    if (targetMethod.name.equals("<init>") && !(at.supportsInstanceCaptureInConstructors() || (this.injectSource.access & Opcodes.ACC_STATIC) != 0)) {
+                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + ".<init>" + targetMethod.desc + ", which is a constructor. The handler method is non-static and the selector @At(\"" + at.getQualifiedSelectorName() + "\") does not support non-static handlers when targetting constructors.");
                     }
 
                     if (this.denyVoids && targetMethod.desc.codePointBefore(targetMethod.desc.length()) == 'V') {
@@ -226,9 +226,6 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                         } else if (((this.injectSource.access & Opcodes.ACC_PUBLIC) != 0)) {
                             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
                         }
-                    } else if ((this.injectSource.access & Opcodes.ACC_STATIC) != 0) {
-                        // Technically that one could be doable, but it'd be nasty.
-                        throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
 
                     {
@@ -300,7 +297,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "<init>", ctorDesc));
                 // Operand stack: CIR
                 injected.add(new InsnNode(Opcodes.DUP));
-                if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                if ((handlerNode.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
                     this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
@@ -314,7 +311,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Operand stack: CIR
-                if (cancellable) {
+                if (this.cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "isCancelled", "()Z"));
                     // Now CIR, BOOL
@@ -363,7 +360,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // Now RET, CIR
                 injected.add(new InsnNode(Opcodes.DUP));
                 // Now RET, CIR, CIR
-                if ((method.access & Opcodes.ACC_STATIC) != 0) {
+                if ((handlerNode.access & Opcodes.ACC_STATIC) != 0) {
                     this.captureArguments(sourceStub, injected, to, method);
                     this.captureLocals(sourceStub.sourceNode, to, method, injected, insn, sharedBuilder);
                     injected.add(new MethodInsnNode(Opcodes.INVOKESTATIC, to.name, handlerNode.name, handlerNode.desc));
@@ -377,7 +374,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 }
                 injected.add(new InsnNode(ASMUtil.popReturn(handlerNode.desc))); // The official mixin implementation doesn't seem to pop here, but we'll do it anyways as that is more likely to be more stable
                 // Now RET, CIR
-                if (cancellable) {
+                if (this.cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
                     injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "isCancelled", "()Z"));
                     // Now RET, CIR, BOOL
@@ -398,10 +395,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 // (Both paths have RET, CIR on the stack)
                 injected.add(new InsnNode(Opcodes.POP2)); // Perhaps with less lazy engineering one could avoid having this pop, but at the moment it does just as well
                 // Now nothing (or RET, but that RET is used later)
-            } else if ((method.access & Opcodes.ACC_STATIC) != 0) {
+            } else if ((handlerNode.access & Opcodes.ACC_STATIC) != 0) {
                 injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_NAME));
                 injected.add(new InsnNode(Opcodes.DUP));
-                if (cancellable) {
+                if (this.cancellable) {
                     injected.add(new InsnNode(Opcodes.DUP));
                 }
                 injected.add(new LdcInsnNode(method.name));
@@ -420,7 +417,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     injected.add(skipReturn);
                 }
             } else {
-                int idx = getCallbackInfoIndex(method, cancellable);
+                int idx = MixinInjectAnnotation.getCallbackInfoIndex(method, this.cancellable);
                 injected.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 injected.add(new VarInsnNode(Opcodes.ALOAD, idx));
                 this.captureArguments(sourceStub, injected, to, method);

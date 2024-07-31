@@ -67,18 +67,16 @@ public class ASMUtil {
             for (SlicedInjectionPointSelector at : ats) {
                 MethodNode targetMethod = selector.selectMethod(target, mixinSource);
                 if (targetMethod != null) {
-                    if (targetMethod.name.equals("<init>") && !at.supportsConstructors()) {
-                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + ".<init>" + targetMethod.desc + ", which is a constructor. However the selector @At(\"" + at.getQualifiedSelectorName() + "\") does not support usage within a constructor.");
+                    if (targetMethod.name.equals("<init>") && !(at.supportsInstanceCaptureInConstructors() || (injectMethodSource.access & Opcodes.ACC_STATIC) != 0)) {
+                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + ".<init>" + targetMethod.desc + ", which is a constructor. The handler method is non-static and the selector @At(\"" + at.getQualifiedSelectorName() + "\") does not support non-static handlers when targetting constructors.");
                     }
+
                     if ((targetMethod.access & Opcodes.ACC_STATIC) != 0) {
                         if (((injectMethodSource.access & Opcodes.ACC_STATIC) == 0)) {
                             throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is not.");
                         } else if (((injectMethodSource.access & Opcodes.ACC_PUBLIC) != 0)) {
                             throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is static, but the mixin is public. A mixin may not be static and public at the same time for whatever odd reasons.");
                         }
-                    } else if ((injectMethodSource.access & Opcodes.ACC_STATIC) != 0) {
-                        // Technically that one could be doable, but it'd be nasty.
-                        throw new IllegalStateException("Illegal mixin: " + mixinSource.sourceNode.name + "." + injectMethodSource.name + injectMethodSource.desc + " targets " + target.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                     }
 
                     {

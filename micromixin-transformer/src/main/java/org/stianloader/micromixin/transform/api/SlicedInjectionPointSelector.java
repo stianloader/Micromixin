@@ -8,6 +8,7 @@ import java.util.Queue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -212,8 +213,9 @@ public class SlicedInjectionPointSelector {
      * <p>Unsafe injection points generally refer to injection points targeting
      * instructions within the constructor before the final {@link Opcodes#RETURN RETURN} instruction,
      * meaning that only the <code>TAIL</code> injection point can safely target instructions
-     * in a constructor. All other injection points must set the unsafe flag in order
-     * to correctly target a constructor.
+     * in a constructor while also capturing the <code>this</code> instance. All other injection
+     * points must set the unsafe flag in order to correctly target a constructor and capture
+     * the 'this' instance while doing so.
      *
      * <p>If a injection point selector targets an unsafe instruction while not being
      * allowed to do so via {@link #isUnsafe()}, then an error will be emitted.
@@ -234,10 +236,40 @@ public class SlicedInjectionPointSelector {
      * allowed to do so via {@link #supportsConstructors()}, then an error will be emitted.
      *
      * @return True to allow injection in a constructor, false otherwise.
-     * @see #isUnsafe()
+     * @deprecated Micromixin always supports injection in the constructor, however it does
+     * not always support capturing the 'this' instance (i.e. local 0) within constructors,
+     * for that {@link #supportsInstanceCaptureInConstructors()} exists. Furthermore, this method
+     * is no longer being used as micromixin-transformer takes constructor support for granted.
      */
     @Contract(pure = true)
+    @Deprecated
+    @ScheduledForRemoval(inVersion = "0.7")
     public boolean supportsConstructors() {
+        return true;
+    }
+
+    /**
+     * Whether to support the usage of implicitly capturing the local variable '<code>this</code>'
+     * while injecting into a constructor. In other terms, if this method returns
+     * <code>false</code>, then the handler method for this annotation must be <code>static</code>
+     * if the handler method injects into the <code>&lt;init;gt;</code> method (i.e. the constructor).
+     *
+     * <p>If this method returns true, then the handler method can still be <code>static</code>,
+     * but it being so is not required.
+     *
+     * <p>The main reason this behaviour exists is because partially initialized instances shouldn't
+     * be leaked and in some cases (e.g. when injecting before the superconstructor) plainly cannot be
+     * leaked.
+     *
+     * <p>By default, the final {@link Opcodes#RETURN RETURN} instruction is assumed to be the only
+     * point in time where an object is fully initialized, and henceforth only the <code>TAIL</code>
+     * injection point will be treated as a safe injection point. However, this method may still
+     * return <code>true</code> if {@link #isUnsafe() the selector's unsafe flag} is set.
+     *
+     * @return True to allow non-static handlers targeting constructors, false otherwise.
+     * @since 0.6.2
+     */
+    public boolean supportsInstanceCaptureInConstructors() {
         return this.unsafe || this.selector == TailInjectionPointSelector.INSTANCE;
     }
 
@@ -252,6 +284,7 @@ public class SlicedInjectionPointSelector {
      * has little sense going forward.
      */
     @Deprecated
+    @ScheduledForRemoval
     public boolean supportsRedirect() {
         return this.selector.supportsRedirect();
     }

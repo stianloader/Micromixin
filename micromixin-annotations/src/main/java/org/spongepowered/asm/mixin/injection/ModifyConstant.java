@@ -37,9 +37,9 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
  *
  * <p>The {@link ModifyConstant} handler (also known as the "constant modifier") MUST
  * declare the same return type (subtypes are not supported) as its argument
- * type (supertypes are not supported). If the targeted method is static, the handler MUST be static and private.
- * For non-static targeted methods the handler MUST NOT be static, but otherwise the accessibility
- * modifiers are not of relevance.
+ * type (supertypes are not supported). If the targeted method is <code>static</code>,
+ * the handler MUST be <code>static</code> and <code>private</code>. For non-<code>static</code>
+ * targets the access modifiers are not of relevance.
  
  * <p>The value that is modified must be the first argument of the constant value modifier handler
  * method. All other arguments are there for argument capture.
