@@ -15,6 +15,7 @@
     "AllowMixin$TooManyModifyConstant",
     "AllowMixin$TooManyRedirect",
     "ArgumentCaptureMixins",
+    "CancellableTestMixins",
     "ConstructorInjectionMixins$IllegalSuperconstructorRedirect",
     "ConstructorInjectionMixins$IllegalSuperconstructorRedirect2",
     "ConstructorInjectionMixins$ModifySuperconstructorArg",

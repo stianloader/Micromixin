@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.callback.CancellationException;
 import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
 import org.stianloader.micromixin.test.j8.targets.AllowTest;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
+import org.stianloader.micromixin.test.j8.targets.CancellableTest;
 import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -53,7 +54,17 @@ public class TestHarness {
         runFieldRedirectTest(report);
         runModifyVariableTest(report);
         runConstructorInjectionTest(report);
+        runCancellableTest(report);
         return report;
+    }
+
+    public static void runCancellableTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("CancellableTest.testRedirectStatic", CancellableTest::testRedirectStatic, 1);
+
+        LoggerFactory.getLogger(TestHarness.class).info("CancellableTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runConstructorInjectionTest(@NotNull TestReport report) {
@@ -62,9 +73,9 @@ public class TestHarness {
         set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$IllegalSuperconstructorRedirect");
         set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$IllegalSuperconstructorRedirect2");
 
-        set.addUnitAssertEquals("ModifySuperconstructorArg", () -> new ConstructorInjectionTest.ModifySuperconstructorArg().intValue(), 8);
+        set.addUnitAssertEquals("ConstructorInjectionTest.ModifySuperconstructorArg", () -> new ConstructorInjectionTest.ModifySuperconstructorArg().intValue(), 8);
 
-        LoggerFactory.getLogger(TestHarness.class).info("ConstructorInjectiontest:");
+        LoggerFactory.getLogger(TestHarness.class).info("ConstructorInjectionTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 

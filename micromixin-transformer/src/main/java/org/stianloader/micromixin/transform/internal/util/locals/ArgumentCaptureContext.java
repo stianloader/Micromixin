@@ -23,6 +23,11 @@ import org.stianloader.micromixin.transform.internal.util.DescString;
 
 public class ArgumentCaptureContext {
 
+    public static enum ArgumentType {
+        CANCELLABLE,
+        NORMAL_ARGUMENT;
+    }
+
     private static final class CapturedArgument {
         @NotNull
         private final String capturedType;
@@ -58,6 +63,28 @@ public class ArgumentCaptureContext {
             }
         }
         return false;
+    }
+
+    @NotNull
+    public static ArgumentType getType(List<AnnotationNode>[] invisibileParameterAnnotations, int argumentIndex) {
+        if (invisibileParameterAnnotations == null) {
+            return ArgumentType.NORMAL_ARGUMENT;
+        }
+
+        List<AnnotationNode> annotations = invisibileParameterAnnotations[argumentIndex];
+
+        for (AnnotationNode annotationNode : annotations) {
+            if (annotationNode.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
+                if (annotationNode.desc.equals("Lcom/llamalad7/mixinextras/sugar/Cancellable;")) {
+                    return ArgumentType.CANCELLABLE;
+                } else {
+                    // TODO support @Local, support @Share
+                    throw new MixinParseException("Unknown/Unimplemented annotation: " + annotationNode.desc);
+                }
+            }
+        }
+
+        return ArgumentType.NORMAL_ARGUMENT;
     }
 
     /**

@@ -7,7 +7,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-annotations'
-version = '0.6.2'
+version = '0.6.3'
 
 repositories {
     mavenLocal()
@@ -16,7 +16,7 @@ repositories {
 
 dependencies {
     api project(":micromixin-runtime")
-    compileOnly 'org.jetbrains:annotations-java5:24.0.1'
+    compileOnly 'org.jetbrains:annotations-java5:24.1.0'
 }
 
 sourceSets {

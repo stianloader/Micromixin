@@ -27,7 +27,8 @@ import org.spongepowered.asm.mixin.Mixin;
  * declare the same return type (subtypes are not supported) as the type of the variable
  * it modifies (supertypes are not supported). If the targeted method is <code>static</code>,
  * the handler MUST be <code>static</code> and <code>private</code>. For non-<code>static</code>
- * targets the access modifiers are not of relevance.
+ * targets the access modifiers are not of relevance, except for constructors where the handler must
+ * be <code>static</code> when not injecting immediately before the final return via <code>TAIL</code>.
  *
  * <p>Locals capture is not supported when using {@link ModifyVariable}.
  * However, arguments may be captured by appending them to the list of arguments

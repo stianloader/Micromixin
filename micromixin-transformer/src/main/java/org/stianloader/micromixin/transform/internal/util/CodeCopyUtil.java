@@ -82,9 +82,10 @@ public class CodeCopyUtil {
         final ClassNode sourceClass = sourceStub.sourceNode;
         MethodNode handler = new MethodNode();
         handler.name = handlerName;
-        handler.desc = remapDesc(source.desc, sourceClass, target);
+        handler.desc = CodeCopyUtil.remapDesc(source.desc, sourceClass, target);
         handler.exceptions = source.exceptions; // TODO same here? Possible.
         handler.access = source.access;
+        handler.invisibleParameterAnnotations = source.invisibleParameterAnnotations;
         AbstractInsnNode sourceStartInsn = source.instructions.getFirst();
         AbstractInsnNode sourceEndInsn = source.instructions.getLast();
         if (sourceStartInsn == null || sourceEndInsn == null) {
@@ -92,7 +93,7 @@ public class CodeCopyUtil {
         }
         AbstractInsnNode prevOutInsn = new LabelNode();
         handler.instructions.add(prevOutInsn);
-        copyTo(source, sourceStartInsn, sourceEndInsn, sourceStub, handler, prevOutInsn, target, remapper, lineAllocator, false, true);
+        CodeCopyUtil.copyTo(source, sourceStartInsn, sourceEndInsn, sourceStub, handler, prevOutInsn, target, remapper, lineAllocator, false, true);
         target.methods.add(handler);
         return handler;
     }

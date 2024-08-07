@@ -107,7 +107,6 @@ feature compatibility with the spongeian mixin implementation.
  - `@At` targets in constructors before final return via unsafe (Sponge)
  - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar (???)
  - Redirecting fields, array loads, array stores, array length operations, etc. (Sponge)
- - Usage of static injection handlers when targetting non-static methods (Sponge)
  - `@WrapOperation`, `@WrapMethod`, et al. (MixinExtras)
 
 ## Contributing

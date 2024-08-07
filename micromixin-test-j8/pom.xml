@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.stianloader</groupId>
     <artifactId>micromixin-test-j8</artifactId>
-    <version>0.6.2</version>
+    <version>0.6.3</version>
     <name>J8-Test-Sources</name>
     <description>Java 8 Test sources for Micromixin</description>
 

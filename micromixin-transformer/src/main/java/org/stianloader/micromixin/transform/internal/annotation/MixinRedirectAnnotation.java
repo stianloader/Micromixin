@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -34,31 +35,10 @@ import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 import org.stianloader.micromixin.transform.internal.util.DescString;
 import org.stianloader.micromixin.transform.internal.util.Objects;
+import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
+import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext.ArgumentType;
 
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
-
-    private final int allow;
-    @NotNull
-    public final SlicedInjectionPointSelector at;
-    @NotNull
-    public final Collection<MixinTargetSelector> selectors;
-    @NotNull
-    private final MethodNode injectSource;
-    private final int require;
-    private final int expect;
-    @NotNull
-    private final MixinTransformer<?> transformer;
-
-    private MixinRedirectAnnotation(@NotNull SlicedInjectionPointSelector at, @NotNull Collection<MixinTargetSelector> selectors,
-            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinTransformer<?> transformer) {
-        this.at = at;
-        this.selectors = selectors;
-        this.injectSource = injectSource;
-        this.require = require;
-        this.expect = expect;
-        this.allow = allow;
-        this.transformer = transformer;
-    }
 
     @NotNull
     public static MixinRedirectAnnotation parse(@NotNull ClassNode node, @NotNull MethodNode method, @NotNull AnnotationNode annot, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) throws MixinParseException {
@@ -146,6 +126,29 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         return new MixinRedirectAnnotation(slicedAt, Collections.unmodifiableCollection(selectors), method, require, expect, allow, transformer);
     }
 
+    private final int allow;
+    @NotNull
+    public final SlicedInjectionPointSelector at;
+    private final int expect;
+    @NotNull
+    private final MethodNode injectSource;
+    private final int require;
+    @NotNull
+    public final Collection<MixinTargetSelector> selectors;
+    @NotNull
+    private final MixinTransformer<?> transformer;
+
+    private MixinRedirectAnnotation(@NotNull SlicedInjectionPointSelector at, @NotNull Collection<MixinTargetSelector> selectors,
+            @NotNull MethodNode injectSource, int require, int expect, int allow, @NotNull MixinTransformer<?> transformer) {
+        this.at = at;
+        this.selectors = selectors;
+        this.injectSource = injectSource;
+        this.require = require;
+        this.expect = expect;
+        this.allow = allow;
+        this.transformer = transformer;
+    }
+
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
@@ -212,13 +215,20 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             }
 
             DescString expectedSignature = new DescString(expectedDesc);
-            DescString actualSignature = new DescString(handlerNode.desc);
+            DescString handlerSignature = new DescString(handlerNode.desc);
+            int handlerSignatureIndex = 0;
 
             while (expectedSignature.hasNext()) {
-                if (!actualSignature.hasNext()) {
+                if (!handlerSignature.hasNext()) {
                     throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument count mismatch). The expected descriptor would be follows: " + expectedDesc);
                 }
-                if (!expectedSignature.nextType().equals(actualSignature.nextType())) {
+
+                String handlerArgumentType = handlerSignature.nextType();
+                if (ArgumentCaptureContext.getType(handlerNode.invisibleParameterAnnotations, handlerSignatureIndex++) != ArgumentType.NORMAL_ARGUMENT) {
+                    throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' includes the improperly annotated argument " + handlerArgumentType + " at index " + (handlerSignatureIndex - 1) + "; Only arguments eligble for argument capture may be annotated with @Local, @Share, @Cancellable, or similar. However, this argument is not eligble for argument capture as it is part of the expected descriptor for the targetted instruction: " + expectedDesc);
+                }
+
+                if (!expectedSignature.nextType().equals(handlerArgumentType)) {
                     throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument type mismatch). The expected descriptor would be follows: " + expectedDesc);
                 }
             }
@@ -229,32 +239,13 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                 List<String> argTypes = ASMUtil.getInputOperandTypes(insn);
                 InsnList preRollback = new InsnList();
-
-                // Argument capture
-                if (actualSignature.hasNext()) {
-                    DescString targetMethodDesc = new DescString(targetMethod.desc);
-                    int capturedArgIndex = 1;
-                    do {
-                        if (!targetMethodDesc.hasNext()) {
-                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
-                        }
-                        String capturedType = actualSignature.nextType();
-                        if (!capturedType.equals(targetMethodDesc.nextType())) {
-                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
-                        }
-                        argTypes.add(capturedType);
-                        int type = capturedType.codePointAt(0);
-                        preRollback.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
-                        if (ASMUtil.isCategory2(type)) {
-                            capturedArgIndex++;
-                        }
-                    } while (actualSignature.hasNext());
-                }
-
                 InsnList rollback = new InsnList();
+
+                this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, handlerNode, targetMethod, insn, preRollback, expectedDesc, argTypes);
                 ASMUtil.moveStackHead(targetMethod, insn, insn, argTypes, argTypes.size(), preRollback, rollback);
                 instructions.insertBefore(insn, preRollback);
                 instructions.insertBefore(insn, new VarInsnNode(Opcodes.ALOAD, 0));
+
                 if (!argTypes.isEmpty()) {
                     if (ASMUtil.isCategory2(argTypes.get(0).codePointAt(0))
                             || (argTypes.size() > 1 && !ASMUtil.isCategory2(argTypes.get(1).codePointAt(0)))) {
@@ -264,27 +255,15 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                         instructions.insertBefore(insn, new InsnNode(Opcodes.SWAP));
                     }
                 }
+
                 instructions.insertBefore(insn, rollback);
                 insertedOpcode = Opcodes.INVOKEVIRTUAL;
             } else {
                 insertedOpcode = Opcodes.INVOKESTATIC;
-                if (actualSignature.hasNext()) {
-                    DescString targetMethodDesc = new DescString(targetMethod.desc);
-                    int capturedArgIndex = 0;
-                    do {
-                        if (!targetMethodDesc.hasNext()) {
-                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
-                        }
-                        String capturedType = actualSignature.nextType();
-                        if (!capturedType.equals(targetMethodDesc.nextType())) {
-                            throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
-                        }
-                        int type = capturedType.codePointAt(0);
-                        instructions.insertBefore(insn, new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
-                        if (ASMUtil.isCategory2(type)) {
-                            capturedArgIndex++;
-                        }
-                    } while (actualSignature.hasNext());
+                if (handlerSignature.hasNext()) {
+                    InsnList injectInsns = new InsnList();
+                    this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, handlerNode, targetMethod, insn, injectInsns, expectedDesc, null);
+                    instructions.insertBefore(insn, injectInsns);
                 }
             }
             MethodInsnNode inserted = new MethodInsnNode(insertedOpcode, to.name, handlerNode.name, handlerNode.desc);
@@ -297,5 +276,66 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
     public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         // NOP
+    }
+
+    /**
+     * {@link MixinRedirectAnnotation Redirect}-specific implementation for argument capture
+     * or other special captures, such as the capture of &#64;Local, &#64;Share, or &#64;Cancellable.
+     *
+     * <p>This injector-specific implementation is used as redirect is not conforming to the standard
+     * ModifyX pattern and thus the capture and non-capture arguments cannot be known ahead of time.
+     *
+     * @param remainingHandlerSignature The {@link DescString} storing the remaining capturing arguments.
+     * @param handlerSignatureIndex The index of the next type stored in the given {@link DescString} which
+     * marks the index of the type within the handler method's descriptor string. Note: Both Category 1 and
+     * Category 2 types count as having a length of 1 as concerns the semantics of the parameter.
+     * @param targetMethod The method in which the handler method is injecting into.
+     * @param targetInsn The instruction before which the injection should occur (used for stack analysis
+     * required for the &#64;Local sugar annotation).
+     * @param outputInstructionList The {@link InsnList} where all instructions concerning argument capture should
+     * be appended to. These instructions should be inserted immediately before the call to the handler method.
+     * @param expectedDesc The minimum descriptor for the redirect handler to be able to inject
+     * into the given target at the given instruction. See {@link ASMUtil#getRedirectHandlerSignature(AbstractInsnNode)}.
+     * @param loadedTypesOut Collection in which the types loaded into the stack are recorded to.
+     * Or <code>null</code>, in order to not perform this recording. Used for methods such as
+     * {@link ASMUtil#moveStackHead(MethodNode, AbstractInsnNode, AbstractInsnNode, List, int, InsnList, InsnList)}.
+     * @since 0.6.3
+     */
+    private void handleArgumentCapture(@NotNull DescString remainingHandlerSignature, int handlerSignatureIndex,
+            @NotNull MethodNode handlerMethod, @NotNull MethodNode targetMethod, @NotNull AbstractInsnNode targetInsn,
+            @NotNull InsnList outputInstructionList, @NotNull String expectedDesc, @Nullable Collection<String> loadedTypesOut) {
+        if (!remainingHandlerSignature.hasNext()) {
+            return;
+        }
+
+        DescString targetMethodDesc = new DescString(targetMethod.desc);
+        int capturedArgIndex = (this.injectSource.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+        do {
+            String capturedType = remainingHandlerSignature.nextType();
+            ArgumentType action = ArgumentCaptureContext.getType(handlerMethod.invisibleParameterAnnotations, handlerSignatureIndex++);
+
+            if (action == ArgumentType.NORMAL_ARGUMENT) {
+                if (!targetMethodDesc.hasNext()) {
+                    throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + this.injectSource.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                }
+
+                if (!capturedType.equals(targetMethodDesc.nextType())) {
+                    throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + this.injectSource.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
+                }
+                int type = capturedType.codePointAt(0);
+                outputInstructionList.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
+                if (ASMUtil.isCategory2(type)) {
+                    capturedArgIndex++;
+                }
+            } else if (action == ArgumentType.CANCELLABLE) {
+                throw new UnsupportedOperationException("@Cancellable not supported - for now!");
+            } else {
+                throw new UnsupportedOperationException("The handler method defines the capture argument of type '" + capturedType + "' at index " + (handlerSignatureIndex - 1) + " bound to action " + action + "; however this class does not know how to handle this case. The @Redirect-handler method " + this.injectSource.name + this.injectSource.desc + " can thus not be properly called.");
+            }
+
+            if (loadedTypesOut != null) {
+                loadedTypesOut.add(capturedType);
+            }
+        } while (remainingHandlerSignature.hasNext());
     }
 }

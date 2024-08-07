@@ -68,7 +68,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * declare the same return type (subtypes are not supported) as the return type of the targeted
  * method. If the targeted method is <code>static</code>, the handler MUST be <code>static</code>
  * and <code>private</code>. For non-<code>static</code> targets the access modifiers are
- * not of relevance.
+ * not of relevance, except for constructors where the handler must be <code>static</code> when
+ * not injecting immediately before the final return via <code>TAIL</code>.
  *
  * <p>The handler should furthermore also have the original return type (supertypes are not supported)
  * as it's argument.
