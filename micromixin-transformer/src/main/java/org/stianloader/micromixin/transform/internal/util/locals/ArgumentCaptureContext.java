@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
@@ -51,7 +52,11 @@ public class ArgumentCaptureContext {
     @NotNull
     private static final ArgumentCaptureContext NO_CAPTURES = new ArgumentCaptureContext(Collections.<CapturedArgument>emptyList());
 
-    private static boolean captureLocals(List<AnnotationNode> annotations) {
+    private static boolean captureLocals(@Nullable List<AnnotationNode> annotations) {
+        if (annotations == null) {
+            return false;
+        }
+
         for (AnnotationNode annotationNode : annotations) {
             if (annotationNode.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
                 if (annotationNode.desc.equals("Lcom/llamalad7/mixinextras/sugar/Local;")) {
@@ -72,6 +77,10 @@ public class ArgumentCaptureContext {
         }
 
         List<AnnotationNode> annotations = invisibileParameterAnnotations[argumentIndex];
+
+        if (annotations == null) {
+            return ArgumentType.NORMAL_ARGUMENT;
+        }
 
         for (AnnotationNode annotationNode : annotations) {
             if (annotationNode.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
