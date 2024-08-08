@@ -19,15 +19,19 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.TypeReference;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
@@ -39,12 +43,13 @@ import org.stianloader.micromixin.transform.internal.selectors.MixinTargetSelect
 @ApiStatus.Internal
 public class ASMUtil {
 
-    public static final String CALLBACK_INFO_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
     public static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
-    public static final String CALLBACK_INFO_RETURNABLE_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
+    public static final String CALLBACK_INFO_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfo";
     public static final String CALLBACK_INFO_RETURNABLE_DESC = "L" + ASMUtil.CALLBACK_INFO_RETURNABLE_NAME + ";";
+    public static final String CALLBACK_INFO_RETURNABLE_NAME = "org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable";
     public static final int CI_LEN = ASMUtil.CALLBACK_INFO_NAME.length();
     public static final int CIR_LEN = ASMUtil.CALLBACK_INFO_RETURNABLE_NAME.length();
+    public static final String COMMON_CI_INSTANCE_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/CommonCIInstance;";
     public static final String ROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Roll;";
     public static final String UNROLL_ANNOT_DESC = "Lorg/stianloader/micromixin/internal/Unroll;";
 
@@ -510,6 +515,77 @@ public class ASMUtil {
 
     public static boolean isStore(int opcode) {
         return Opcodes.ISTORE <= opcode && opcode <= Opcodes.ASTORE;
+    }
+
+    /**
+     * Lazily allocates a shared <code>CallbackInfo</code> or <code>CallbackInfoCallbackInfo</code>
+     * instance for the given target method. This method will try to aggressively reuse indices
+     * for the <code>CallbackInfo</code> or <code>CallbackInfoCallbackInfo</code>.
+     *
+     * <p>The instance will be loaded onto the top of the stack within the provided usageSiteOutput
+     * {@link InsnList}.
+     *
+     * <p>This method mutates the injectTarget {@link MethodNode}.
+     *
+     * <p>The callback info will be cancellable.
+     *
+     * @param injectTarget The method which is being injected into.
+     * @param usageSiteOutput An instruction list where the allocation of the instance occurs in,
+     * if the allocation did not already occur.
+     * @return The index from which the callback info instance can be loaded from afterwards.
+     * @since 0.6.3
+     */
+    public static int loadCallbackInfoInstance(@NotNull MethodNode injectTarget, @NotNull InsnList usageSiteOutput) {
+        if (injectTarget.invisibleAnnotations == null) {
+            injectTarget.invisibleAnnotations = new ArrayList<AnnotationNode>();
+        }
+
+        int sharedIndex = -1;
+        for (AnnotationNode annotation : injectTarget.invisibleAnnotations) {
+            if (annotation.desc.equals(ASMUtil.COMMON_CI_INSTANCE_ANNOT_DESC)) {
+                List<Object> annotationValues = annotation.values;
+                if (annotationValues == null || annotationValues.size() != 2) {
+                    throw new UnsupportedOperationException("Common CI Instance annotation value count > 2: " + annotationValues);
+                }
+                if (!"index".equals(annotationValues.get(0))) {
+                    throw new IllegalStateException("Common CI Instance annotation has an unexpected key: '" + annotationValues.get(0) + "'; Expected 'index'.");
+                }
+                sharedIndex = ((Integer) annotationValues.get(1)).intValue();
+            }
+        }
+
+        if (sharedIndex < 0) {
+            int minimumLocalIndex = ASMUtil.getInitialFrameSize(injectTarget);
+            for (AbstractInsnNode insn = injectTarget.instructions.getFirst(); insn != null; insn = insn.getNext()) {
+                if (insn instanceof VarInsnNode) {
+                    int varIndex = ((VarInsnNode) insn).var + (ASMUtil.isCategory2VarInsn(insn.getOpcode()) ? 1 : 0);
+                    minimumLocalIndex = Math.max(minimumLocalIndex, varIndex);
+                }
+            }
+
+            sharedIndex = minimumLocalIndex + 1;
+            AnnotationNode annotation = new AnnotationNode(ASMUtil.COMMON_CI_INSTANCE_ANNOT_DESC);
+            annotation.values = new ArrayList<Object>(Arrays.<Object>asList("index", sharedIndex));
+            injectTarget.invisibleAnnotations.add(annotation);
+            injectTarget.instructions.insert(new VarInsnNode(Opcodes.ASTORE, sharedIndex));
+            injectTarget.instructions.insert(new InsnNode(Opcodes.ACONST_NULL));
+        }
+
+        String callbackInfoType = injectTarget.desc.codePointBefore(injectTarget.desc.length()) != 'V' ? ASMUtil.CALLBACK_INFO_RETURNABLE_NAME : ASMUtil.CALLBACK_INFO_NAME;
+
+        usageSiteOutput.add(new VarInsnNode(Opcodes.ALOAD, sharedIndex));
+        LabelNode label = new LabelNode();
+        usageSiteOutput.add(new JumpInsnNode(Opcodes.IFNONNULL, label));
+        usageSiteOutput.add(new TypeInsnNode(Opcodes.NEW, callbackInfoType));
+        usageSiteOutput.add(new InsnNode(Opcodes.DUP));
+        usageSiteOutput.add(new LdcInsnNode(injectTarget.name));
+        usageSiteOutput.add(new InsnNode(Opcodes.ICONST_1)); // cancellable = true
+        usageSiteOutput.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, callbackInfoType, "<init>", "(Ljava/lang/String;Z)V"));
+        usageSiteOutput.add(new VarInsnNode(Opcodes.ASTORE, sharedIndex));
+        usageSiteOutput.add(label);
+        usageSiteOutput.add(new VarInsnNode(Opcodes.ALOAD, sharedIndex));
+
+        return sharedIndex;
     }
 
     /**

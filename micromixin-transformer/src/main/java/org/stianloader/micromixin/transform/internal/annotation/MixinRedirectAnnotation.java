@@ -18,8 +18,11 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.transform.api.MixinTransformer;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
@@ -235,13 +238,15 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
 
             MethodNode targetMethod = entry.getValue();
             InsnList instructions = targetMethod.instructions;
+            InsnList postInject = new InsnList();
             int insertedOpcode;
+
             if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                 List<String> argTypes = ASMUtil.getInputOperandTypes(insn);
                 InsnList preRollback = new InsnList();
                 InsnList rollback = new InsnList();
 
-                this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, handlerNode, targetMethod, insn, preRollback, expectedDesc, argTypes);
+                this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, targetMethod, insn, preRollback, postInject, expectedDesc, argTypes);
                 ASMUtil.moveStackHead(targetMethod, insn, insn, argTypes, argTypes.size(), preRollback, rollback);
                 instructions.insertBefore(insn, preRollback);
                 instructions.insertBefore(insn, new VarInsnNode(Opcodes.ALOAD, 0));
@@ -262,12 +267,14 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 insertedOpcode = Opcodes.INVOKESTATIC;
                 if (handlerSignature.hasNext()) {
                     InsnList injectInsns = new InsnList();
-                    this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, handlerNode, targetMethod, insn, injectInsns, expectedDesc, null);
+                    this.handleArgumentCapture(handlerSignature, handlerSignatureIndex, targetMethod, insn, injectInsns, postInject, expectedDesc, null);
                     instructions.insertBefore(insn, injectInsns);
                 }
             }
-            MethodInsnNode inserted = new MethodInsnNode(insertedOpcode, to.name, handlerNode.name, handlerNode.desc);
-            instructions.insertBefore(insn, inserted);
+
+            MethodInsnNode replacementInsn = new MethodInsnNode(insertedOpcode, to.name, handlerNode.name, handlerNode.desc);
+            instructions.insertBefore(insn, replacementInsn);
+            instructions.insert(replacementInsn, postInject);
             instructions.remove(insn);
         }
     }
@@ -292,8 +299,12 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
      * @param targetMethod The method in which the handler method is injecting into.
      * @param targetInsn The instruction before which the injection should occur (used for stack analysis
      * required for the &#64;Local sugar annotation).
-     * @param outputInstructionList The {@link InsnList} where all instructions concerning argument capture should
-     * be appended to. These instructions should be inserted immediately before the call to the handler method.
+     * @param outputInstructionListBeforeInject The {@link InsnList} where all instructions concerning
+     * the loading of captured arguments should be appended to. These instructions should be inserted
+     * immediately before the call to the handler method.
+     * @param outputInstructionListAfterInject An {@link InsnList} where instructions are added concerning
+     * method cancellation. These instructions should be inserted immediately after the call to the handler
+     * method.
      * @param expectedDesc The minimum descriptor for the redirect handler to be able to inject
      * into the given target at the given instruction. See {@link ASMUtil#getRedirectHandlerSignature(AbstractInsnNode)}.
      * @param loadedTypesOut Collection in which the types loaded into the stack are recorded to.
@@ -302,8 +313,9 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
      * @since 0.6.3
      */
     private void handleArgumentCapture(@NotNull DescString remainingHandlerSignature, int handlerSignatureIndex,
-            @NotNull MethodNode handlerMethod, @NotNull MethodNode targetMethod, @NotNull AbstractInsnNode targetInsn,
-            @NotNull InsnList outputInstructionList, @NotNull String expectedDesc, @Nullable Collection<String> loadedTypesOut) {
+            @NotNull MethodNode targetMethod, @NotNull AbstractInsnNode targetInsn,
+            @NotNull InsnList outputInstructionListBeforeInject, @NotNull InsnList outputInstructionListAfterInject,
+            @NotNull String expectedDesc, @Nullable Collection<String> loadedTypesOut) {
         if (!remainingHandlerSignature.hasNext()) {
             return;
         }
@@ -312,7 +324,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         int capturedArgIndex = (this.injectSource.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
         do {
             String capturedType = remainingHandlerSignature.nextType();
-            ArgumentType action = ArgumentCaptureContext.getType(handlerMethod.invisibleParameterAnnotations, handlerSignatureIndex++);
+            ArgumentType action = ArgumentCaptureContext.getType(this.injectSource.invisibleParameterAnnotations, handlerSignatureIndex++);
 
             if (action == ArgumentType.NORMAL_ARGUMENT) {
                 if (!targetMethodDesc.hasNext()) {
@@ -323,12 +335,95 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + this.injectSource.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture type mismatch). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
                 }
                 int type = capturedType.codePointAt(0);
-                outputInstructionList.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
+                outputInstructionListBeforeInject.add(new VarInsnNode(ASMUtil.getLoadOpcode(type), capturedArgIndex++));
                 if (ASMUtil.isCategory2(type)) {
                     capturedArgIndex++;
                 }
             } else if (action == ArgumentType.CANCELLABLE) {
-                throw new UnsupportedOperationException("@Cancellable not supported - for now!");
+                int returnType = targetMethod.desc.codePointBefore(targetMethod.desc.length());
+                if (returnType != 'V') {
+                    if (!ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(capturedType)) {
+                        throw new IllegalStateException("The target method " + targetMethod.name + targetMethod.desc + " returns void, but the parameter at index " + (handlerSignatureIndex - 1) + " of type '" + capturedType + "' is annotated with @Cancellable. The type should be '" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC + "' in this case.");
+                    }
+                } else {
+                    if (!ASMUtil.CALLBACK_INFO_DESC.equals(capturedType)) {
+                        throw new IllegalStateException("The target method " + targetMethod.name + targetMethod.desc + " returns void, but the parameter at index " + (handlerSignatureIndex - 1) + " of type '" + capturedType + "' is annotated with @Cancellable. The type should be '" + ASMUtil.CALLBACK_INFO_DESC + "' in this case.");
+                    }
+                }
+
+                int callbackSlot = ASMUtil.loadCallbackInfoInstance(targetMethod, outputInstructionListBeforeInject);
+                outputInstructionListAfterInject.add(new VarInsnNode(Opcodes.ALOAD, callbackSlot));
+                outputInstructionListAfterInject.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_NAME, "isCancelled", "()Z"));
+                LabelNode label = new LabelNode();
+                outputInstructionListAfterInject.add(new JumpInsnNode(Opcodes.IFEQ, label));
+                if (returnType == 'V') {
+                    outputInstructionListAfterInject.add(new InsnNode(Opcodes.RETURN));
+                } else {
+                    String methodName;
+                    String returnDesc;
+                    int returnOpcode;
+                    switch (returnType) {
+                    case ';': // objects &  arrays
+                        methodName = "getReturnValue";
+                        returnDesc = "()Ljava/lang/Object;";
+                        returnOpcode = Opcodes.ARETURN;
+                        break;
+                    case 'I': // int
+                        methodName = "getReturnValueI";
+                        returnDesc = "()I";
+                        returnOpcode = Opcodes.IRETURN;
+                        break;
+                    case 'S': // short
+                        methodName = "getReturnValueS";
+                        returnDesc = "()S";
+                        returnOpcode = Opcodes.IRETURN;
+                        break;
+                    case 'C': // char
+                        methodName = "getReturnValueC";
+                        returnDesc = "()C";
+                        returnOpcode = Opcodes.IRETURN;
+                        break;
+                    case 'Z': // boolean
+                        methodName = "getReturnValueZ";
+                        returnDesc = "()Z";
+                        returnOpcode = Opcodes.IRETURN;
+                        break;
+                    case 'B': // byte
+                        methodName = "getReturnValueB";
+                        returnDesc = "()B";
+                        returnOpcode = Opcodes.IRETURN;
+                        break;
+                    case 'F': // float
+                        methodName = "getReturnValueF";
+                        returnDesc = "()F";
+                        returnOpcode = Opcodes.FRETURN;
+                        break;
+                    case 'J': // long
+                        methodName = "getReturnValueJ";
+                        returnDesc = "()J";
+                        returnOpcode = Opcodes.LRETURN;
+                        break;
+                    case 'D': // double
+                        methodName = "getReturnValueD";
+                        returnDesc = "()D";
+                        returnOpcode = Opcodes.DRETURN;
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("Unknown reference type: " + returnType + " for return desc of method " + targetMethod.name + targetMethod.desc);
+                    }
+                    outputInstructionListAfterInject.add(new VarInsnNode(Opcodes.ALOAD, callbackSlot));
+                    outputInstructionListAfterInject.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, methodName, returnDesc));
+                    if (returnType == ';') {
+                        int beginReturnIndex = targetMethod.desc.lastIndexOf(')') + 1;
+                        if (targetMethod.desc.codePointAt(beginReturnIndex) == 'L') {
+                            outputInstructionListAfterInject.add(new TypeInsnNode(Opcodes.CHECKCAST, targetMethod.desc.substring(beginReturnIndex + 1, targetMethod.desc.length() - 1)));
+                        } else {
+                            outputInstructionListAfterInject.add(new TypeInsnNode(Opcodes.CHECKCAST, targetMethod.desc.substring(beginReturnIndex)));
+                        }
+                    }
+                    outputInstructionListAfterInject.add(new InsnNode(returnOpcode));
+                }
+                outputInstructionListAfterInject.add(label);
             } else {
                 throw new UnsupportedOperationException("The handler method defines the capture argument of type '" + capturedType + "' at index " + (handlerSignatureIndex - 1) + " bound to action " + action + "; however this class does not know how to handle this case. The @Redirect-handler method " + this.injectSource.name + this.injectSource.desc + " can thus not be properly called.");
             }

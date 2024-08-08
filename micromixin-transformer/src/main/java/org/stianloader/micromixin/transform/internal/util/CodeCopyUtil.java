@@ -85,7 +85,6 @@ public class CodeCopyUtil {
         handler.desc = CodeCopyUtil.remapDesc(source.desc, sourceClass, target);
         handler.exceptions = source.exceptions; // TODO same here? Possible.
         handler.access = source.access;
-        handler.invisibleParameterAnnotations = source.invisibleParameterAnnotations;
         AbstractInsnNode sourceStartInsn = source.instructions.getFirst();
         AbstractInsnNode sourceEndInsn = source.instructions.getLast();
         if (sourceStartInsn == null || sourceEndInsn == null) {

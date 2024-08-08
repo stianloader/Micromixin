@@ -62,6 +62,7 @@ public class TestHarness {
         TestSet set = new TestSet();
 
         set.addUnitAssertEquals("CancellableTest.testRedirectStatic", CancellableTest::testRedirectStatic, 1);
+        set.addUnitAssertEquals("CancellableTest.testRedirectStaticReturnable", CancellableTest::testRedirectStaticReturnable, 9);
 
         LoggerFactory.getLogger(TestHarness.class).info("CancellableTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
