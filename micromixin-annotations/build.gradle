@@ -7,7 +7,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-annotations'
-version = '0.6.3'
+version = '0.6.4'
 
 repositories {
     mavenLocal()

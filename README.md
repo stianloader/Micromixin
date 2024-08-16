@@ -39,15 +39,20 @@ Painpoints of the official Mixin implementation that this implementation seeks t
 
 ## Modules
 
-The Micromixin framework comes in five modules.
+The Micromixin framework comes in six modules.
 
- - "micromixin-annotations" includes
-all the traditional mixin annotations that are implemented by Micromixin - nothing more.
+ - "micromixin-annotations" includes all the traditional mixin annotations that are
+implemented by Micromixin - nothing more.
  - "micromixin-transformer" includes the transformer - i.e. it is the heart of the project.
  - "micromixin-runtime" includes everything needed to run transformed classes (such as the
 CallbackInfo classes).
  - "micromixin-test-j8" includes tests for Micromxin and is the least interesting part of
 the project.
+ - "micromixin-remapper", an add-on library for stianloader-remapper in order to remap
+mixin classes. It is developed under https://github.com/stianloader/micromixin-remapper
+ - "micromixin-backports" includes micromixin-specific annotations and adds support for
+their use within mixin environments. Note: The backports do not come with an annotation
+processor bundled.
 
 <b>Warning: In 90% of cases you'll want to bundle micromixin-transformer alongside
 micromixin-runtime. Due to there being no strict dependencies between the classes,
@@ -55,10 +60,6 @@ the dependency is not resolved by default.</b>
 micromixin-annotations should strictly be used for compilation only,
 micromixin-transformer should strictly be used for runtime transformation only,
 micromixin-runtime should most likely always be used.
-
-Another project under the micromixin umbrella is micromixin-remapper, which is an
-add-on library for stianloader-remapper in order to be able remap mixin classes.
-It is developed under https://github.com/stianloader/micromixin-remapper
 
 ## Maven
 
@@ -68,6 +69,7 @@ This project is available at https://stianloader.org/maven/ with following coord
    * micromixin-transformer
    * or micromixin-runtime
    * or micromixin-annotations
+   * or micromixin-backports
 
  Available versions are listed under
  https://stianloader.org/maven/org/stianloader/micromixin-runtime/
@@ -90,7 +92,8 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
 These features might have been implemented, but either aren't correctly implemented
 or are improperly tested, if at all. Avoid their use, if you can.
 
- - `@Mutable` (Sponge) 
+ - `@Mutable` (Sponge)
+ - `@Cancellable` (MixinExtras); Only supported in conjunction with `@Redirect`
 
 ## Notable unsupported features
 
@@ -102,8 +105,8 @@ feature compatibility with the spongeian mixin implementation.
    already exists so it won't be a herculean task.
  - `@Coerce` (Sponge)
  - `@ModifyArgs` (Sponge)
- - `@Local`, `@Share`, `@Cancellable` (MixinExtras)
- - `@At` targets in constructors before final return (Fabric)
+ - `@Local`, `@Share` (MixinExtras)
+ - `@At` targets in constructors before final return (Fabric) 
  - `@At` targets in constructors before final return via unsafe (Sponge)
  - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar (???)
  - Redirecting fields, array loads, array stores, array length operations, etc. (Sponge)
@@ -125,6 +128,6 @@ However, you can also indirectly contribute to micromixin by simply making use o
 and reporting any bugs you find along the way! (though please don't make use of micromixin
 in gigantic projects and expect it to work fine)
 
-## Sister projects
+## Sister repositories
 
 - Micromixin-remapper: https://github.com/stianloader/micromixin-remapper

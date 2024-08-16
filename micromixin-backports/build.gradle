@@ -1,7 +1,3 @@
-buildscript {
-    dependencies.classpath 'org.ow2.asm:asm-tree:9.7'
-}
-
 plugins {
     id 'java-library'
     id 'maven-publish'
@@ -10,23 +6,21 @@ plugins {
 }
 
 group = 'org.stianloader'
-def archivesBaseName = 'micromixin-transformer'
+def archivesBaseName = 'micromixin-backports'
 version = '0.6.4'
 
 repositories {
     mavenLocal()
     mavenCentral()
+    maven {
+        name 'sponge'
+        url 'https://repo.spongepowered.org/maven'
+    }
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.7'
-    api 'org.ow2.asm:asm-commons:9.7'
-    api 'org.ow2.asm:asm-tree:9.7'
-    api 'org.ow2.asm:asm-util:9.7'
-    api 'org.json:json:20230618' // Note: It is likely that one cannot update this dependency without breaking compilation. Handle with care.
-    compileOnlyApi 'org.jetbrains:annotations-java5:24.1.0'
-    // junit 4 is the last version of junit that I am aware of that still works with Java 6
-    testImplementation 'junit:junit:4.13.2'
+    api "org.spongepowered:mixin:0.8.7"
+    compileOnly 'org.jetbrains:annotations-java5:24.1.0'
 }
 
 sourceSets {
@@ -37,6 +31,9 @@ sourceSets {
             java.setSrcDirs(new java.util.ArrayList())
             java.srcDir(getProjectDir().toPath().resolve('src/main/java9'))
             java.filter.exclude("module-info.java")
+
+            // !!! More compilation hacks !!!
+            java.filter.exclude("")
         }
     }
     java9module {
@@ -45,8 +42,8 @@ sourceSets {
             java.setSrcDirs(new java.util.ArrayList())
             var rootSourceDir = getProjectDir().toPath().resolve('src/main/java9');
             java.srcDir(rootSourceDir)
-            java.srcDirs(main.java.srcDirs())
-            main.java.srcDirs().each { dir -> {
+            java.srcDirs(main.allJava.srcDirs())
+            main.allJava.srcDirs().each { dir -> {
                     // For whatever reason 'dir' represents source files and not source directories at this point
                     // Can I complain? No, not really...
                     String path = dir.toString().substring(dir.toString().indexOf("java/") + 5)
@@ -76,6 +73,7 @@ compileJava {
 
     sourceCompatibility = '1.6'
     targetCompatibility = '1.6'
+    modularity.inferModulePath.set(true)
 }
 
 compileJava9Java {
@@ -91,7 +89,9 @@ compileJava9Java {
 
 compileJava9moduleJava {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(11)
+        // The mixin module-info.class file is compiled using Java 16.
+        // Why this is needed is really a mistery to be, but w/e - mufrey says it's there for a reason.
+        languageVersion = JavaLanguageVersion.of(17)
     }
     dependsOn compileJava
 
@@ -100,58 +100,20 @@ compileJava9moduleJava {
     modularity.inferModulePath.set(true)
 }
 
-// Eclipse will every frequently use micromixin-transformer's Objects class instead
-// of the Object class provided by the JDK. By deprecating the micromixin-transformer
-// class before publication, we can ensure that internals are less likely to be used
-// by dependent artifacts.
-// As we assume that JPMS is used for J9+ environments, this is not performed for
-// the Java 9 MRJ variant, although in theory it's still an environment where it is an issue.
-task virtualDeprecationJ6(type: Copy) {
-    dependsOn compileJava
-
-    from sourceSets.main.output
-    into 'build/classes/java/virtualdepr6'
-
-    eachFile {
-        if (it.getPath().equals("org/stianloader/micromixin/transform/internal/util/Objects.class")) {
-            it.exclude()
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            it.copyTo(baos);
-            org.objectweb.asm.ClassReader reader = new org.objectweb.asm.ClassReader(baos.toByteArray());
-            org.objectweb.asm.tree.ClassNode node = new org.objectweb.asm.tree.ClassNode();
-            reader.accept(node, 0);
-            node.access |= org.objectweb.asm.Opcodes.ACC_DEPRECATED;
-            org.objectweb.asm.ClassWriter writer = new org.objectweb.asm.ClassWriter(0);
-            node.accept(writer);
-            java.nio.file.Files.write(destinationDir.toPath().resolve(it.path), writer.toByteArray());
-        }
-    }
-}
-
 jar {
     dependsOn compileJava9Java
-    dependsOn compileJava9moduleJava
-    dependsOn test
-    dependsOn virtualDeprecationJ6
-
-    // Remove original jar sources - yeah, this is getting a bit cursed and there is probably
-    // a better way out, but I don't know that way; Or do I?
-    eachFile {
-        if (compileJava.destinationDirectory.asFileTree.contains(it.getFile())) {
-            it.exclude()
-        }
-    }
-
-    from tasks.virtualDeprecationJ6.destinationDir
+    //dependsOn compileJava9moduleJava
 
     into('META-INF/versions/9') {
         from sourceSets.java9.output
     }
 
+    /*
     into('META-INF/versions/9') {
         from sourceSets.java9module.output
         include 'module-info.class'
     }
+    */
 
     into('META-INF/LICENSES/' + archivesBaseName) {
         from project.rootProject.file("LICENSE")
@@ -191,10 +153,10 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'Micromixin Transformer'
-                description = "Lightweight reimplementation of sponge's mixin framework."
+                name = 'Micromixin Backports'
+                description = 'Backports Micromixin-specific annotations to standard mixin environments.'
                 url = 'https://github.com/stianloader/Micromixin'
-                inceptionYear = '2023'
+                inceptionYear = '2024'
 
                 licenses {
                     license {
@@ -230,13 +192,11 @@ publishing {
 
     repositories {
         if (providers.gradleProperty('publishRepo').isPresent()) {
-            System.out.println("Publishing to " + providers.gradleProperty('publishRepo').get())
             maven {
                 url providers.gradleProperty('publishRepo').get()
                 allowInsecureProtocol = true
             }
         } else {
-            System.out.println("Publishing to the local maven repository")
             mavenLocal()
         }
     }
@@ -258,6 +218,7 @@ eclipse {
                     if (it.kind == 'con' || it.kind == 'lib') {
                         it.entryAttributes['module'] = 'true'
                     } else if (it.kind == 'src' && it.path == 'src/main/java9') {
+                        // Eclipse has a seizure 
                         it.setIncludes(java.util.Arrays.asList('module-info.java'))
                     }
                 }

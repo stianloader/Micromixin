@@ -38,21 +38,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * easily and safely chained. In truth we do not see if that is really the case
  * under the micromixin-transformer implementation. Usage of
  *
- * <blockquote><code>
+ * <blockquote><pre><code>
  * &#64;Inject(...)
  * private void handleCallback(CallbackInfoReturnable&lt;T&gt; cir) {
  *      cir.setReturnValue(apply(cir.getReturnValue()));
  * }
- * </code></blockquote>
+ * </code></pre></blockquote>
  *
  * can and should be replaced with
  *
- * <blockquote><code>
+ * <blockquote><pre><code>
  * &#64;ModifyReturnValue(...)
  * private T handleCallback(T original) {
  *      return apply(original);
  * }
- * </code></blockquote>
+ * </code></pre></blockquote>
  *
  * <p>Aside from the aforementioned improvements this annotations does not
  * (as seen above) allocate a {@link CallbackInfoReturnable} and is as such more performant.
