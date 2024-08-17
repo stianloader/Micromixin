@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
 
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
@@ -27,9 +28,13 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * <p>It may not be applied on non-public or static methods, see the illegal
  * usecases for further details.
  *
- * <h2>Technical approximation</h2>
+ * <h2>Semantic approximation</h2>
  *
- * In it's purest form, the behaviour of this annotation can be replicated
+ * <em>The semantic approximation is an approximation of how the behaviour of this
+ * annotation can be replicated using other annotations, but may not mirror
+ * the inner workings of the annotation behind the scenes.</em>
+ *
+ * <p>In it's purest form, the behaviour of this annotation can be replicated
  * using a default/implicit overwrite + explicit {@link Overwrite} pair.
  * Henceforth you get the following two methods:
  *
@@ -62,8 +67,18 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  *
  * <h2>Technical details</h2>
  *
- * This annotation is yet to be implemented, and henceforth the technical details
- * are left vague.
+ * <em>This paragraph is mostly specific to the implementation within
+ * micromixin-transformer, other implementations may derive slightly from the
+ * implementation details. However, the behaviour must be kept the same.
+ * This is especially crucial to overrides in conjunction with subclassing.</em>
+ *
+ * <p>Within the remapper process, the handler method may not be renamed.
+ * Instead, only {@link #method()} and {@link #target()} are renamed.
+ * If neither {@link #method()} nor {@link #target()} are defined,
+ * then {@link #target()} will be set to correspond to the method's
+ * current name and descriptor, and the new {@link #target()} value
+ * will be remapped from then on. The handler method's name stays
+ * constant as established earlier.
  *
  * <h2>Important limitations &amp; words of warning</h2>
  *
@@ -106,10 +121,63 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * This constraint is at its core  arbitrary, but is necessary to reduce the possibility of
  * misuse of this annotation, as the ABI (application binary interface) guarantees provided
  * are only relevant when this constraint is applied.
+ *
+ * <p>The handler method (that is the method annotated with {@link CanonicalOverwrite}) and the
+ * target method (that is the method that should be overwritten) must have the same descriptor.
+ * It is not valid for them to differ in the descriptor, which means that the return value and
+ * the argument types must match. However, the generic signatures may differ due to generic
+ * erasure (but do note that mismatches may be dangerous nonetheless).
  */
 @Documented
 @Retention(CLASS)
 @Target(METHOD)
 public @interface CanonicalOverwrite {
 
+    /**
+     * The target selector string defining the method that should be overwritten.
+     * That is, the selected method will delegate all it's calls to the handler method.
+     *
+     * <p>This parameter is mutually exclusive with {@link #target()}. Only one of
+     * the two may be defined. However, it is also valid for none of the elements
+     * to be set, in which case the overwritten method is assumed to have the same
+     * descriptor and name as the annotated handler method.
+     *
+     * <p>Note: Like many other mixin annotations, the transformer can differ between
+     * explicitly setting the value to <code>&quot;&quot;</code> and not setting the
+     * value at all. This is because javac omits undefined element values and ignores
+     * the default value. The default value advertised here is only required due to how
+     * optional elements need to be defined in java source code but truth be told
+     * there is no such default value in practice.
+     *
+     * @return The target selector string defining the method to overwrite.
+     */
+    public String method() default "";
+
+    /**
+     * The {@link Desc &#64;Desc} definition referring to the method that should be
+     * overwritten.
+     * That is, the selected method will delegate all it's calls to the handler method.
+     *
+     * <p>This parameter is mutually exclusive with {@link #method()}. Only one of
+     * the two may be defined. However, it is also valid for none of the elements
+     * to be set, in which case the overwritten method is assumed to have the same
+     * descriptor and name as the annotated handler method.
+     *
+     * <p>Like in all other annotations, the default descriptor of the {@link Desc} is
+     * implicitly set to <code>void.class</code>. If a non-void method is
+     * overwritten, the descriptor <b>must</b> be explicitly set as a logical consequence
+     * of this constant (i.e. blind) default. The descriptor of the overwritten method
+     * and the descriptor of the target method must be the same, as defined by the
+     * illegal usecases of {@link CanonicalOverwrite}.
+     *
+     * <p>Note: Like many other mixin annotations, the transformer can differ between
+     * explicitly setting the value to <code>&#64;Desc(&quot;&quot;)</code> and not setting the
+     * value at all. This is because javac omits undefined element values and ignores
+     * the default value. The default value advertised here is only required due to how
+     * optional elements need to be defined in java source code but truth be told
+     * there is no such default value in practice.
+     *
+     * @return The method to overwrite.
+     */
+    public Desc target() default @Desc("");
 }
