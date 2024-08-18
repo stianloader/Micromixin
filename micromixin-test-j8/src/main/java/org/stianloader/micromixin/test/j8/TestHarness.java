@@ -7,6 +7,7 @@ import org.stianloader.micromixin.test.j8.localsprinting.LocalPrintingWitnesses;
 import org.stianloader.micromixin.test.j8.targets.AllowTest;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.CancellableTest;
+import org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -55,7 +56,23 @@ public class TestHarness {
         runModifyVariableTest(report);
         runConstructorInjectionTest(report);
         runCancellableTest(report);
+        runCanonicalOverwriteTest(report);
         return report;
+    }
+
+    public static void runCanonicalOverwriteTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest$OverwriteTargetNotPresentImplicit");
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest$OverwriteTargetNotPresentExplicit");
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest$OverwriteInterfaceMissing");
+        set.addUnit("OverwriteImplicit.invokeMethodOne", new CanonicalOverwriteTest.OverwriteImplicit()::invokeMethodOne);
+        set.addUnitAssertEquals("OverwriteExplicitDiffer.invokeMethodIOverwritten", new CanonicalOverwriteTest.OverwriteExplicitDiffer()::invokeMethodIOverwritten, 1);
+        set.addUnitAssertEquals("OverwriteExplicitDiffer.invokeMethodI", ((CanonicalOverwriteTest.CanonicalOverwriteInterfaceI) (Object) new CanonicalOverwriteTest.OverwriteExplicitDiffer())::invokeMethodI, 1);
+        set.addUnit("OverwriteExplicitIdentity.invokeMethodOne", new CanonicalOverwriteTest.OverwriteExplicitIdentity()::invokeMethodOne);
+
+        LoggerFactory.getLogger(TestHarness.class).info("CanonicalOverwriteTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runCancellableTest(@NotNull TestReport report) {

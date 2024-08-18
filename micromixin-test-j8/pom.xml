@@ -42,6 +42,12 @@
             <version>4.0.0-a20240730</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.stianloader</groupId>
+            <artifactId>micromixin-backports</artifactId>
+            <version>0.6.4-a20240817</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
