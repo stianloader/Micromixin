@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * <h2>Abstract</h2>
  * 
  * The {@link CanonicalOverwrite} is a micromixin-specific derivation of the
- * traditional {@link Overwrite} annotation. This annotation the same behavioural
+ * traditional {@link Overwrite} annotation. This annotation has the same behavioural
  * semantics as {@link Overwrite} in the absence of a remapper or refmaps.
  * However, when a remapper is used, the handler method keeps its
  * &quot;canonical&quot; name, and a new helper method is spawned to keep the

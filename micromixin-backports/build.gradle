@@ -23,7 +23,8 @@ dependencies {
 
     // Dependency required by mixin, but the dependency is not transitively provided.
     // We need it however.
-    implementation 'org.ow2.asm:asm-tree:9.7'
+    implementation 'org.ow2.asm:asm-util:9.7'
+    implementation 'org.ow2.asm:asm-commons:9.7'
 
     compileOnly 'org.jetbrains:annotations-java5:24.1.0'
 }
@@ -39,6 +40,26 @@ sourceSets {
 
             // !!! More compilation hacks !!!
             java.filter.exclude("")
+        }
+    }
+
+    java9module {
+        java {
+            compileClasspath += main.compileClasspath
+            java.setSrcDirs(new java.util.ArrayList())
+            var rootSourceDir = getProjectDir().toPath().resolve('src/main/java9');
+            java.srcDir(rootSourceDir)
+            java.srcDirs(main.allJava.srcDirs())
+            main.allJava.srcDirs().each { dir -> {
+                    // For whatever reason 'dir' represents source files and not source directories at this point
+                    // Can I complain? No, not really...
+                    String path = dir.toString().substring(dir.toString().indexOf("java/") + 5)
+                    if (java.nio.file.Files.exists(rootSourceDir.resolve(path))) {
+                        java.filter.exclude(path)
+                    }
+                }
+            }
+            java.filter.include("module-info.java")
         }
     }
 }
@@ -73,11 +94,28 @@ compileJava9Java {
     modularity.inferModulePath.set(false)
 }
 
+compileJava9moduleJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+    dependsOn compileJava
+
+    sourceCompatibility = '9'
+    targetCompatibility = '9'
+    modularity.inferModulePath.set(true)
+}
+
 jar {
     dependsOn compileJava9Java
+    dependsOn compileJava9moduleJava
 
     into('META-INF/versions/9') {
         from sourceSets.java9.output
+    }
+
+    into('META-INF/versions/9') {
+        from sourceSets.java9module.output
+        include 'module-info.class'
     }
 
     into('META-INF/LICENSES/' + archivesBaseName) {
@@ -175,17 +213,26 @@ if (providers.gradleProperty('signedPublish').isPresent() && Boolean.parseBoolea
 }
 
 eclipse {
+    jdt {
+        sourceCompatibility = JavaVersion.VERSION_1_6
+        targetCompatibility = JavaVersion.VERSION_1_6
+    }
     classpath {
         containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+        containers 'org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6/'
         file {
             whenMerged {
-                entries.each {
+                entries.removeAll {
                     if (it.kind == 'con' || it.kind == 'lib') {
-                        it.entryAttributes['module'] = 'true'
+                        if (it.path.endsWith("/JavaSE-11/")) {
+                            return true
+                        }
+                        it.entryAttributes['module'] = 'false'
                     } else if (it.kind == 'src' && it.path == 'src/main/java9') {
                         // Eclipse has a seizure 
                         it.setIncludes(java.util.Arrays.asList('module-info.java'))
                     }
+                    return false
                 }
             }
         }
