@@ -10,8 +10,8 @@ def archivesBaseName = 'micromixin-backports'
 version = '0.6.4'
 
 repositories {
-    mavenLocal()
     mavenCentral()
+    mavenLocal()
     maven {
         name 'sponge'
         url 'https://repo.spongepowered.org/maven'
@@ -107,15 +107,20 @@ compileJava9moduleJava {
 
 jar {
     dependsOn compileJava9Java
-    dependsOn compileJava9moduleJava
 
     into('META-INF/versions/9') {
         from sourceSets.java9.output
     }
 
-    into('META-INF/versions/9') {
-        from sourceSets.java9module.output
-        include 'module-info.class'
+    if (providers.gradleProperty('mixinJPMSFix').isPresent() && Boolean.parseBoolean(providers.gradleProperty('mixinJPMSFix').get())) {
+        System.out.println("Warning: Assuming that the mixin release is JPMS-compatible!")
+
+        dependsOn compileJava9moduleJava
+
+        into('META-INF/versions/9') {
+            from sourceSets.java9module.output
+            include 'module-info.class'
+        }
     }
 
     into('META-INF/LICENSES/' + archivesBaseName) {
