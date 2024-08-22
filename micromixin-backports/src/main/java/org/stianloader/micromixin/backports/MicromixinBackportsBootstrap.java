@@ -2,14 +2,28 @@ package org.stianloader.micromixin.backports;
 
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.mixin.injection.struct.InjectionInfo;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.mixin.transformer.ext.Extensions;
 import org.spongepowered.asm.mixin.transformer.ext.IExtensionRegistry;
 
 public class MicromixinBackportsBootstrap {
 
+    private static boolean globalInit = false;
+
+    private static void globalInit() {
+        if (MicromixinBackportsBootstrap.globalInit) {
+            throw new IllegalStateException("Already globally initialized. (Calling this method in the wrong thread?)");
+        }
+
+        InjectionInfo.register(CanonicalOverwriteInjectionInfo.class);
+        MicromixinBackportsBootstrap.globalInit = true;
+    }
+
     public static void init(@NotNull Extensions extensionRegistry) {
-        
+        if (!MicromixinBackportsBootstrap.globalInit) {
+            MicromixinBackportsBootstrap.globalInit();
+        }
     }
 
     public static void init(@NotNull IMixinTransformer transformer) {
