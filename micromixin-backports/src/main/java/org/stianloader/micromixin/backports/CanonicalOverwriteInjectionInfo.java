@@ -27,24 +27,8 @@ public class CanonicalOverwriteInjectionInfo extends InjectionInfo {
     }
 
     @Override
-    protected Injector parseInjector(AnnotationNode injectAnnotation) {
-        return new CanonicalOverwriteInjector(this);
-    }
-
-    @Override
-    protected void parseSelectors() {
-        // Override to alter behaviour when not explicitly specifying a target method.
-
-        Set<ITargetSelector> selectors = new LinkedHashSet<ITargetSelector>();
-        TargetSelector.parse(Annotations.<String>getValue(this.annotation, "method", false), this, selectors);
-        TargetSelector.parse(Annotations.<AnnotationNode>getValue(this.annotation, "target", false), this, selectors);
-
-        if (selectors.size() == 0) {
-            // Bit cursed for a solution, hopefully works (TM)
-            selectors.add(new MemberInfo(this.method.name, "L" + this.mixin.getTargetClassNode().name + ";", this.method.desc));
-        }
-
-        this.targets.parse(selectors);
+    protected String getDescription() {
+        return "Canonical Overwrite";
     }
 
     @Override
@@ -64,8 +48,8 @@ public class CanonicalOverwriteInjectionInfo extends InjectionInfo {
     }
 
     @Override
-    protected void readInjectionPoints() {
-        // Override to avoid exception
+    protected Injector parseInjector(AnnotationNode injectAnnotation) {
+        return new CanonicalOverwriteInjector(this);
     }
 
     @Override
@@ -76,7 +60,23 @@ public class CanonicalOverwriteInjectionInfo extends InjectionInfo {
     }
 
     @Override
-    protected String getDescription() {
-        return "Canonical Overwrite";
+    protected void parseSelectors() {
+        // Override to alter behaviour when not explicitly specifying a target method.
+
+        Set<ITargetSelector> selectors = new LinkedHashSet<ITargetSelector>();
+        TargetSelector.parse(Annotations.<String>getValue(this.annotation, "method", false), this, selectors);
+        TargetSelector.parse(Annotations.<AnnotationNode>getValue(this.annotation, "target", false), this, selectors);
+
+        if (selectors.size() == 0) {
+            // Bit cursed for a solution, but seems to work
+            selectors.add(new MemberInfo(this.getMethodName(), this.mixin.getTargetClassNode().name, this.method.desc));
+        }
+
+        this.targets.parse(selectors);
+    }
+
+    @Override
+    protected void readInjectionPoints() {
+        // Override to avoid exception
     }
 }

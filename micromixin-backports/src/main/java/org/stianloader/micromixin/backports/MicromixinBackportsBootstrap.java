@@ -18,34 +18,6 @@ public class MicromixinBackportsBootstrap {
 
         InjectionInfo.register(CanonicalOverwriteInjectionInfo.class);
         MicromixinBackportsBootstrap.globalInit = true;
-
-        /*
-        Field f;
-        try {
-            f = InjectionInfo.class.getDeclaredField("registry");
-            f.setAccessible(true);
-            Map<?, ?> registry = (Map<?, ?>) f.get(null);
-            System.out.println("Registry contents:");
-
-            for (Map.Entry<?, ?> e : registry.entrySet()) {
-                Field f1 = e.getValue().getClass().getDeclaredField("annotationType");
-                Field f2 = e.getValue().getClass().getDeclaredField("injectorType");
-                Field f3 = e.getValue().getClass().getDeclaredField("annotationDesc");
-                Field f4 = e.getValue().getClass().getDeclaredField("prefix");
-                f1.setAccessible(true);
-                f2.setAccessible(true);
-                f3.setAccessible(true);
-                f4.setAccessible(true);
-
-                System.out.println("  - " + e.getKey() + ": " + f1.get(e.getValue()) + "; " + f2.get(e.getValue()) + "; " + f3.get(e.getValue()) + "; " + f4.get(e.getValue()) + "; ");
-            }
-
-            System.out.println("Registered annotations: "+ InjectionInfo.getRegisteredAnnotations());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        */
-
     }
 
     public static void init(@NotNull Extensions extensionRegistry) {
