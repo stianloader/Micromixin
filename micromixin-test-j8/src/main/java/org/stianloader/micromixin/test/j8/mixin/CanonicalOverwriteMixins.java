@@ -7,7 +7,7 @@ import org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest;
 
 public class CanonicalOverwriteMixins {
     @Mixin(CanonicalOverwriteTest.OverwriteExplicitDiffer.class)
-    private class OverwriteExplicitDiffer implements CanonicalOverwriteTest.CanonicalOverwriteInterfaceI {
+    private static class OverwriteExplicitDiffer implements CanonicalOverwriteTest.CanonicalOverwriteInterfaceI {
         @CanonicalOverwrite(method = "invokeMethodIOverwritten")
         @Override
         public int invokeMethodI() {
@@ -16,7 +16,7 @@ public class CanonicalOverwriteMixins {
     }
 
     @Mixin(CanonicalOverwriteTest.OverwriteExplicitIdentity.class)
-    private class OverwriteExplicitIdentity implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
+    private static class OverwriteExplicitIdentity implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
         @CanonicalOverwrite(target = @Desc("invokeMethodOne"))
         @Override
         public void invokeMethodOne() {
@@ -25,7 +25,7 @@ public class CanonicalOverwriteMixins {
     }
 
     @Mixin(CanonicalOverwriteTest.OverwriteImplicit.class)
-    private class OverwriteImplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
+    private static class OverwriteImplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
         @CanonicalOverwrite
         @Override
         public void invokeMethodOne() {
@@ -34,7 +34,7 @@ public class CanonicalOverwriteMixins {
     }
 
     @Mixin(CanonicalOverwriteTest.OverwriteInterfaceMissing.class)
-    private class OverwriteInterfaceMissing {
+    private static class OverwriteInterfaceMissing {
         @CanonicalOverwrite
         public void invokeMethodOne() {
             // NOP
@@ -42,7 +42,7 @@ public class CanonicalOverwriteMixins {
     }
 
     @Mixin(CanonicalOverwriteTest.OverwriteTargetNotPresentExplicit.class)
-    private class OverwriteTargetNotPresentExplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
+    private static class OverwriteTargetNotPresentExplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
         @CanonicalOverwrite(method = "notAMethod")
         @Override
         public void invokeMethodOne() {
@@ -51,7 +51,7 @@ public class CanonicalOverwriteMixins {
     }
 
     @Mixin(CanonicalOverwriteTest.OverwriteTargetNotPresentImplicit.class)
-    private class OverwriteTargetNotPresentImplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
+    private static class OverwriteTargetNotPresentImplicit implements CanonicalOverwriteTest.CanonicalOverwriteInterface {
         @CanonicalOverwrite
         @Override
         public void invokeMethodOne() {

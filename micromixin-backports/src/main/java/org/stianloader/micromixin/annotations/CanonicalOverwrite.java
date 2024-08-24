@@ -1,10 +1,9 @@
 package org.stianloader.micromixin.annotations;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.CLASS;
-
 import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.spongepowered.asm.mixin.Overwrite;
@@ -129,8 +128,8 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
  * erasure (but do note that mismatches may be dangerous nonetheless).
  */
 @Documented
-@Retention(CLASS)
-@Target(METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
 public @interface CanonicalOverwrite {
 
     /**

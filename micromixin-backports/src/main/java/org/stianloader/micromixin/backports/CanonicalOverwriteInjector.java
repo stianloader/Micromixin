@@ -14,5 +14,4 @@ public class CanonicalOverwriteInjector extends Injector {
     protected void inject(Target target, InjectionNode node) {
         throw new UnsupportedOperationException("This annotation is not not yet fully implemented.");
     }
-
 }

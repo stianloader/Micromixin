@@ -22,7 +22,7 @@ import org.stianloader.micromixin.annotations.CanonicalOverwrite;
 @InjectionInfo.HandlerPrefix("canonicalOverwriteHandler")
 public class CanonicalOverwriteInjectionInfo extends InjectionInfo {
 
-    protected CanonicalOverwriteInjectionInfo(MixinTargetContext mixin, MethodNode method, AnnotationNode annotation) {
+    public CanonicalOverwriteInjectionInfo(MixinTargetContext mixin, MethodNode method, AnnotationNode annotation) {
         super(mixin, method, annotation, null);
     }
 
@@ -73,5 +73,10 @@ public class CanonicalOverwriteInjectionInfo extends InjectionInfo {
         Annotations.setValue(this.annotation, "require", 1);
         Annotations.setValue(this.annotation, "allow", 1);
         super.parseRequirements();
+    }
+
+    @Override
+    protected String getDescription() {
+        return "Canonical Overwrite";
     }
 }
