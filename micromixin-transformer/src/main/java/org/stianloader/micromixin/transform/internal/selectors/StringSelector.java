@@ -73,6 +73,12 @@ public class StringSelector implements MixinTargetSelector, InjectionPointTarget
         }
     }
 
+    public StringSelector(@Nullable String owner, @Nullable String name, @Nullable String desc) {
+        this.owner = owner;
+        this.name = name;
+        this.desc = desc;
+    }
+
     @Override
     @Nullable
     public MethodNode selectMethod(@NotNull ClassNode within, @NotNull MixinStub source) {

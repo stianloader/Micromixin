@@ -23,6 +23,7 @@ import org.stianloader.micromixin.transform.internal.annotation.MixinShadowAnnot
 import org.stianloader.micromixin.transform.internal.annotation.MixinUniqueAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.VirtualClInitMergeAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.VirtualConstructorMergeAnnotation;
+import org.stianloader.micromixin.transform.internal.annotation.micromixin.MicromixinCanonicalOverwriteAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasModifyReturnValueAnnotation;
 
 public class MixinMethodStub implements ClassMemberStub {
@@ -58,9 +59,16 @@ public class MixinMethodStub implements ClassMemberStub {
                     } else {
                         throw new MixinParseException("Unimplemented MixinExtras annotation: " + annot.desc);
                     }
+                } else if (annot.desc.startsWith("Lorg/stianloader/micromixin/annotations/")) {
+                    if (annot.desc.equals("Lorg/stianloader/micromixin/annotations/CanonicalOverwrite;")) {
+                        annotations.add(MicromixinCanonicalOverwriteAnnotation.parse(node, method, annot, transformer, sharedBuilder));
+                    } else {
+                        throw new MixinParseException("Unimplemented micromixin annotation: " + annot.desc);
+                    }
                 }
             }
         }
+
         if (annotations.isEmpty()) {
             if (method.name.equals("<init>") && method.desc.equals("()V")) {
                 annotations.add(new VirtualConstructorMergeAnnotation());
@@ -75,6 +83,7 @@ public class MixinMethodStub implements ClassMemberStub {
         for (MixinAnnotation<MixinMethodStub> annotation : annotations) {
             annotation.validateMixin(stub, transformer.getLogger(), sharedBuilder);
         }
+
         return stub;
     }
 

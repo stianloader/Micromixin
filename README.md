@@ -86,6 +86,7 @@ In the future, "stable" releases may be offered under OSSRH (maven central).
  - `@ModifyConstant` (Sponge)
  - `@ModifyReturnValue` (MixinExtras)
  - `@ModifyVariable` (Sponge)
+ - `@CanonicalOverwrite` (Micromixin)
 
 ## Partially supported features
 

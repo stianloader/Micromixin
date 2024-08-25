@@ -276,7 +276,27 @@ public class ASMUtil {
     }
 
     public static int getLoadOpcodeFromMethodDesc(@NotNull String methodDesc) {
-        return ASMUtil.getLoadOpcode(ASMUtil.getReturnComputationalType(methodDesc));
+        switch (methodDesc.codePointBefore(methodDesc.length())) {
+        case ';':
+            return Opcodes.ARETURN;
+        case 'I': // int
+        case 'S': // short
+        case 'C': // char
+        case 'Z': // boolean
+        case 'B': // byte
+            return Opcodes.IRETURN;
+        case 'J': // long
+            return Opcodes.LRETURN;
+        case 'F': // float
+            return Opcodes.FRETURN;
+        case 'D': // double
+            return Opcodes.DRETURN;
+        case 'V':
+            return Opcodes.RETURN;
+        default:
+            int codepoint = methodDesc.codePointBefore(methodDesc.length());
+            throw new IllegalStateException("Unknown return type: " + codepoint + " ('" + new String(new int[] {codepoint}, 0, 1) + "') (0x" + Integer.toHexString(codepoint) + ") for descriptor '" + methodDesc + "'");
+        }
     }
 
     @Nullable

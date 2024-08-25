@@ -39,7 +39,7 @@ public class CanonicalOverwriteInjector extends Injector {
         } else if (retType == ';') {
             // reference
             retOpcode = Opcodes.ARETURN;
-        } else if (retType == 'Z' || retType == 'I' || retType == 'C' || retType == 'S') {
+        } else if (retType == 'Z' || retType == 'I' || retType == 'C' || retType == 'S' || retType == 'B') {
             // int-like
             retOpcode = Opcodes.IRETURN;
         } else if (retType == 'F') {

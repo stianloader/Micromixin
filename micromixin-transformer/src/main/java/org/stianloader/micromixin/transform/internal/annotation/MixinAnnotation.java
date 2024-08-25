@@ -30,7 +30,7 @@ public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T
      * the owner class may not have been parsed in it's entirety. The main purpose of this
      * validation method is to catch obviously flawed mixin handlers as early as possible.
      *
-     * <p>As for larger modded environments this as early as possible may in fact be too early
+     * <p>As for larger modded environments this 'as early as possible' may in fact be too early
      * and get drowned out by other log statements, any logging statements made while executing
      * this method should be printed on application too, within reason (i.e.
      * {@link MixinLoggingFacade#info(Class, String, Object...)} calls have no real reason to
