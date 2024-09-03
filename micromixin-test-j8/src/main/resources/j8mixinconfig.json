@@ -30,6 +30,8 @@
     "LocalCaptureTestMixins",
     "LocalPrintingTestMixins",
     "MixinOverwriteTestMixins",
+    "MixinOverwriteTestMixins$ClInitMergeTest",
+    "MixinOverwriteTestMixins$ClInitMergeTestClInitPresent",
     "MixinOverwriteTestMixins$InvalidIntrinsicNoInterface",
     "MixinOverwriteTestMixins$InvalidIntrinsicNoInterfacePrefixed",
     "ModifyArgMixins",

@@ -36,6 +36,7 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
         if (target == null) {
             target = new MethodNode(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
             target.instructions.add(new InsnNode(Opcodes.RETURN));
+            to.methods.add(target);
         }
         AbstractInsnNode nextOutInsn = target.instructions.getLast();
         while (nextOutInsn.getOpcode() == -1) {

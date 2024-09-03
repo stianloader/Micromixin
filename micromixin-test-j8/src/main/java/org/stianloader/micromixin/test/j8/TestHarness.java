@@ -13,6 +13,8 @@ import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
 import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
+import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest.ClInitMergeTest;
+import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest.ClInitMergeTestClInitPresent;
 import org.stianloader.micromixin.test.j8.targets.ModifyArgTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyConstantAuxiliaryTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyConstantTest;
@@ -841,6 +843,8 @@ public class TestHarness {
         set.addUnitAssertEquals("MixinOverwriteTest.explicitlyOverwrittenMethodAliasedPriorityAlias", MixinOverwriteTest::acc$explicitlyOverwrittenMethodAliasedPriorityAlias, 2);
         set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.invalid.InvalidIntrinsic$InvalidIntrinsicNoInterface");
         set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.invalid.InvalidIntrinsic$InvalidIntrinsicNoInterfacePrefixed");
+        set.addUnit("MixinOverwriteTest$ClInitMergeTest.verifyClInitMerge", ClInitMergeTest::verifyClInitMerge);
+        set.addUnit("MixinOverwriteTest$ClInitMergeTestClInitPresent.verifyClInitMerge", ClInitMergeTestClInitPresent::verifyClInitMerge);
         LoggerFactory.getLogger(TestHarness.class).info("MixinOverwriteTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

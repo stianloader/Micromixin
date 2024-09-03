@@ -1,15 +1,40 @@
 package org.stianloader.micromixin.test.j8.mixin;
 
+import java.util.Objects;
+
 import org.spongepowered.asm.mixin.Intrinsic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.stianloader.micromixin.test.j8.MutableInt;
 import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InvalidIntrinsic;
 
 @Mixin(value = MixinOverwriteTest.class)
 public class MixinOverwriteTestMixins {
+
+    @Mixin(MixinOverwriteTest.ClInitMergeTest.class)
+    private static class ClInitMergeTest {
+        private static final MutableInt STATIC_FIELD_0 = new MutableInt(2);
+        @Overwrite
+        public static void verifyClInitMerge() {
+            if (Objects.requireNonNull(ClInitMergeTest.STATIC_FIELD_0).intValue() != 2) {
+                throw new AssertionError("Unexpected value for STATIC_FIELD_0.");
+            }
+        }
+    }
+
+    @Mixin(MixinOverwriteTest.ClInitMergeTestClInitPresent.class)
+    private static class ClInitMergeTestClInitPresent {
+        private static final MutableInt STATIC_FIELD_0 = new MutableInt(2);
+        @Overwrite
+        public static void verifyClInitMerge() {
+            if (Objects.requireNonNull(ClInitMergeTestClInitPresent.STATIC_FIELD_0).intValue() != 2) {
+                throw new AssertionError("Unexpected value for STATIC_FIELD_0.");
+            }
+        }
+    }
 
     @Mixin(value = InvalidIntrinsic.InvalidIntrinsicNoInterface.class)
     private static class InvalidIntrinsicNoInterface {

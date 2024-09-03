@@ -2,6 +2,25 @@ package org.stianloader.micromixin.test.j8.targets;
 
 public class MixinOverwriteTest {
 
+    public static class ClInitMergeTest {
+        public static void verifyClInitMerge() {
+            throw new AssertionError("Injection failure.");
+        }
+    }
+
+    public static class ClInitMergeTestClInitPresent {
+
+        static {
+            if (Boolean.TRUE.equals(Boolean.valueOf(false))) {
+                Thread.dumpStack();
+            }
+        }
+
+        public static void verifyClInitMerge() {
+            throw new AssertionError("Injection failure.");
+        }
+    }
+
     // Unfortunately the official Mixin implementation refuses public-static mixins (at least to some degree), so we have to do these
     // workarounds.
     public static int acc$explicitlyOverwrittenMethodAliasedMultiA() {

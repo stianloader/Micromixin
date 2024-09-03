@@ -100,8 +100,8 @@ compileJava9moduleJava {
     modularity.inferModulePath.set(true)
 }
 
-// Eclipse will every frequently use micromixin-transformer's Objects class instead
-// of the Object class provided by the JDK. By deprecating the micromixin-transformer
+// Eclipse will very frequently use micromixin-transformer's Objects class instead
+// of the Objects class provided by the JDK. By deprecating the micromixin-transformer
 // class before publication, we can ensure that internals are less likely to be used
 // by dependent artifacts.
 // As we assume that JPMS is used for J9+ environments, this is not performed for
