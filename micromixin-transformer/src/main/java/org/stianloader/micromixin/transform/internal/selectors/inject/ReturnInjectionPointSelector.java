@@ -32,9 +32,12 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
-        for (; insn != null && insn != guard; insn = insn.getNext()) {
+        for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
                 return insn;
+            }
+            if(insn == guard) {
+                break;
             }
         }
 
@@ -54,9 +57,12 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
 
-        for (; insn != null && insn != guard; insn = insn.getNext()) {
+        for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
                 matched.add(insn);
+            }
+            if(insn == guard) {
+                break;
             }
         }
 
