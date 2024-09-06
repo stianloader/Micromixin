@@ -266,7 +266,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             if (this.captureLocalsEarly(sourceStub.sourceNode, to, method, insn, sharedBuilder)) {
                 continue;
             }
-            if (returnType != 'V' && category2) {
+            if (category2) {
                 // This method could theoretically work with both cat 1 and cat 2 return types,
                 // but uses the local variable table for temporary storage
                 int returnOpcode = ASMUtil.getReturnOpcode(returnType);
@@ -289,7 +289,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(this.cancellable ? Opcodes.ICONST_1 : Opcodes.ICONST_0));
                 injected.add(new VarInsnNode(loadOpcode, lvt0));
                 String ctorDesc;
-                if (storedType == 'L') {
+                if (storeOpcode == Opcodes.ASTORE) {
                     ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
                 } else {
                     ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
@@ -351,7 +351,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 injected.add(new InsnNode(Opcodes.SWAP));
                 // Now RET, CIR, CIR, NAME, CANCELLABLE, RET
                 String ctorDesc;
-                if (storedType == 'L') {
+                if (storedType == 'L' || storedType == '[') {
                     ctorDesc = "(Ljava/lang/String;ZLjava/lang/Object;)V";
                 } else {
                     ctorDesc = "(Ljava/lang/String;Z" + ((char) storedType) + ")V";
@@ -383,7 +383,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     // Now RET, CIR
                     if (returnOpcode == Opcodes.ARETURN) {
                         injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "getReturnValue", "()Ljava/lang/Object;"));
-                        injected.add(new TypeInsnNode(Opcodes.CHECKCAST, method.desc.substring(method.desc.lastIndexOf(')') + 2, method.desc.length() - 1)));
+                        String castDesc;
+                        if (returnType == '[') {
+                            castDesc = method.desc.substring(method.desc.lastIndexOf(')') + 1, method.desc.length());
+                        } else {
+                            castDesc = method.desc.substring(method.desc.lastIndexOf(')') + 2, method.desc.length() - 1);
+                        }
+                        injected.add(new TypeInsnNode(Opcodes.CHECKCAST, castDesc));
                     } else {
                         injected.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, "getReturnValue" + ((char) returnType), "()" + ((char) returnType)));
                     }
