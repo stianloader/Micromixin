@@ -9,6 +9,7 @@ import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.CancellableTest;
 import org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
+import org.stianloader.micromixin.test.j8.targets.InjectReturnTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
 import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
@@ -59,7 +60,27 @@ public class TestHarness {
         runConstructorInjectionTest(report);
         runCancellableTest(report);
         runCanonicalOverwriteTest(report);
+        runInjectReturnTest(report);
         return report;
+    }
+
+    public static void runInjectReturnTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnit("InjectReturnTest.assertValueArray", InjectReturnTest::assertValueArray);
+        set.addUnit("InjectReturnTest.assertValueB", InjectReturnTest::assertValueB);
+        set.addUnit("InjectReturnTest.assertValueC", InjectReturnTest::assertValueC);
+        set.addUnit("InjectReturnTest.assertValueD", InjectReturnTest::assertValueD);
+        set.addUnit("InjectReturnTest.assertValueF", InjectReturnTest::assertValueF);
+        set.addUnit("InjectReturnTest.assertValueI", InjectReturnTest::assertValueI);
+        set.addUnit("InjectReturnTest.assertValueJ", InjectReturnTest::assertValueJ);
+        set.addUnit("InjectReturnTest.assertValueObject", InjectReturnTest::assertValueObject);
+        set.addUnit("InjectReturnTest.assertValueS", InjectReturnTest::assertValueS);
+        set.addUnit("InjectReturnTest.assertValueV", InjectReturnTest::assertValueV);
+        set.addUnit("InjectReturnTest.assertValueZ", InjectReturnTest::assertValueZ);
+
+        LoggerFactory.getLogger(TestHarness.class).info("InjectReturnTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runCanonicalOverwriteTest(@NotNull TestReport report) {
@@ -908,6 +929,7 @@ public class TestHarness {
 
     public static void runInjectionHeadTests(TestReport report) {
         TestSet set = new TestSet();
+        set.addUnit("InjectionHeadTest.expectNoThrowArray", InjectionHeadTest::expectNoThrowArray);
         set.addUnit("InjectionHeadTest.expectNoThrowV", InjectionHeadTest::expectNoThrowV);
         set.addUnit("InjectionHeadTest.expectNoThrowB", InjectionHeadTest::expectNoThrowB);
         set.addUnit("InjectionHeadTest.expectNoThrowC", InjectionHeadTest::expectNoThrowC);

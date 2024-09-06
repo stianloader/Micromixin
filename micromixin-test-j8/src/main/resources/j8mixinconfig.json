@@ -27,6 +27,7 @@
     "ConstructorInjectionMixins$ModifySuperconstructorArg",
     "InjectionHeadTestMixins",
     "InjectorRemapTestMixins",
+    "InjectReturnTestMixins",
     "LocalCaptureTestMixins",
     "LocalPrintingTestMixins",
     "MixinOverwriteTestMixins",

@@ -27,6 +27,12 @@ public class InjectionHeadTestMixins {
     // (CI injects cannot operate where CIR would be appropriate)
     // The signature of the CIR does not influence selection.
 
+    @Inject(method = "expectNoThrowArray", at = @At("HEAD"), cancellable = true)
+    private static void injectExpectNoThrowArray(CallbackInfoReturnable<Object[]> cir) {
+        cir.setReturnValue(null);
+        cir.cancel();
+    }
+
     @Inject(target = @Desc(value = "expectNoThrowB", ret = byte.class),
             cancellable = true,
             at = @At("HEAD"))

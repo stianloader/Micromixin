@@ -2,6 +2,10 @@ package org.stianloader.micromixin.test.j8.targets;
 
 public class InjectionHeadTest {
 
+    public static Object[] expectNoThrowArray() {
+        throw new AssertionError();
+    }
+
     public static byte expectNoThrowB() {
         throw new AssertionError();
     }
