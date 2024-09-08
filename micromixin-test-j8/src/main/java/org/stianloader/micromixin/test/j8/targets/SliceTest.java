@@ -215,4 +215,34 @@ public class SliceTest {
         val.add(MutableInt.valueOf(2));
         return val;
     }
+
+    public static MutableInt sliceTest5InjectA(MutableInt val) {
+        val.add(MutableInt.valueOf(2));
+        if (val.intValue() > 10) {
+            return val;
+        }
+        val.add(MutableInt.valueOf(5));
+        val.add(MutableInt.valueOf(2));
+        return val;
+    }
+
+    public static MutableInt sliceTest5InjectB(MutableInt val) {
+        val.add(MutableInt.valueOf(2));
+        if (val.intValue() > 10) {
+            return val;
+        }
+        val.add(MutableInt.valueOf(5));
+        val.add(MutableInt.valueOf(2));
+        return val;
+    }
+
+    public static MutableInt sliceTest5InjectC(MutableInt val) {
+        val.add(MutableInt.valueOf(2));
+        if (val.intValue() > 10) {
+            return val;
+        }
+        val.add(MutableInt.valueOf(5));
+        val.add(MutableInt.valueOf(2));
+        return val;
+    }
 }

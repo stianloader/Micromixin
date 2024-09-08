@@ -145,4 +145,43 @@ public class SliceTestMixins {
     private static void slice4InjectD(MutableInt i, CallbackInfoReturnable<MutableInt> cir) {
         i.mul(2);
     }
+
+    @Inject(
+        at = @At(value = "TAIL", slice = "slice1"),
+        target = @Desc(value = "sliceTest5InjectA", args = MutableInt.class, ret = MutableInt.class),
+        slice = {
+            @Slice(to = @At(value = "CONSTANT", args = "intValue=5", slice = "slice0"), id = "slice1"),
+            @Slice(to = @At(value = "CONSTANT", args = "intValue=5"), id = "slice0"),
+        },
+        require = 1
+    )
+    private static void slice5InjectA(MutableInt i, CallbackInfoReturnable<MutableInt> cir) {
+        i.mul(2);
+    }
+
+    @Inject(
+        at = @At(value = "RETURN", slice = "slice1"),
+        target = @Desc(value = "sliceTest5InjectB", args = MutableInt.class, ret = MutableInt.class),
+        slice = {
+            @Slice(to = @At(value = "RETURN", slice = "slice0"), id = "slice1"),
+            @Slice(to = @At(value = "CONSTANT", args = "intValue=5"), id = "slice0"),
+        },
+        require = 1
+    )
+    private static void slice5InjectB(MutableInt i, CallbackInfoReturnable<MutableInt> cir) {
+        i.mul(2);
+    }
+
+    @Inject(
+        at = @At(value = "TAIL", slice = "slice1"),
+        target = @Desc(value = "sliceTest5InjectC", args = MutableInt.class, ret = MutableInt.class),
+        slice = {
+            @Slice(to = @At(value = "RETURN", slice = "slice0"), id = "slice1"),
+            @Slice(to = @At(value = "CONSTANT", args = "intValue=5"), id = "slice0"),
+        },
+        require = 1
+    )
+    private static void slice5InjectC(MutableInt i, CallbackInfoReturnable<MutableInt> cir) {
+        i.mul(2);
+    }
 }

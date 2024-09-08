@@ -347,7 +347,13 @@ public class TestHarness {
         set.addUnitAssertEquals("SliceTest.sliceTest4InjectD{1}", () -> SliceTest.sliceTest4InjectD(new MutableInt(0)).intValue(), 9);
         set.addUnitAssertEquals("SliceTest.sliceTest4InjectD{2}", () -> SliceTest.sliceTest4InjectD(new MutableInt(9)).intValue(), 22);
         set.addUnitExpectClassloadingFailure("org.stianloader.micromixin.test.j8.targets.SliceTest$InvalidlyExcludedTailTest");
-        AmbigiousSliceTest.class.toString();
+        set.addUnit("AmbigiousSliceTest.target", () -> AmbigiousSliceTest.target());
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectA{1}", () -> SliceTest.sliceTest5InjectA(new MutableInt(0)).intValue(), 9);
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectA{2}", () -> SliceTest.sliceTest5InjectA(new MutableInt(9)).intValue(), 22);
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectB{1}", () -> SliceTest.sliceTest5InjectB(new MutableInt(0)).intValue(), 9);
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectB{2}", () -> SliceTest.sliceTest5InjectB(new MutableInt(9)).intValue(), 22);
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectC{1}", () -> SliceTest.sliceTest5InjectC(new MutableInt(0)).intValue(), 9);
+        set.addUnitAssertEquals("SliceTest.sliceTest5InjectC{2}", () -> SliceTest.sliceTest5InjectC(new MutableInt(9)).intValue(), 22);
 
         LoggerFactory.getLogger(TestHarness.class).info("SliceTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
