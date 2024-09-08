@@ -77,7 +77,6 @@ public class MixinAtAnnotation {
                     dependencies = new ArrayList<MixinAtAnnotation>();
                     dependents.put(slice.from.slice, dependencies);
                 }
-                ats.add(slice.from);
                 deps.add(slice.from.slice);
             }
             if (!slice.id.equals("") || !slice.to.slice.equals("")) {
@@ -86,7 +85,6 @@ public class MixinAtAnnotation {
                     dependencies = new ArrayList<MixinAtAnnotation>();
                     dependents.put(slice.to.slice, dependencies);
                 }
-                ats.add(slice.to);
                 deps.add(slice.to.slice);
             }
         }
@@ -173,7 +171,7 @@ public class MixinAtAnnotation {
             evaluatedSlices.add(slice);
             // Sanity test, can be freely committed out in prod (though I'll probably won't for sanity reasons)
             if (!evaluatedSlices.containsAll(sliceDependenciesDeep.get(slice).keySet())) {
-                throw new IllegalStateException("Slice " + slice + " depends on non-evaluated slices. This is an internal algorithmic error - please report this issue to the micromixin maintainers.");
+                throw new AssertionError("Slice " + slice + " depends on non-evaluated slices. This is an internal algorithmic error - please report this issue to the micromixin maintainers.");
             }
 
             MixinSliceAnnotation sliceAnnot = name2slice.get(slice);
