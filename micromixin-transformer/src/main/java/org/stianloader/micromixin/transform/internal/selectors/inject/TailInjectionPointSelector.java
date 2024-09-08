@@ -30,11 +30,14 @@ public class TailInjectionPointSelector extends InjectionPointSelector implement
     @Nullable
     public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode guard = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
-        AbstractInsnNode insn = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
+        AbstractInsnNode insn = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
-        for (; insn != null && insn != guard; insn = insn.getPrevious()) {
+        for (; insn != null; insn = insn.getPrevious()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
                 return insn;
+            }
+            if(insn == guard) {
+                break;
             }
         }
 

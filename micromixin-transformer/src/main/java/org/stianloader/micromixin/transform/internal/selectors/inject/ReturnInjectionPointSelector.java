@@ -30,7 +30,7 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
     @Nullable
     public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
         for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {
@@ -55,7 +55,7 @@ public class ReturnInjectionPointSelector extends InjectionPointSelector impleme
     public Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         List<AbstractInsnNode> matched = new ArrayList<AbstractInsnNode>();
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
         for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isReturn(insn.getOpcode())) {

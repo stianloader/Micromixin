@@ -33,11 +33,14 @@ public class LoadInjectionPointSelector extends InjectionPointSelector implement
             @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper,
             @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
-        for (; insn != null && insn != guard; insn = insn.getNext()) {
+        for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isLoad(insn.getOpcode())) {
                 return insn;
+            }
+            if(insn == guard) {
+                break;
             }
         }
 
@@ -57,11 +60,14 @@ public class LoadInjectionPointSelector extends InjectionPointSelector implement
             @NotNull StringBuilder sharedBuilder) {
         List<AbstractInsnNode> matched = new ArrayList<AbstractInsnNode>();
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
-        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getAfterSelected(method, remapper, sharedBuilder);
+        AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
-        for (; insn != null && insn != guard; insn = insn.getNext()) {
+        for (; insn != null; insn = insn.getNext()) {
             if (ASMUtil.isLoad(insn.getOpcode())) {
                 matched.add(insn);
+            }
+            if(insn == guard) {
+                break;
             }
         }
 
