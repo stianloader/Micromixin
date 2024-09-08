@@ -65,6 +65,38 @@ public class SlicedInjectionPointSelector {
     }
 
     /**
+     * Obtains the instruction immediately after the next instruction.
+     *
+     * <p>Handle with care, improper use may lead to unexpected behaviour with frames or jumps!
+     * The method is mainly intended to be used in order to easily check whether an instruction lies between
+     * two other instructions.
+     *
+     * @param method The method to find the entrypoints in.
+     * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
+     * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
+     * @return Instruction immediately after the next instruction.
+     * @deprecated Not every instruction has a next instruction. This applies to the last instruction, usually a
+     * return but sometimes also an {@link Opcodes#ATHROW}. While this method will in this case return the last instruction,
+     * this will not always be what depending logic had in mind. As such, this method is unused by micromixin-transformer
+     * internals and will be removed once permitted.
+     */
+    @Deprecated
+    @ScheduledForRemoval(inVersion = "0.7.0")
+    public AbstractInsnNode getAfterSelected(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        AbstractInsnNode first = this.getFirstInsn(method, remapper, sharedBuilder);
+        if (first == null) {
+            return null;
+        }
+        AbstractInsnNode selected = ASMUtil.afterInstruction(first);
+        AbstractInsnNode afterSelected = selected.getNext();
+        if (afterSelected == null) {
+            return selected;
+        } else {
+            return afterSelected;
+        }
+    }
+
+    /**
      * Obtains the first {@link AbstractInsnNode} that corresponds to the first applicable entrypoint within
      * the provided method as defined by this {@link InjectionPointSelector}. The {@link AbstractInsnNode} may
      * not be virtual, that is it may not have an {@link AbstractInsnNode#getOpcode() opcode} value of -1.
