@@ -70,7 +70,7 @@ public class MixinMethodStub implements ClassMemberStub {
         }
 
         if (annotations.isEmpty()) {
-            if (method.name.equals("<init>") && method.desc.equals("()V")) {
+            if (method.name.equals("<init>")) {
                 annotations.add(new VirtualConstructorMergeAnnotation());
             } else if (method.name.equals("<clinit>") && method.desc.equals("()V")) {
                 annotations.add(new VirtualClInitMergeAnnotation(method));

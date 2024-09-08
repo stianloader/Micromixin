@@ -62,9 +62,6 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        if (!source.method.desc.equals("()V")) {
-            throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + source.method.name + source.method.desc + ". Expected no-args constructor!");
-        }
         AbstractInsnNode firstInsn = getConstructorInvokeInsn(source.owner, source.method).getNext();
         if (firstInsn == null) {
             return; // Nothing to merge
@@ -74,7 +71,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
             throw new AssertionError(); // Sadly `InsnList#getLast` is not nullable due to empty lists being a thing.
         }
         for (MethodNode m : to.methods) {
-            if (m.name.equals("<init>")) {
+            if (m.name.equals("<init>") && m.desc.equals(source.method.desc)) {
                 MethodInsnNode targetInsn = getConstructorInvokeInsn(to, m);
                 if (targetInsn.owner.equals(to.superName)) {
                     CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, hctx.lineAllocator, true, false);
