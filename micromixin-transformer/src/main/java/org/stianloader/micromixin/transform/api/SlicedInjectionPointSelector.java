@@ -12,6 +12,7 @@ import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.stianloader.micromixin.transform.internal.selectors.inject.ReturnInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
@@ -275,7 +276,7 @@ public class SlicedInjectionPointSelector {
      * @since 0.6.2
      */
     public boolean supportsInstanceCaptureInConstructors() {
-        return this.unsafe || this.selector == TailInjectionPointSelector.INSTANCE;
+        return this.unsafe || this.selector == TailInjectionPointSelector.INSTANCE || this.selector == ReturnInjectionPointSelector.INSTANCE;
     }
 
     /**
