@@ -116,6 +116,45 @@ public class TestHarness {
 
         set.addUnitAssertEquals("ConstructorInjectionTest.ModifySuperconstructorArg", () -> new ConstructorInjectionTest.ModifySuperconstructorArg().intValue(), 8);
 
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$InjectHeadStatic");
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest$InjectHeadVirtual");
+        set.addUnit("ConstructorInjectionTest.InjectReturnStatic", () -> {
+            int cc = ConstructorInjectionTest.InjectReturnStatic.callerCounter;
+            if (new ConstructorInjectionTest.InjectReturnStatic(7).intValue() != 7) {
+                throw new AssertionError("Value != 7");
+            }
+            if (cc + 1 != ConstructorInjectionTest.InjectReturnStatic.callerCounter) {
+                throw new AssertionError("Callback not called?");
+            }
+        });
+        set.addUnit("ConstructorInjectionTest.InjectReturnVirtual", () -> {
+            int cc = ConstructorInjectionTest.InjectReturnVirtual.callerCounter;
+            if (new ConstructorInjectionTest.InjectReturnVirtual(7).intValue() != 21) {
+                throw new AssertionError("Value != 21");
+            }
+            if (cc + 1 != ConstructorInjectionTest.InjectReturnVirtual.callerCounter) {
+                throw new AssertionError("Callback not called?");
+            }
+        });
+        set.addUnit("ConstructorInjectionTest.InjectTailStatic", () -> {
+            int cc = ConstructorInjectionTest.InjectTailStatic.callerCounter;
+            if (new ConstructorInjectionTest.InjectTailStatic(7).intValue() != 7) {
+                throw new AssertionError("Value != 7");
+            }
+            if (cc + 1 != ConstructorInjectionTest.InjectTailStatic.callerCounter) {
+                throw new AssertionError("Callback not called?");
+            }
+        });
+        set.addUnit("ConstructorInjectionTest.InjectTailVirtual", () -> {
+            int cc = ConstructorInjectionTest.InjectTailVirtual.callerCounter;
+            if (new ConstructorInjectionTest.InjectTailVirtual(7).intValue() != 21) {
+                throw new AssertionError("Value != 7");
+            }
+            if (cc + 1 != ConstructorInjectionTest.InjectTailVirtual.callerCounter) {
+                throw new AssertionError("Callback not called?");
+            }
+        });
+
         LoggerFactory.getLogger(TestHarness.class).info("ConstructorInjectionTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

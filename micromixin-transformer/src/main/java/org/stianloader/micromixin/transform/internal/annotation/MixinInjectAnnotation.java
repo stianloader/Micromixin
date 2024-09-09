@@ -54,10 +54,6 @@ import org.stianloader.micromixin.transform.internal.util.locals.LocalCaptureRes
 import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
 
 public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
-
-    @NotNull
-    private static final String CALLBACK_INFO_DESC = "L" + ASMUtil.CALLBACK_INFO_NAME + ";";
-
     private final int allow;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> at;
@@ -717,14 +713,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         DescString targetDesc = new DescString(targetMethod.desc);
 
         int lvtIndex = 0;
-        if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
+        if ((targetMethod.access & Opcodes.ACC_STATIC) == 0) {
             lvtIndex++;
         }
 
         while (handlerDesc.hasNext() && targetDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
-            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
-                if (this.injectSource.desc.startsWith("(" + CALLBACK_INFO_DESC + ")")
+            if (handlerType.equals(ASMUtil.CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
+                if (this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_DESC + ")")
                         || this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC + ")")) {
                     // Not capturing any argument is supported even in the case of an argument underflow.
                     return;
@@ -756,7 +752,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     + "the target method has more arguments than the source method is capturing.");
         } else if (handlerDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
-            if (handlerType.equals(CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
+            if (handlerType.equals(ASMUtil.CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
                 return;
             }
             // handler wishes to capture more arguments than it should.
