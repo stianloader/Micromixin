@@ -104,4 +104,42 @@ public class ConstructorInjectionMixins {
             return 8;
         }
     }
+
+    @Mixin(ConstructorInjectionTest.RedirectInConstructorStatic.class)
+    private static class RedirectInConstructorStatic {
+        @Redirect(at = @At(value = "INVOKE", target = "set"), method = "<init>")
+        private static MutableInt onSet(ConstructorInjectionTest.RedirectInConstructorStatic caller, int value) {
+            return caller.add(value);
+        }
+    }
+
+    @Mixin(ConstructorInjectionTest.RedirectInConstructorStaticCapture.class)
+    private static class RedirectInConstructorStaticCapture {
+        @Redirect(at = @At(value = "INVOKE", target = "set"), method = "<init>")
+        private static MutableInt onSet(ConstructorInjectionTest.RedirectInConstructorStaticCapture caller, int value, int captured) {
+            if (captured != value) {
+                throw new AssertionError("Capture and value mismatch");
+            }
+            return caller.add(value);
+        }
+    }
+
+    @Mixin(ConstructorInjectionTest.RedirectInConstructorVirtual.class)
+    private static class RedirectInConstructorVirtual {
+        @Redirect(at = @At(value = "INVOKE", target = "set"), method = "<init>")
+        private MutableInt onSet(ConstructorInjectionTest.RedirectInConstructorVirtual caller, int value) {
+            return caller.add(value);
+        }
+    }
+
+    @Mixin(ConstructorInjectionTest.RedirectInConstructorVirtualCapture.class)
+    private static class RedirectInConstructorVirtualCapture {
+        @Redirect(at = @At(value = "INVOKE", target = "set"), method = "<init>")
+        private MutableInt onSet(ConstructorInjectionTest.RedirectInConstructorVirtualCapture caller, int value, int captured) {
+            if (captured != value) {
+                throw new AssertionError("Capture and value mismatch");
+            }
+            return caller.add(value);
+        }
+    }
 }

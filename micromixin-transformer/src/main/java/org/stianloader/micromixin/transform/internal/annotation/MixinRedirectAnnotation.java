@@ -171,9 +171,6 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                     if ((this.injectSource.access & Opcodes.ACC_STATIC) == 0) {
                         throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + ". Target is static, but the mixin is not.");
                     }
-                } else if ((this.injectSource.access & Opcodes.ACC_STATIC) != 0) {
-                    // Technically that one could be doable, but it'd be nasty.
-                    throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " targets " + to.name + "." + targetMethod.name + targetMethod.desc + " target is not static, but the callback handler is.");
                 }
 
                 {
@@ -321,7 +318,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         }
 
         DescString targetMethodDesc = new DescString(targetMethod.desc);
-        int capturedArgIndex = (this.injectSource.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+        int capturedArgIndex = (targetMethod.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
         do {
             String capturedType = remainingHandlerSignature.nextType();
             ArgumentType action = ArgumentCaptureContext.getType(this.injectSource.invisibleParameterAnnotations, handlerSignatureIndex++);

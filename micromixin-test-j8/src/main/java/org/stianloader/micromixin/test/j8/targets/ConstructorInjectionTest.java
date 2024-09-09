@@ -63,4 +63,32 @@ public class ConstructorInjectionTest {
             super(2);
         }
     }
+
+    public static class RedirectInConstructorStatic extends MutableInt {
+        public RedirectInConstructorStatic(int value) {
+            super(2);
+            this.set(value);
+        }
+    }
+
+    public static class RedirectInConstructorStaticCapture extends MutableInt {
+        public RedirectInConstructorStaticCapture(int value) {
+            super(2);
+            this.set(value);
+        }
+    }
+
+    public static class RedirectInConstructorVirtual extends MutableInt {
+        public RedirectInConstructorVirtual(int value) {
+            super(2);
+            this.set(value);
+        }
+    }
+
+    public static class RedirectInConstructorVirtualCapture extends MutableInt {
+        public RedirectInConstructorVirtualCapture(int value) {
+            super(2);
+            this.set(value);
+        }
+    }
 }

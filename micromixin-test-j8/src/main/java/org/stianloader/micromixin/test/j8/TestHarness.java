@@ -154,6 +154,18 @@ public class TestHarness {
                 throw new AssertionError("Callback not called?");
             }
         });
+        set.addUnitAssertEquals("ConstructorInjectionTest.RedirectInConstructorStatic", () -> {
+            return new ConstructorInjectionTest.RedirectInConstructorStatic(7).intValue();
+        }, 9);
+        set.addUnitAssertEquals("ConstructorInjectionTest.RedirectInConstructorVirtual", () -> {
+            return new ConstructorInjectionTest.RedirectInConstructorVirtual(7).intValue();
+        }, 9);
+        set.addUnitAssertEquals("ConstructorInjectionTest.RedirectInConstructorStaticCapture", () -> {
+            return new ConstructorInjectionTest.RedirectInConstructorStaticCapture(7).intValue();
+        }, 9);
+        set.addUnitAssertEquals("ConstructorInjectionTest.RedirectInConstructorVirtualCapture", () -> {
+            return new ConstructorInjectionTest.RedirectInConstructorVirtualCapture(7).intValue();
+        }, 9);
 
         LoggerFactory.getLogger(TestHarness.class).info("ConstructorInjectionTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
