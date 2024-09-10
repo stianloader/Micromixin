@@ -13,11 +13,11 @@ public class TestReport {
     public Throwable runTest(Runnable x) {
         try {
             x.run();
-            testSucceedCount.incrementAndGet();
+            this.testSucceedCount.incrementAndGet();
             return null;
         } catch (Throwable t) {
-            testFailureCount.incrementAndGet();
-            testFailures.add(t);
+            this.testFailureCount.incrementAndGet();
+            this.testFailures.add(t);
             return t;
         }
     }

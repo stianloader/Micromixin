@@ -9,6 +9,7 @@ import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.CancellableTest;
 import org.stianloader.micromixin.test.j8.targets.CanonicalOverwriteTest;
 import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
+import org.stianloader.micromixin.test.j8.targets.ConstructorMergingTest;
 import org.stianloader.micromixin.test.j8.targets.InjectReturnTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
@@ -61,7 +62,43 @@ public class TestHarness {
         runCancellableTest(report);
         runCanonicalOverwriteTest(report);
         runInjectReturnTest(report);
+        runConstructorMergingTest(report);
         return report;
+    }
+
+    public static void runConstructorMergingTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("ConstructorMergingTest.intValue()", () -> {
+            return new ConstructorMergingTest(1).intValue();
+        }, 1);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField0", () -> {
+            return new ConstructorMergingTest(1).shadowField0;
+        }, 3);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField1", () -> {
+            return new ConstructorMergingTest(1).shadowField1;
+        }, 5);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField2", () -> {
+            return new ConstructorMergingTest(1).shadowField2;
+        }, 7);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField3", () -> {
+            return new ConstructorMergingTest(1).shadowField3;
+        }, 9);
+        set.addUnitAssertNotEquals("ConstructorMergingTest.getWitness0", () -> {
+            return new ConstructorMergingTest(1).getWitness0();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness1", () -> {
+            return new ConstructorMergingTest(1).getWitness1();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness2", () -> {
+            return new ConstructorMergingTest(1).getWitness2();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness3", () -> {
+            return new ConstructorMergingTest(1).getWitness3();
+        }, "0xA");
+
+        LoggerFactory.getLogger(TestHarness.class).info("ConstructorMergingTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runInjectReturnTest(@NotNull TestReport report) {

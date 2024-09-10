@@ -335,7 +335,7 @@ public class TestSet {
     }
 
     public void executeAll(TestReport report, Logger logger) {
-        for (TestUnit unit : units) {
+        for (TestUnit unit : this.units) {
             logger.info("  Executing {}", unit.name);
             Throwable t = report.runTest(unit.unit);
             if (t != null) {
