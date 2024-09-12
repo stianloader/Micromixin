@@ -33,6 +33,10 @@ public class ConstructorMergingMixins {
         this.witness2 = "0b" + Integer.toBinaryString(value);
     }
 
+    public ConstructorMergingMixins(String thingy) {
+        // Second constructor, it's there for other reasons
+    }
+
     @Shadow
     public int shadowField2 = 8;
     private String witness3 = "0x" + Integer.toHexString(10).toUpperCase(Locale.ROOT);

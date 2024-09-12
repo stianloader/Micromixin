@@ -17,6 +17,15 @@ public class ConstructorMergingTest extends MutableInt {
         }
     }
 
+    public ConstructorMergingTest(int value, Void otherConstructor) {
+        super(value);
+        if (Boolean.getBoolean("true")) {
+            return;
+        } else if (Boolean.getBoolean("false")) {
+            return;
+        }
+    }
+
     public Object getWitness0() {
         throw new UnsupportedOperationException();
     }

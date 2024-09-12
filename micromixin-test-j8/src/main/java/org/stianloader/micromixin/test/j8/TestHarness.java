@@ -69,32 +69,62 @@ public class TestHarness {
     public static void runConstructorMergingTest(@NotNull TestReport report) {
         TestSet set = new TestSet();
 
-        set.addUnitAssertEquals("ConstructorMergingTest.intValue()", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.intValue() [1]", () -> {
             return new ConstructorMergingTest(1).intValue();
         }, 1);
-        set.addUnitAssertEquals("ConstructorMergingTest.shadowField0", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField0 [1]", () -> {
             return new ConstructorMergingTest(1).shadowField0;
         }, 3);
-        set.addUnitAssertEquals("ConstructorMergingTest.shadowField1", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField1 [1]", () -> {
             return new ConstructorMergingTest(1).shadowField1;
         }, 5);
-        set.addUnitAssertEquals("ConstructorMergingTest.shadowField2", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField2 [1]", () -> {
             return new ConstructorMergingTest(1).shadowField2;
         }, 7);
-        set.addUnitAssertEquals("ConstructorMergingTest.shadowField3", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField3 [1]", () -> {
             return new ConstructorMergingTest(1).shadowField3;
         }, 9);
-        set.addUnitAssertNotEquals("ConstructorMergingTest.getWitness0", () -> {
+        set.addUnitAssertNotEquals("ConstructorMergingTest.getWitness0 [1]", () -> {
             return new ConstructorMergingTest(1).getWitness0();
         }, null);
-        set.addUnitAssertEquals("ConstructorMergingTest.getWitness1", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness1 [1]", () -> {
             return new ConstructorMergingTest(1).getWitness1();
         }, null);
-        set.addUnitAssertEquals("ConstructorMergingTest.getWitness2", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness2 [1]", () -> {
             return new ConstructorMergingTest(1).getWitness2();
         }, null);
-        set.addUnitAssertEquals("ConstructorMergingTest.getWitness3", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness3 [1]", () -> {
             return new ConstructorMergingTest(1).getWitness3();
+        }, "0xA");
+
+        // Same thing, but with another constructor
+
+        set.addUnitAssertEquals("ConstructorMergingTest.intValue() [2]", () -> {
+            return new ConstructorMergingTest(1, null).intValue();
+        }, 1);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField0 [2]", () -> {
+            return new ConstructorMergingTest(1, null).shadowField0;
+        }, 3);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField1 [2]", () -> {
+            return new ConstructorMergingTest(1, null).shadowField1;
+        }, 5);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField2 [2]", () -> {
+            return new ConstructorMergingTest(1, null).shadowField2;
+        }, 7);
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField [2]3", () -> {
+            return new ConstructorMergingTest(1, null).shadowField3;
+        }, 9);
+        set.addUnitAssertNotEquals("ConstructorMergingTest.getWitness0 [2]", () -> {
+            return new ConstructorMergingTest(1, null).getWitness0();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness1 [2]", () -> {
+            return new ConstructorMergingTest(1, null).getWitness1();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness2 [2]", () -> {
+            return new ConstructorMergingTest(1, null).getWitness2();
+        }, null);
+        set.addUnitAssertEquals("ConstructorMergingTest.getWitness3 [2]", () -> {
+            return new ConstructorMergingTest(1, null).getWitness3();
         }, "0xA");
 
         LoggerFactory.getLogger(TestHarness.class).info("ConstructorMergingTest:");
