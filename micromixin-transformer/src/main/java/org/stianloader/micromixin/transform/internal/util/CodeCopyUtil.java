@@ -147,7 +147,7 @@ public class CodeCopyUtil {
     }
 
     @Nullable
-    private static AbstractInsnNode duplicateRemap(@NotNull AbstractInsnNode in,
+    public static AbstractInsnNode duplicateRemap(@NotNull AbstractInsnNode in,
             @NotNull SimpleRemapper remapper, @NotNull LabelNodeMapper labelNodeMapper, @NotNull StringBuilder sharedBuilder,
             boolean invalidInvokestaticRemapping) {
         switch (in.getType()) {
@@ -253,7 +253,7 @@ public class CodeCopyUtil {
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
             @NotNull MethodNode output, @NotNull AbstractInsnNode previousOutInsn, @NotNull ClassNode targetClass, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator) {
-        copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, lineAllocator, false, false);
+        CodeCopyUtil.copyTo(source, startInInsn, endInInsn, sourceStub, output, previousOutInsn, targetClass, remapper, lineAllocator, false, false);
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,
@@ -266,18 +266,7 @@ public class CodeCopyUtil {
         Set<LabelNode> declaredLabels = new HashSet<LabelNode>();
         StringBuilder sharedBuilder = new StringBuilder();
         LabelNode endLabel = new LabelNode();
-        LabelNodeMapper labelMapper = new LabelNodeMapper() {
-            @Override
-            @NotNull
-            public LabelNode apply(LabelNode label) {
-                LabelNode l = labelMap.get(label);
-                if (l == null) {
-                  l = new LabelNode();
-                  labelMap.put(label, l);
-                }
-                return l;
-            }
-        };
+        LabelNodeMapper labelMapper = new LabelNodeMapper.LazyDuplicateLabelNodeMapper(labelMap);
         do {
             if (inInsn == null) {
                 inInsn = startInInsn;
@@ -298,7 +287,7 @@ public class CodeCopyUtil {
                 copiedInstructions.add(lineAllocator.reserve(sourceStub.sourceNode, inLineNumberNode, labelMapper.apply(inLineNumberNode.start)));
                 continue;
             }
-            AbstractInsnNode insn = duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder, invalidInvokestaticRemapping);
+            AbstractInsnNode insn = CodeCopyUtil.duplicateRemap(inInsn, remapper, labelMapper, sharedBuilder, invalidInvokestaticRemapping);
             if (insn != null) {
                 copiedInstructions.add(insn);
             }
@@ -311,7 +300,7 @@ public class CodeCopyUtil {
                 boolean end = labelMap.containsKey(node.end);
                 boolean handler = labelMap.containsKey(node.handler);
                 if (start != end || end != handler) {
-                    throw new AssertionError("Attempted to chop of a try-catch block of " + sourceStub.sourceNode.name + "." + source.name + source.desc + ". Start chopped: " + (!start) + ", end chopped: " + (!end) + ", handler chopped: " + (!handler) + ". This is likely a bug in the micromixin library.");
+                    throw new AssertionError("Attempted to chop off a try-catch block of " + sourceStub.sourceNode.name + "." + source.name + source.desc + ". Start chopped: " + (!start) + ", end chopped: " + (!end) + ", handler chopped: " + (!handler) + ". This is likely a bug in the micromixin library.");
                 } else if (start) {
                     String htype = node.type;
                     if (htype != null) {

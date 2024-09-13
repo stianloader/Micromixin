@@ -1,13 +1,24 @@
 package org.stianloader.micromixin.transform.internal.annotation;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.MixinVendor;
@@ -16,6 +27,7 @@ import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
+import org.stianloader.micromixin.transform.internal.util.LabelNodeMapper;
 
 public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -99,7 +111,8 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
         AbstractInsnNode firstInsn = VirtualConstructorMergeAnnotation.getConstructorInvokeInsn(source.owner, source.method).getNext();
 
         if (firstInsn == null) {
-            return; // Nothing to merge
+            this.logger.error(VirtualConstructorMergeAnnotation.class, "Unable to find superconstructor call for {}.{}{}: Constructor will not be merged.", source.owner, source.getName(), source.getDesc());
+            return; // Error state, gracefully recover. Likely a constructor that is unconditionally throwing.
         }
 
         AbstractInsnNode lastInsn = source.method.instructions.getLast();
@@ -123,8 +136,110 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     private void applySpongeian(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        // TODO Implement
-        throw new UnsupportedOperationException("Not yet implemented.");
+        if (!this.matchAny) {
+            throw new IllegalStateException("The spongeian mixin merging behaviour does not support the 'matchAny' attribute (it is enabled by default and micromixin does not allow disabling it.)");
+        }
+
+        AbstractInsnNode firstInsn = VirtualConstructorMergeAnnotation.getConstructorInvokeInsn(source.owner, source.method).getNext();
+
+        if (firstInsn == null) {
+            this.logger.error(VirtualConstructorMergeAnnotation.class, "Unable to find superconstructor call for {}.{}{}: Constructor will not be merged.", source.owner, source.getName(), source.getDesc());
+            return; // Error state, gracefully recover. Likely a constructor that is unconditionally throwing.
+        }
+
+        AbstractInsnNode insn = firstInsn;
+        while (insn != null && !(insn instanceof LineNumberNode)) {
+            insn = insn.getPrevious();
+        }
+
+        if (insn == null) {
+            throw new IllegalStateException("Unable to find the LineNumberNode corresponding to the superconstructor call for " + source.owner.name + "." + source.getName() + source.getDesc() + ". The SPONGE constructor merging behaviour does not support merging constructors with this metadata missing.");
+        }
+
+        int firstConstructorLine = ((LineNumberNode) insn).line;
+
+        insn = source.method.instructions.getLast();
+        while (!(insn instanceof LineNumberNode)) {
+            insn = insn.getPrevious();
+        }
+
+        int lastConstructorInsn = ((LineNumberNode) insn).line;
+
+        insn = firstInsn.getNext();
+
+        for (MethodNode method : to.methods) {
+            if (!method.name.equals("<init>")) {
+                continue;
+            }
+
+            AbstractInsnNode targetInstruction = VirtualConstructorMergeAnnotation.getConstructorInvokeInsn(to, method);
+
+            InsnList output = new InsnList();
+            Map<LabelNode, LabelNode> labelMap = new HashMap<LabelNode, LabelNode>();
+            Set<LabelNode> declaredLabels = new HashSet<LabelNode>();
+            AbstractInsnNode copyInsn = firstInsn;
+            LabelNode finalLabel = new LabelNode();
+            LabelNodeMapper labelMapper = new LabelNodeMapper.LazyDuplicateLabelNodeMapper(labelMap);
+            boolean copying = true;
+
+            while ((copyInsn = copyInsn.getNext()) != null) {
+                if (copyInsn instanceof LineNumberNode) {
+                    int line = ((LineNumberNode) copyInsn).line;
+                    copying = line <= firstConstructorLine || line > lastConstructorInsn;
+                }
+                if (!copying) {
+                    continue;
+                }
+
+                if (copyInsn.getOpcode() == Opcodes.RETURN) {
+                    // TODO detect and remove useless jumps (i.e. strip the last RETURN instruction)
+                    output.add(new JumpInsnNode(Opcodes.GOTO, finalLabel));
+                    continue;
+                } else if (copyInsn instanceof LabelNode) {
+                    declaredLabels.add((LabelNode) copyInsn);
+                } else if (copyInsn instanceof LineNumberNode) {
+                    LineNumberNode inLineNumberNode = (LineNumberNode) copyInsn;
+                    output.add(hctx.lineAllocator.reserve(sourceStub.sourceNode, inLineNumberNode, labelMapper.apply(inLineNumberNode.start)));
+                    continue;
+                }
+                // FIXME ensure that local variables are not chopped
+
+                AbstractInsnNode copiedInsn = CodeCopyUtil.duplicateRemap(copyInsn, remapper, labelMapper, sharedBuilder, true);
+                if (copiedInsn != null) {
+                    output.add(insn);
+                }
+            }
+
+            output.add(finalLabel);
+
+            List<TryCatchBlockNode> tryCatchBlocks = source.method.tryCatchBlocks;
+            if (tryCatchBlocks != null) {
+                for (TryCatchBlockNode node : tryCatchBlocks) {
+                    boolean start = labelMap.containsKey(node.start);
+                    boolean end = labelMap.containsKey(node.end);
+                    boolean handler = labelMap.containsKey(node.handler);
+                    if (start != end || end != handler) {
+                        throw new AssertionError("Attempted to chop off a try-catch block of " + sourceStub.sourceNode.name + "." + source.getName() + source.getDesc() + ". Start chopped: " + (!start) + ", end chopped: " + (!end) + ", handler chopped: " + (!handler) + ". This is likely a bug in the micromixin library.");
+                    } else if (start) {
+                        String htype = node.type;
+                        if (htype != null) {
+                            remapper.remapInternalName(htype, sharedBuilder);
+                        }
+                        if (method.tryCatchBlocks == null) {
+                            method.tryCatchBlocks = new ArrayList<TryCatchBlockNode>();
+                        }
+                        method.tryCatchBlocks.add(new TryCatchBlockNode(labelMap.get(node.start), labelMap.get(node.end), labelMap.get(node.handler), htype));
+                    }
+                }
+            }
+
+            // Verify integrity of labels
+            if (declaredLabels.size() < labelMap.size()) {
+                throw new AssertionError((labelMap.size() - declaredLabels.size()) + " more label(s) were chopped of while copying " + sourceStub.sourceNode.name + "." + source.getName() + source.getDesc() + " to " + to.name + "." + method.name + method.desc + ". This is likely a bug in the micromixin library.");
+            }
+
+            method.instructions.insert(targetInstruction, output);
+        }
     }
 
     @Override
