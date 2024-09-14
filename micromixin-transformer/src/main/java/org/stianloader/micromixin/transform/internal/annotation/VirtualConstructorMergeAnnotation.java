@@ -177,36 +177,44 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
             InsnList output = new InsnList();
             Map<LabelNode, LabelNode> labelMap = new HashMap<LabelNode, LabelNode>();
             Set<LabelNode> declaredLabels = new HashSet<LabelNode>();
-            AbstractInsnNode copyInsn = firstInsn;
             LabelNode finalLabel = new LabelNode();
             LabelNodeMapper labelMapper = new LabelNodeMapper.LazyDuplicateLabelNodeMapper(labelMap);
+            Map<LabelNode, Integer> labelToLineNumber = new HashMap<LabelNode, Integer>();
             boolean copying = true;
 
-            while ((copyInsn = copyInsn.getNext()) != null) {
-                if (copyInsn instanceof LineNumberNode) {
-                    int line = ((LineNumberNode) copyInsn).line;
-                    copying = line <= firstConstructorLine || line > lastConstructorInsn;
+            for (insn = firstInsn; insn != null; insn = insn.getNext()) {
+                if (insn instanceof LineNumberNode) {
+                    labelToLineNumber.put(((LineNumberNode) insn).start, ((LineNumberNode) insn).line);
+                }
+            }
+
+            for (insn = firstInsn; insn != null; insn = insn.getNext()) {
+                if (insn instanceof LabelNode) {
+                    Integer line = labelToLineNumber.get(insn);
+                    if (line != null) {
+                        copying = line <= firstConstructorLine || line > lastConstructorInsn;
+                    }
                 }
                 if (!copying) {
                     continue;
                 }
 
-                if (copyInsn.getOpcode() == Opcodes.RETURN) {
+                if (insn.getOpcode() == Opcodes.RETURN) {
                     // TODO detect and remove useless jumps (i.e. strip the last RETURN instruction)
                     output.add(new JumpInsnNode(Opcodes.GOTO, finalLabel));
                     continue;
-                } else if (copyInsn instanceof LabelNode) {
-                    declaredLabels.add((LabelNode) copyInsn);
-                } else if (copyInsn instanceof LineNumberNode) {
-                    LineNumberNode inLineNumberNode = (LineNumberNode) copyInsn;
+                } else if (insn instanceof LabelNode) {
+                    declaredLabels.add((LabelNode) insn);
+                } else if (insn instanceof LineNumberNode) {
+                    LineNumberNode inLineNumberNode = (LineNumberNode) insn;
                     output.add(hctx.lineAllocator.reserve(sourceStub.sourceNode, inLineNumberNode, labelMapper.apply(inLineNumberNode.start)));
                     continue;
                 }
                 // FIXME ensure that local variables are not chopped
 
-                AbstractInsnNode copiedInsn = CodeCopyUtil.duplicateRemap(copyInsn, remapper, labelMapper, sharedBuilder, true);
+                AbstractInsnNode copiedInsn = CodeCopyUtil.duplicateRemap(insn, remapper, labelMapper, sharedBuilder, true);
                 if (copiedInsn != null) {
-                    output.add(insn);
+                    output.add(copiedInsn);
                 }
             }
 
@@ -235,7 +243,22 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
 
             // Verify integrity of labels
             if (declaredLabels.size() < labelMap.size()) {
-                throw new AssertionError((labelMap.size() - declaredLabels.size()) + " more label(s) were chopped of while copying " + sourceStub.sourceNode.name + "." + source.getName() + source.getDesc() + " to " + to.name + "." + method.name + method.desc + ". This is likely a bug in the micromixin library.");
+                this.logger.info(VirtualConstructorMergeAnnotation.class, "Label map info for method {}.{}{} targetting {}.{}{}", source.owner.name, source.getName(), source.getDesc(), to.name, method.name, method.desc);
+                insn = source.method.instructions.getFirst();
+                while (insn != null) {
+                    if (insn instanceof LabelNode) {
+                        this.logger.info(VirtualConstructorMergeAnnotation.class, "LabelNode {} -- {} {} @ {}", insn.hashCode(), labelMap.containsKey(insn), declaredLabels.contains(insn), labelToLineNumber.get(insn));
+                    } else if (insn instanceof LineNumberNode) {
+                        this.logger.info(VirtualConstructorMergeAnnotation.class, "LineNumberNode {} -- {} @ {}", insn.hashCode(), ((LineNumberNode) insn).line, ((LineNumberNode) insn).start.hashCode());
+                    } else {
+                        this.logger.info(VirtualConstructorMergeAnnotation.class, "{} {}", insn.getClass().getSimpleName(), insn.hashCode());
+                    }
+                    if (insn == firstInsn) {
+                        this.logger.info(VirtualConstructorMergeAnnotation.class, "^^^ First instruction. Copying starts there");
+                    }
+                    insn = insn.getNext();
+                }
+                throw new AssertionError((labelMap.size() - declaredLabels.size()) + " more label(s) were chopped off while copying " + sourceStub.sourceNode.name + "." + source.getName() + source.getDesc() + " to " + to.name + "." + method.name + method.desc + ". This is likely a bug in the micromixin library.");
             }
 
             method.instructions.insert(targetInstruction, output);

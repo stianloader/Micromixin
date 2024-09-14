@@ -316,7 +316,7 @@ public class CodeCopyUtil {
 
         // Verify integrity of labels
         if (declaredLabels.size() < labelMap.size()) {
-            throw new AssertionError((labelMap.size() - declaredLabels.size()) + " more label(s) were chopped of while copying " + sourceStub.sourceNode.name + "." + source.name + source.desc+ " to " + targetClass.name + "." + output.name + output.desc + ". This is likely a bug in the micromixin library.");
+            throw new AssertionError((labelMap.size() - declaredLabels.size()) + " more label(s) were chopped off while copying " + sourceStub.sourceNode.name + "." + source.name + source.desc+ " to " + targetClass.name + "." + output.name + output.desc + ". This is likely a bug in the micromixin library.");
         }
 
         if (transformReturnToJump) {

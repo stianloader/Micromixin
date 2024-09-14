@@ -111,7 +111,7 @@ public class TestHarness {
         set.addUnitAssertEquals("ConstructorMergingTest.shadowField2 [2]", () -> {
             return new ConstructorMergingTest(1, null).shadowField2;
         }, 7);
-        set.addUnitAssertEquals("ConstructorMergingTest.shadowField [2]3", () -> {
+        set.addUnitAssertEquals("ConstructorMergingTest.shadowField [2]", () -> {
             return new ConstructorMergingTest(1, null).shadowField3;
         }, 9);
         set.addUnitAssertNotEquals("ConstructorMergingTest.getWitness0 [2]", () -> {
