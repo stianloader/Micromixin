@@ -4,20 +4,30 @@ import org.stianloader.micromixin.test.j8.MutableInt;
 
 public class SliceTest {
 
-    public static class InvalidlyExcludedTailTest {
-        public static void target() {
-            MutableInt val = MutableInt.valueOf(2);
-            val.add(MutableInt.valueOf(2));
-            val.add(MutableInt.valueOf(5));
-            val.add(MutableInt.valueOf(2));
-        }
-    }
-
     public static class AmbigiousSliceTest {
         public static void target() {
             MutableInt val = MutableInt.valueOf(2);
             val.add(MutableInt.valueOf(2));
             val.add(MutableInt.valueOf(5));
+            val.add(MutableInt.valueOf(5));
+            val.add(MutableInt.valueOf(2));
+        }
+    }
+
+    public static class AmbigiousToSliceTest {
+        public static int target() {
+            MutableInt val = MutableInt.valueOf(1);
+            val.add(MutableInt.valueOf(5));
+            val.add(MutableInt.valueOf(3));
+            val.add(MutableInt.valueOf(5));
+            return val.intValue();
+        }
+    }
+
+    public static class InvalidlyExcludedTailTest {
+        public static void target() {
+            MutableInt val = MutableInt.valueOf(2);
+            val.add(MutableInt.valueOf(2));
             val.add(MutableInt.valueOf(5));
             val.add(MutableInt.valueOf(2));
         }

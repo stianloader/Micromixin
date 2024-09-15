@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import org.stianloader.micromixin.test.j8.MutableInt;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
+import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousToSliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.InvalidlyExcludedTailTest;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
@@ -29,6 +30,22 @@ public class SliceTestMixins {
                 target = @Desc(value = "target", ret = void.class),
                 slice = @Slice(from = @At(value = "CONSTANT", args = "intValue=5")))
         private static void injector(CallbackInfo ci) { }
+    }
+
+    @Mixin(AmbigiousToSliceTest.class)
+    private static class AmbigiousToSliceMixin {
+        @Inject(
+            at = @At(value = "HEAD"),
+            method = "target()I",
+            slice = @Slice(
+                from = @At(value = "CONSTANT", args = "intValue=3"),
+                to = @At(value = "CONSTANT", args = "intValue=5")
+            ),
+            locals = LocalCapture.CAPTURE_FAILHARD
+        )
+        private static void injector(CallbackInfo ci, MutableInt captured) {
+            captured.mul(7);
+        }
     }
 
     @Mixin(InvalidlyExcludedTailTest.class)

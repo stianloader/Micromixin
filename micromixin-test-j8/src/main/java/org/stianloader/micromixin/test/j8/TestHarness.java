@@ -24,6 +24,7 @@ import org.stianloader.micromixin.test.j8.targets.ModifyVariableTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
+import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousToSliceTest;
 import org.stianloader.micromixin.test.j8.targets.StringTargetTest;
 import org.stianloader.micromixin.test.j8.targets.UniqueTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
@@ -472,6 +473,7 @@ public class TestHarness {
         set.addUnitAssertEquals("SliceTest.sliceTest5InjectB{2}", () -> SliceTest.sliceTest5InjectB(new MutableInt(9)).intValue(), 22);
         set.addUnitAssertEquals("SliceTest.sliceTest5InjectC{1}", () -> SliceTest.sliceTest5InjectC(new MutableInt(0)).intValue(), 9);
         set.addUnitAssertEquals("SliceTest.sliceTest5InjectC{2}", () -> SliceTest.sliceTest5InjectC(new MutableInt(9)).intValue(), 22);
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.SliceTest$AmbigiousToSliceTest");
 
         LoggerFactory.getLogger(TestHarness.class).info("SliceTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));

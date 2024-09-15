@@ -54,6 +54,7 @@
     "MultiInjectTestMixins",
     "SliceTestMixins",
     "SliceTestMixins$AmbigiousSliceTestMixin",
+    "SliceTestMixins$AmbigiousToSliceMixin",
     "SliceTestMixins$InvalidlyExcludedTailTestMixin",
     "StringTargetTestMixins$DetchedReturnDescriptorTarget",
     "StringTargetTestMixins$DotMixinTarget",
