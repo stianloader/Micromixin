@@ -65,4 +65,8 @@ public class ArgumentCaptureTest {
     public void captureOne(int argument) {
         // NOP
     }
+
+    public double injectCaptureAndAddDoubles(double arg0, double arg1, double arg2) {
+        return 0;
+    }
 }

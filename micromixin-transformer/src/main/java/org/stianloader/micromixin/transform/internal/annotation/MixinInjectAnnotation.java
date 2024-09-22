@@ -737,12 +737,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
 
             int refType = targetType.codePointAt(0);
-            output.add(new VarInsnNode(ASMUtil.getLoadOpcode(refType), lvtIndex++));
+            output.add(new VarInsnNode(ASMUtil.getLoadOpcode(refType), lvtIndex));
             if (ASMUtil.isCategory2(refType)) {
                 output.add(new InsnNode(Opcodes.DUP2_X1));
                 output.add(new InsnNode(Opcodes.POP2));
+                lvtIndex += 2;
             } else {
                 output.add(new InsnNode(Opcodes.SWAP));
+                lvtIndex++;
             }
         }
 

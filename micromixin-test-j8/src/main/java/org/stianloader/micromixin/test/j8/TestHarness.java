@@ -24,7 +24,6 @@ import org.stianloader.micromixin.test.j8.targets.ModifyVariableTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
-import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousToSliceTest;
 import org.stianloader.micromixin.test.j8.targets.StringTargetTest;
 import org.stianloader.micromixin.test.j8.targets.UniqueTest;
 import org.stianloader.micromixin.test.j8.targets.invalid.InjectorStackPosioningTest;
@@ -922,6 +921,9 @@ public class TestHarness {
                 throw new AssertionError("captureModifyConstantMulti5(9, 3) != 6; expected opposite");
             }
         });
+        set.addUnitAssertEquals("ArgumentCaptureTest.injectCaptureAndAddDoubles", () -> {
+            return new ArgumentCaptureTest().injectCaptureAndAddDoubles(1, 3, 5);
+        }, 9D);
         LoggerFactory.getLogger(TestHarness.class).info("ArgumentCaptureTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
