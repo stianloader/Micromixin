@@ -7,7 +7,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-backports'
-version = '0.6.5'
+version = '0.6.6'
 
 repositories {
     mavenCentral()
