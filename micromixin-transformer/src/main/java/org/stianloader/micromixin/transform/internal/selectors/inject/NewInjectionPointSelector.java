@@ -55,7 +55,7 @@ public class NewInjectionPointSelector extends InjectionPointSelector {
     private final InjectionPointTargetConstraint constraint;
 
     private NewInjectionPointSelector(@NotNull InjectionPointTargetConstraint constraint) {
-        super("oorg.spongepowered.asm.mixin.injection.points.BeforeNew", "NEW");
+        super("org.spongepowered.asm.mixin.injection.points.BeforeNew", "NEW");
         this.constraint = constraint;
     }
 
