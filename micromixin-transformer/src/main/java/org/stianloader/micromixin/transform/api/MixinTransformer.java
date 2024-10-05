@@ -208,12 +208,12 @@ public class MixinTransformer<M> {
         if (mixins == null) {
             return;
         }
-        this.logger.debug(MixinTransformer.class, "Transforming class {} using following stubs: {}", in.name, mixins);
+        this.getLogger().debug(MixinTransformer.class, "Transforming class {} using following stubs: {}", in.name, mixins);
         HandlerContextHelper hctx = HandlerContextHelper.from(in);
         StringBuilder sharedBuilder = new StringBuilder();
         for (MixinStub stub : mixins) {
             try {
-                this.logger.debug(MixinTransformer.class, "Applying mixin {} to transforming classnode {}.", stub.sourceNode.name, in.name);
+                this.getLogger().debug(MixinTransformer.class, "Applying mixin {} to transforming classnode {}.", stub.sourceNode.name, in.name);
                 stub.applyTo(in, hctx, sharedBuilder);
             } catch (Throwable t) {
                 if (t instanceof Error && !(t instanceof AssertionError)) {
@@ -242,7 +242,7 @@ public class MixinTransformer<M> {
                 }
             }
         }
-        hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder);
+        hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder, this.getLogger());
         if (MixinTransformer.DEBUG) {
             try {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
