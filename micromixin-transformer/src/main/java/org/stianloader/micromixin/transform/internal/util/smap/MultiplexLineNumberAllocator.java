@@ -102,7 +102,7 @@ public class MultiplexLineNumberAllocator {
         }
         FileSection fileSection = new FileSection(fileEntries);
         LineSection lineSection = new LineSection(lineInfos);
-        smap.appendStratum(stratum, fileSection, lineSection, "Stianloader Micromixin");
+        smap.appendStratum(stratum, fileSection, lineSection, "org.stianloader.micromixin.transformer");
         return smap;
     }
 

@@ -2,9 +2,11 @@ package org.stianloader.micromixin.test;
 
 import static org.junit.Assert.assertEquals;
 
+import java.security.CodeSource;
 import java.util.Arrays;
 
 import org.junit.Test;
+import org.objectweb.asm.ClassWriter;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 
 public class ASMUtilTest {

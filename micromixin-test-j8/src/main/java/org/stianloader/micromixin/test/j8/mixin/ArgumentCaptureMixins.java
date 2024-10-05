@@ -3,16 +3,36 @@ package org.stianloader.micromixin.test.j8.mixin;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.stianloader.micromixin.test.j8.MutableInt;
 import org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
 @Mixin(ArgumentCaptureTest.class)
 public class ArgumentCaptureMixins {
+
+    @Mixin(ArgumentCaptureTest.InvalidArgCaptureModifyArg.class)
+    private static class InvalidArgCaptureModifyArg {
+        @ModifyArg(method = "captureModifyArg", at = @At(value = "INVOKE", desc = @Desc(value = "add", owner = MutableInt.class, args = int.class, ret = MutableInt.class)))
+        private int captureModifyArg(int stack0, int arg0, int arg1) {
+            if (stack0 != 7) {
+                throw new AssertionError("'stack0' != 7");
+            }
+            if (arg0 != 1) {
+                throw new AssertionError("'arg0' != 1");
+            }
+            if (arg1 != 7) {
+                throw new AssertionError("'arg1' != 7");
+            }
+            return 3;
+        }
+    }
 
     @ModifyConstant(method = "captureModifyConstantMulti0", constant = @Constant(intValue = 0))
     private int captureModifyConstantMulti0(int originalReturnValue, int capturedArgumentA, int capturedArgumentB) {

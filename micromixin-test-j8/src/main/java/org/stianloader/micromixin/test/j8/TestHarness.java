@@ -924,6 +924,7 @@ public class TestHarness {
         set.addUnitAssertEquals("ArgumentCaptureTest.injectCaptureAndAddDoubles", () -> {
             return new ArgumentCaptureTest().injectCaptureAndAddDoubles(1, 3, 5);
         }, 9D);
+        set.addUnitExpectTransformationFailure("org.stianloader.micromixin.test.j8.targets.ArgumentCaptureTest$InvalidArgCaptureModifyArg");
         LoggerFactory.getLogger(TestHarness.class).info("ArgumentCaptureTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

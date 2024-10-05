@@ -1,6 +1,14 @@
 package org.stianloader.micromixin.test.j8.targets;
 
+import org.stianloader.micromixin.test.j8.MutableInt;
+
 public class ArgumentCaptureTest {
+
+    public static class InvalidArgCaptureModifyArg {
+        public int captureModifyArg(int a, int b) {
+            return new MutableInt(a).add(b).intValue();
+        }
+    }
 
     public boolean captureModifyConstant(boolean arg) {
         return false;

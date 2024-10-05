@@ -64,6 +64,7 @@ public class SMAPRoot {
     @Contract(mutates = "param1, param2", pure = false, value = "!null, !null -> this; null, _ -> fail; _, null -> fail")
     public SMAPRoot applyTo(@NotNull ClassNode node, @NotNull StringBuilder builder) {
         builder.setLength(0);
+        // FIXME do not overwrite the `sourceDebug` attribute
         node.sourceDebug = this.pushContents(builder).toString();
         return this;
     }

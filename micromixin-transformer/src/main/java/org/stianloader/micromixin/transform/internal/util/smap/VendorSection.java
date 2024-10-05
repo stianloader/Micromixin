@@ -7,6 +7,12 @@ public class VendorSection extends AbstractSMAPSection {
     @NotNull
     private final String vendorId;
 
+    /**
+     * Constructor for a new {@link VendorSection} with a given vendorId string. The vendorInfo
+     * attribute is left unspecified.
+     *
+     * @param vendorId The vendor Id. Must follow the package naming conventions as per JSR-45.
+     */
     public VendorSection(@NotNull String vendorId) {
         this.vendorId = vendorId;
     }
