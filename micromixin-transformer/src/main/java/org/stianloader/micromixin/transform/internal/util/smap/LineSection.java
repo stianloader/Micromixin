@@ -9,13 +9,13 @@ public class LineSection extends AbstractSMAPSection {
 
     public static class LineInfo {
 
+        public final int inputLineCount;
         // Technically only "inputStartLine" and "outputStartLine" are required - but we are not lazy people.
         // Outside of that, the performance implications (at least memory-wise) would be significant
-        private final int inputStartLine;
-        private final int lineFileId;
-        private final int inputLineCount;
-        private final int outputStartLine;
-        private final int outputLineIncrement;
+        public final int inputStartLine;
+        public final int lineFileId;
+        public final int outputLineIncrement;
+        public final int outputStartLine;
 
         public LineInfo(int inputStartLine, int lineFileId, int inputLineCount, int outputLineIncrement, int outputStartLine) {
             this.inputStartLine = inputStartLine;
@@ -35,10 +35,17 @@ public class LineSection extends AbstractSMAPSection {
         }
     }
 
+    @NotNull
     private final List<LineInfo> lineInfos;
 
-    public LineSection(List<LineInfo> lineInfos) {
+    public LineSection(@NotNull List<LineInfo> lineInfos) {
         this.lineInfos = lineInfos;
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public List<LineInfo> getLineInfos() {
+        return this.lineInfos;
     }
 
     @Override

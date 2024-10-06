@@ -18,6 +18,9 @@ import org.stianloader.micromixin.transform.internal.util.Atomics;
  */
 public class SMAPRoot {
 
+    @NotNull
+    public static final String MIXIN_STRATUM = "Mixin";
+
     private static AbstractSMAPSection parseSection(@NotNull String contents, int seekStart, @NotNull AtomicInteger seekEndOut) {
         if (contents.charAt(seekStart) != '*') {
             throw new IllegalStateException("Unexpected character at index " + seekStart + ". Expected an asterisk, got '" + contents.charAt(seekStart) + "' instead.");
@@ -103,6 +106,16 @@ public class SMAPRoot {
         return root;
     }
 
+    private static int seekEndOfLine(@NotNull String contents, int seekEnd) {
+        if (contents.charAt(--seekEnd) == '\r') {
+            return seekEnd;
+        } else if (contents.charAt(seekEnd) == '\n') {
+            return contents.charAt(seekEnd - 1) == '\r' ? seekEnd - 1 : seekEnd;
+        } else {
+            throw new IllegalStateException("'seekEnd' wasn't located at the start of a new line.");
+        }
+    }
+
     private static int seekStartOfLine(@NotNull String contents, int seekStart) {
         int indexCR = contents.indexOf('\r', seekStart);
         int indexLF = contents.indexOf('\n', seekStart);
@@ -112,16 +125,6 @@ public class SMAPRoot {
             return indexCR + 1;
         } else {
             throw new IllegalArgumentException("Missing CR/CRLF/LF, but the SMAP definition wasn't closed.");
-        }
-    }
-
-    private static int seekEndOfLine(@NotNull String contents, int seekEnd) {
-        if (contents.charAt(--seekEnd) == '\r') {
-            return seekEnd;
-        } else if (contents.charAt(seekEnd) == '\n') {
-            return contents.charAt(seekEnd - 1) == '\r' ? seekEnd - 1 : seekEnd;
-        } else {
-            throw new IllegalStateException("'seekEnd' wasn't located at the start of a new line.");
         }
     }
 
@@ -149,12 +152,12 @@ public class SMAPRoot {
             insertIndex = this.sections.size() - 1;
         }
 
-        this.sections.add(insertIndex, stratumSection);
-        this.sections.add(insertIndex, fileSection);
-        this.sections.add(insertIndex, lineSection);
         if (vendorSection != null) {
             this.sections.add(insertIndex, vendorSection);
         }
+        this.sections.add(insertIndex, lineSection);
+        this.sections.add(insertIndex, fileSection);
+        this.sections.add(insertIndex, stratumSection);
     }
 
     public void appendStratum(@NotNull String stratum, @NotNull FileSection fileSection,
@@ -197,6 +200,24 @@ public class SMAPRoot {
         }
 
         return this;
+    }
+
+    @Nullable
+    @Contract(pure = true)
+    public LineSection getLineSection(@NotNull String stratum) {
+        String currentStratum = this.defaultStratum;
+        for (AbstractSMAPSection smapSection : this.sections) {
+            if (smapSection instanceof StratumSection) {
+                currentStratum = ((StratumSection) smapSection).getStrataId();
+                while (Character.isWhitespace(currentStratum.charAt(0))) {
+                    currentStratum = currentStratum.substring(1);
+                }
+            } else if (smapSection instanceof LineSection && currentStratum.equals(stratum)) {
+                return (LineSection) smapSection;
+            }
+        }
+
+        return null;
     }
 
     @NotNull

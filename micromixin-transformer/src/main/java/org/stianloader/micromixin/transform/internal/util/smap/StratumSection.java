@@ -11,6 +11,11 @@ public class StratumSection extends AbstractSMAPSection {
         this.stratumId = stratumId;
     }
 
+    @Contract(pure = true)
+    public String getStrataId() {
+        return this.stratumId;
+    }
+
     @NotNull
     @Contract(mutates = "param1", pure = false, value = "!null -> param1; null -> fail")
     public StringBuilder pushContents(@NotNull StringBuilder sharedBuilder) {

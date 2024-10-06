@@ -76,7 +76,7 @@ public class MultiplexLineNumberAllocator {
     @NotNull
     public SMAPRoot exportToSMAP(@NotNull String stratum) {
         this.flushFrame();
-        SMAPRoot smap = new SMAPRoot(primaryFileName, stratum);
+        SMAPRoot smap = new SMAPRoot(this.primaryFileName, stratum);
         List<FileSectionEntry> fileEntries = new ArrayList<FileSectionEntry>();
         List<LineInfo> lineInfos = new ArrayList<LineInfo>();
         for (LineAllocationFrame frame : this.allocationFrames) {
@@ -138,8 +138,8 @@ public class MultiplexLineNumberAllocator {
     @Contract(mutates = "this", pure = false, value = "!null, !null -> new; null, _ -> fail; _, null -> fail")
     public LineNumberNode reserve(@NotNull ClassNode allocator, @NotNull LineNumberNode originNode, @NotNull LabelNode copiedStart) {
         if (this.currentAllocatorNode != allocator) {
-            this.currentAllocatorNode = Objects.requireNonNull(allocator, "allocator may not be null");
             this.flushFrame();
+            this.currentAllocatorNode = Objects.requireNonNull(allocator, "allocator may not be null");
         }
         if (this.currentAllocationSize == -1) {
             this.currentAllocatorStart = originNode.line;
