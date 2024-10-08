@@ -239,9 +239,9 @@ public class SlicedInjectionPointSelector {
 
     /**
      * Verify the integrity of a sliced injection point selector.
-     * At the core this method is responsible for ensuring that the {@link #getFrom() from}
-     * and the {@link #getTo() to} injection points exist and are in a valid order
-     * - that is {@link #getTo() to} may not match an instruction before {@link #getFrom() from}.
+     * At the core this method is responsible for ensuring that the 'from'
+     * and the 'to' injection points exist and are in a valid order - that is 'to' may not match
+     * an instruction before 'from'.
      *
      * <p>If the {@link SlicedInjectionPointSelector} is not valid, then an exception is thrown
      * with adequate information that ensures that the root cause can be properly traced back or otherwise
