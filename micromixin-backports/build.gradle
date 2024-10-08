@@ -7,7 +7,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-backports'
-version = '0.6.6'
+version = '0.7.0'
 
 repositories {
     mavenCentral()
@@ -23,8 +23,8 @@ dependencies {
 
     // Dependency required by mixin, but the dependency is not transitively provided.
     // We need it however.
-    implementation 'org.ow2.asm:asm-util:9.7'
-    implementation 'org.ow2.asm:asm-commons:9.7'
+    implementation 'org.ow2.asm:asm-util:9.7.1'
+    implementation 'org.ow2.asm:asm-commons:9.7.1'
 
     compileOnly 'org.jetbrains:annotations-java5:24.1.0'
 }

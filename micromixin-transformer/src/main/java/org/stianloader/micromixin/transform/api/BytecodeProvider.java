@@ -11,12 +11,16 @@ import org.objectweb.asm.tree.ClassNode;
  * is always given a Modularity attachment. The {@link MixinTransformer} will have the same type
  * of the modularity attachment as the {@link BytecodeProvider}.
  *
+ * <p>Implementors are highly recommended to also implements the {@link CodeSourceURIProvider} interface.
+ * Future versions of micromxin-transformer are likely to require all implementations of {@link BytecodeProvider}
+ * to also implement {@link CodeSourceURIProvider} for maintenance, stability and uniformity reasons.
+ *
  * @param <M> The type of the modularity attachment. A recommended type can be {@link ClassLoader},
  * but really anything goes, {@link Void} for example is perfectly fine as long as the {@link BytecodeProvider}
  * accounts for null attachments.
+ * @see CodeSourceURIProvider
  */
 public interface BytecodeProvider<M> {
-
     @NotNull
     ClassNode getClassNode(M modularityAttachment, @NotNull String internalName) throws ClassNotFoundException;
 }

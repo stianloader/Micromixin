@@ -11,7 +11,7 @@ plugins {
 
 group = 'org.stianloader'
 def archivesBaseName = 'micromixin-transformer'
-version = '0.6.6'
+version = '0.7.0'
 
 repositories {
     mavenLocal()
@@ -19,10 +19,10 @@ repositories {
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.7'
-    api 'org.ow2.asm:asm-commons:9.7'
-    api 'org.ow2.asm:asm-tree:9.7'
-    api 'org.ow2.asm:asm-util:9.7'
+    api 'org.ow2.asm:asm:9.7.1'
+    api 'org.ow2.asm:asm-commons:9.7.1'
+    api 'org.ow2.asm:asm-tree:9.7.1'
+    api 'org.ow2.asm:asm-util:9.7.1'
     api 'org.json:json:20230618' // Note: It is likely that one cannot update this dependency without breaking compilation. Handle with care.
     compileOnlyApi 'org.jetbrains:annotations-java5:24.1.0'
     // junit 4 is the last version of junit that I am aware of that still works with Java 6

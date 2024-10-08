@@ -1,10 +1,12 @@
 package org.stianloader.micromixin.transform.internal;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,26 +19,7 @@ import org.stianloader.micromixin.transform.internal.util.Objects;
 public class MixinStub implements Comparable<MixinStub> {
 
     @NotNull
-    public final MixinHeader header;
-    @NotNull
-    public final ClassNode sourceNode;
-    @NotNull
-    public final Collection<MixinMethodStub> methods;
-    @NotNull
-    public final Collection<MixinFieldStub> fields;
-    @Nullable
-    private final List<MixinParseException> delayedExceptions;
-
-    public MixinStub(@NotNull ClassNode sourceNode, @NotNull MixinHeader header, @NotNull Collection<MixinMethodStub> methods, @NotNull Collection<MixinFieldStub> fields, @Nullable List<MixinParseException> delayedExceptions) {
-        this.sourceNode = sourceNode;
-        this.header = header;
-        this.methods = methods;
-        this.fields = fields;
-        this.delayedExceptions = delayedExceptions;
-    }
-
-    @NotNull
-    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
+    public static MixinStub parse(int defaultPriority, @NotNull ClassNode node, @NotNull MixinTransformer<?> transformer, @Nullable URI codeSourceURI, @NotNull StringBuilder sharedBuilder) {
         List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
         List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
         List<MixinParseException> delayedExceptions = null;
@@ -75,16 +58,30 @@ public class MixinStub implements Comparable<MixinStub> {
                 }
             }
         }
-        return new MixinStub(node, MixinHeader.parse(node, defaultPriority), Collections.unmodifiableCollection(methods), Collections.unmodifiableCollection(fields), delayedExceptions);
+        return new MixinStub(node, MixinHeader.parse(node, defaultPriority), Collections.unmodifiableCollection(methods), Collections.unmodifiableCollection(fields), delayedExceptions, codeSourceURI);
     }
 
-    @Override
-    public int compareTo(MixinStub o) {
-        int priority = this.header.priority - o.header.priority;
-        if (priority != 0) {
-            return priority;
-        }
-        return this.sourceNode.name.compareTo(o.sourceNode.name); // Under rather rare circumstances this check doesn't suffice, so we will need to improve that check eventually
+    @Nullable
+    @ApiStatus.AvailableSince("0.7.0-a20241008")
+    public final URI codeSourceURI;
+    @Nullable
+    private final List<MixinParseException> delayedExceptions;
+    @NotNull
+    public final Collection<MixinFieldStub> fields;
+    @NotNull
+    public final MixinHeader header;
+    @NotNull
+    public final Collection<MixinMethodStub> methods;
+    @NotNull
+    public final ClassNode sourceNode;
+
+    public MixinStub(@NotNull ClassNode sourceNode, @NotNull MixinHeader header, @NotNull Collection<MixinMethodStub> methods, @NotNull Collection<MixinFieldStub> fields, @Nullable List<MixinParseException> delayedExceptions, @Nullable URI codeSourceURI) {
+        this.sourceNode = sourceNode;
+        this.header = header;
+        this.methods = methods;
+        this.fields = fields;
+        this.delayedExceptions = delayedExceptions;
+        this.codeSourceURI = codeSourceURI;
     }
 
     public void applyTo(@NotNull ClassNode target, @NotNull HandlerContextHelper hctx, @NotNull StringBuilder sharedBuilder) {
@@ -108,6 +105,15 @@ public class MixinStub implements Comparable<MixinStub> {
                 target.interfaces.add(itf);
             }
         }
+    }
+
+    @Override
+    public int compareTo(MixinStub o) {
+        int priority = this.header.priority - o.header.priority;
+        if (priority != 0) {
+            return priority;
+        }
+        return this.sourceNode.name.compareTo(o.sourceNode.name); // Under rather rare circumstances this check doesn't suffice, so we will need to improve that check eventually
     }
 
     @NotNull

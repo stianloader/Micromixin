@@ -2,14 +2,20 @@ package org.stianloader.micromixin.transform.api;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -30,6 +36,11 @@ import org.stianloader.micromixin.transform.internal.selectors.inject.ReturnInje
 import org.stianloader.micromixin.transform.internal.selectors.inject.StoreInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.selectors.inject.TailInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.util.Objects;
+import org.stianloader.micromixin.transform.internal.util.smap.FileSection;
+import org.stianloader.micromixin.transform.internal.util.smap.FileSection.FileSectionEntry;
+import org.stianloader.micromixin.transform.internal.util.smap.LineSection;
+import org.stianloader.micromixin.transform.internal.util.smap.LineSection.LineInfo;
+import org.stianloader.micromixin.transform.internal.util.smap.SMAPRoot;
 
 /**
  * The central brain of Micromixin.
@@ -102,7 +113,15 @@ public class MixinTransformer<M> {
             this.mixins.put(mixinRef, config);
             try {
                 ClassNode node = this.bytecodeProvider.getClassNode(attachment, mixinRef.value);
-                MixinStub stub = MixinStub.parse(config.priority, node, this, sharedBuilder);
+                URI codeSourceURI;
+                if (this.bytecodeProvider instanceof CodeSourceURIProvider) {
+                    @SuppressWarnings("unchecked")
+                    URI uncheckedAssignmentHack = ((CodeSourceURIProvider<M>) this.bytecodeProvider).findURI(attachment, mixinRef.value);
+                    codeSourceURI = uncheckedAssignmentHack;
+                } else {
+                    codeSourceURI = null;
+                }
+                MixinStub stub = MixinStub.parse(config.priority, node, this, codeSourceURI, sharedBuilder);
                 this.mixinNodes.put(mixinRef, node);
                 this.mixinStubs.put(mixinRef, stub);
                 Set<String> targets = new HashSet<String>();
@@ -117,7 +136,7 @@ public class MixinTransformer<M> {
                     }
                     val.add(stub);
                 }
-                this.getLogger().debug(MixinTransformer.class, "Registering mixin {} under modularity attachment {}, the mixin target following classes: {}", mixinRef.value, attachment, targets);
+                this.getLogger().debug(MixinTransformer.class, "Registering mixin {} under modularity attachment {}, the mixin target following classes: {}. The code source URI of the mixin is {}", mixinRef.value, attachment, targets, codeSourceURI);
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException("Broken mixin: " + mixinRef.value + " (attached via " + attachment + ")", e);
             } catch (MixinParseException e) {
@@ -203,7 +222,14 @@ public class MixinTransformer<M> {
         this.mergeClassFileVersions = mergeClassFileVersions;
     }
 
+    @Deprecated
+    @ApiStatus.Obsolete
     public void transform(@NotNull ClassNode in) {
+        this.transform(in, null);
+    }
+
+    @ApiStatus.AvailableSince("0.7.0-a20241008")
+    public void transform(@NotNull ClassNode in, @Nullable URI classCodeSourceURI) {
         Iterable<MixinStub> mixins = this.mixinTargets.get(in.name);
         if (mixins == null) {
             return;
@@ -242,7 +268,63 @@ public class MixinTransformer<M> {
                 }
             }
         }
-        hctx.lineAllocator.exportToSMAP("Mixin").applyTo(in, sharedBuilder, this.getLogger());
+
+        SMAPRoot smap = hctx.lineAllocator.exportToSMAP(SMAPRoot.MIXIN_STRATUM);
+
+        if (this.bytecodeProvider instanceof CodeSourceURIProvider) {
+            List<FileSectionEntry> fileSectionEntries = new ArrayList<FileSectionEntry>();
+            int sourceId = classCodeSourceURI == null ? 1 : 2;
+            int sourceOffset = sourceId - 1;
+            for (MixinStub stub : mixins) {
+                URI codeSourceURI = stub.codeSourceURI;
+                if (codeSourceURI != null) {
+                    try {
+                        String path = Objects.requireNonNull(codeSourceURI.toURL().toExternalForm());
+                        fileSectionEntries.add(new FileSectionEntry(++sourceId, path, null));
+                    } catch (MalformedURLException e) {
+                        this.logger.warn(MixinTransformer.class, "Cannot convert URI to external form: '{}'", codeSourceURI, e);
+                    }
+                }
+            }
+
+            if (!fileSectionEntries.isEmpty()) {
+                String sourceName = in.sourceFile;
+                if (sourceName == null) {
+                    sourceName = "sourceFile";
+                }
+                if (classCodeSourceURI != null) {
+                    try {
+                        fileSectionEntries.add(0, new FileSectionEntry(2, Objects.requireNonNull(classCodeSourceURI.toURL().toExternalForm()), null));
+                    } catch (MalformedURLException e) {
+                        fileSectionEntries.add(0, new FileSectionEntry(2, classCodeSourceURI.toString(), null));
+                    }
+                    fileSectionEntries.add(0, new FileSectionEntry(1, sourceName, null));
+                } else {
+                    fileSectionEntries.add(0, new FileSectionEntry(1, sourceName, null));
+                }
+
+                List<LineInfo> lineSectionEntries = new ArrayList<LineInfo>(); 
+                LineSection jdtLineSection = new LineSection(lineSectionEntries);
+                LineSection mixinLineSection = smap.getLineSection(SMAPRoot.MIXIN_STRATUM);
+                if (mixinLineSection != null) {
+                    for (LineInfo mixinLineInfo : mixinLineSection.getLineInfos()) {
+                        LineInfo jdtLineInfo = new LineInfo(
+                                mixinLineInfo.inputStartLine,
+                                mixinLineInfo.lineFileId + sourceOffset,
+                                mixinLineInfo.inputLineCount,
+                                mixinLineInfo.outputLineIncrement,
+                                mixinLineInfo.outputStartLine
+                        );
+                        lineSectionEntries.add(jdtLineInfo);
+                    }
+                }
+
+                smap.appendStratum("jdt", new FileSection(fileSectionEntries), jdtLineSection, "org.stianloader.micromixin.transform");
+            }
+        }
+
+        smap.applyTo(in, sharedBuilder, this.getLogger());
+
         if (MixinTransformer.DEBUG) {
             try {
                 CheckClassAdapter cca = new CheckClassAdapter(null);
