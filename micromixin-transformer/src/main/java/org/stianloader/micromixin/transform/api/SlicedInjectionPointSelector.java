@@ -5,10 +5,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -66,38 +67,6 @@ public class SlicedInjectionPointSelector {
     }
 
     /**
-     * Obtains the instruction immediately after the next instruction.
-     *
-     * <p>Handle with care, improper use may lead to unexpected behaviour with frames or jumps!
-     * The method is mainly intended to be used in order to easily check whether an instruction lies between
-     * two other instructions.
-     *
-     * @param method The method to find the entrypoints in.
-     * @param remapper The remapper instance to make use of. This is used to remap any references of the mixin class to the target class when applying injection point constraints.
-     * @param sharedBuilder Shared {@link StringBuilder} instance to reduce {@link StringBuilder} allocations.
-     * @return Instruction immediately after the next instruction.
-     * @deprecated Not every instruction has a next instruction. This applies to the last instruction, usually a
-     * return but sometimes also an {@link Opcodes#ATHROW}. While this method will in this case return the last instruction,
-     * this will not always be what depending logic had in mind. As such, this method is unused by micromixin-transformer
-     * internals and will be removed once permitted.
-     */
-    @Deprecated
-    @ScheduledForRemoval(inVersion = "0.7.0")
-    public AbstractInsnNode getAfterSelected(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        AbstractInsnNode first = this.getFirstInsn(method, remapper, sharedBuilder);
-        if (first == null) {
-            return null;
-        }
-        AbstractInsnNode selected = ASMUtil.afterInstruction(first);
-        AbstractInsnNode afterSelected = selected.getNext();
-        if (afterSelected == null) {
-            return selected;
-        } else {
-            return afterSelected;
-        }
-    }
-
-    /**
      * Obtains the first {@link AbstractInsnNode} that corresponds to the first applicable entrypoint within
      * the provided method as defined by this {@link InjectionPointSelector}. The {@link AbstractInsnNode} may
      * not be virtual, that is it may not have an {@link AbstractInsnNode#getOpcode() opcode} value of -1.
@@ -120,12 +89,6 @@ public class SlicedInjectionPointSelector {
         } else {
             return ASMUtil.shiftInsn(insn, this.offset);
         }
-    }
-
-    @Nullable
-    @Deprecated
-    public SlicedInjectionPointSelector getFrom() {
-        return this.from;
     }
 
     /**
@@ -199,18 +162,6 @@ public class SlicedInjectionPointSelector {
         return this.selector.fullyQualifiedName;
     }
 
-    @NotNull
-    @Deprecated
-    public InjectionPointSelector getSelector() {
-        return this.selector;
-    }
-
-    @Nullable
-    @Deprecated
-    public SlicedInjectionPointSelector getTo() {
-        return this.to;
-    }
-
     /**
      * Get whether this {@link SlicedInjectionPointSelector} allows use in an unsafe context,
      * that is whether it can match instructions that when they are transformed unsafe
@@ -232,26 +183,6 @@ public class SlicedInjectionPointSelector {
     @Contract(pure = true)
     public boolean isUnsafe() {
         return this.unsafe;
-    }
-
-    /**
-     * Get whether this {@link SlicedInjectionPointSelector} can be used to target instructions
-     * within a constructor.
-     *
-     * <p>If a injection point selector targets an instruction within a constructor while not being
-     * allowed to do so via {@link #supportsConstructors()}, then an error will be emitted.
-     *
-     * @return True to allow injection in a constructor, false otherwise.
-     * @deprecated Micromixin always supports injection in the constructor, however it does
-     * not always support capturing the 'this' instance (i.e. local 0) within constructors,
-     * for that {@link #supportsInstanceCaptureInConstructors()} exists. Furthermore, this method
-     * is no longer being used as micromixin-transformer takes constructor support for granted.
-     */
-    @Contract(pure = true)
-    @Deprecated
-    @ScheduledForRemoval(inVersion = "0.7")
-    public boolean supportsConstructors() {
-        return true;
     }
 
     /**
@@ -280,7 +211,11 @@ public class SlicedInjectionPointSelector {
     }
 
     /**
-     * Checks whether the injection point can be used in conjunction with the Redirect-annotation.
+     * <b>WARNING WARNING WARNING</b> The method was deprecated for removal in the 0.6.X lifecycle and
+     * will get removed at an unspecified point in time (this might fall within the 0.7.X lifecycle!).
+     * This method is no longer considered to be part of the public API.
+     *
+     * <p>Checks whether the injection point can be used in conjunction with the Redirect-annotation.
      * Generally should only be true if this injection point selector can select method instruction nodes.
      *
      * @return True if usable in redirects, false otherwise.
@@ -291,6 +226,7 @@ public class SlicedInjectionPointSelector {
      */
     @Deprecated
     @ScheduledForRemoval
+    @ApiStatus.Internal
     public boolean supportsRedirect() {
         return this.selector.supportsRedirect();
     }

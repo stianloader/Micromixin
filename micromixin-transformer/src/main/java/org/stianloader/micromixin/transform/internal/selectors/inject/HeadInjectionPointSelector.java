@@ -5,13 +5,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
 import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
-import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.transform.api.InjectionPointConstraint;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
@@ -69,9 +71,11 @@ public class HeadInjectionPointSelector extends InjectionPointSelector implement
 
     @Override
     @NotNull
-    public InjectionPointSelector create(@Nullable List<String> args, @Nullable InjectionPointTargetConstraint constraint) {
-        if (constraint != null) {
-            throw new MixinParseException("Broken mixin: Superfluous discriminator found in @At(\"" + this.getFullyQualifiedName() + "\"). Usage of the 'target' or 'desc' constraints is not applicable to the " + this.getFullyQualifiedName() + " injection point.");
+    @ApiStatus.AvailableSince("0.7.0-a20241008")
+    @Contract(pure = true)
+    public InjectionPointSelector create(@Nullable List<String> args, @NotNull InjectionPointConstraint[] constraints) {
+        if (constraints.length != 0) {
+            throw new MixinParseException("Broken mixin: Superfluous discriminator found in @At(\"" + this.getFullyQualifiedName() + "\"). Usage of the 'target' or 'desc' constraints is not applicable to the CONSTANT injection point.");
         }
         if (args != null) {
             throw new MixinParseException("Broken mixin: Superfluous discriminator found in @At(\"" + this.getFullyQualifiedName() + "\"). Usage of the 'args' constraints is not applicable to the " + this.getFullyQualifiedName() + " injection point.");

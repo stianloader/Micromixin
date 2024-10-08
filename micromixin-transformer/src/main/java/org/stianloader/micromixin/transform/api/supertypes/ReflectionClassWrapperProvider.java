@@ -16,7 +16,7 @@ public class ReflectionClassWrapperProvider implements ClassWrapperProvider {
     public ClassWrapper provide(@NotNull String className, @NotNull ClassWrapperPool pool) {
         Class<?> clazz;
         try {
-            clazz = Class.forName(className.replace('/', '.'), false, loader);
+            clazz = Class.forName(className.replace('/', '.'), false, this.loader);
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Unable to resolve class: " + className, e);
         }

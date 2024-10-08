@@ -177,11 +177,6 @@ public class MixinTransformer<M> {
         return this.mergeClassFileVersions;
     }
 
-    @Deprecated
-    public boolean isMergeingClassFileVersions() {
-        return this.mergeClassFileVersions;
-    }
-
     /**
      * Returns whether a package or a class is within a mixin.
      * Such classes or packages should not be loaded by the classloader.
@@ -254,7 +249,7 @@ public class MixinTransformer<M> {
                 throw new RuntimeException("Failed to apply mixin stub originating from " + stub.sourceNode.name + " to node " + in.name, t);
             }
 
-            if (this.isMergeingClassFileVersions()) {
+            if (this.isMergingClassFileVersions()) {
                 int adjustOrigin = in.version & ~Opcodes.V_PREVIEW;
                 int adjustSource = stub.sourceNode.version & ~Opcodes.V_PREVIEW;
                 if (adjustOrigin < adjustSource) {

@@ -19,7 +19,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
 import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory;
-import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.transform.api.InjectionPointConstraint;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.selectors.DescSelector;
@@ -225,7 +225,7 @@ public class MixinAtAnnotation {
         String slice = "";
         String value = null;
         List<String> args = null;
-        InjectionPointTargetConstraint constraint = null;
+        InjectionPointConstraint targetSelector = null;
         int shift = 0;
 
         for (int i = 0; i < atValue.values.size(); i += 2) {
@@ -238,11 +238,11 @@ public class MixinAtAnnotation {
                 List<String> temp = (List<String>) val; // Temporary variable required to suppress all warnings caused by this "dangerous" cast
                 args = temp;
             } else if (name.equals("target")) {
-                constraint = new StringSelector(((String) Objects.requireNonNull(val)));
+                targetSelector = new StringSelector(((String) Objects.requireNonNull(val)));
             } else if (name.equals("slice")) {
                 slice = (String) Objects.requireNonNull(val);
             } else if (name.equals("desc")) {
-                constraint = new DescSelector(MixinDescAnnotation.parse(mixinSource, Objects.requireNonNull((AnnotationNode) val)));
+                targetSelector = new DescSelector(MixinDescAnnotation.parse(mixinSource, Objects.requireNonNull((AnnotationNode) val)));
             } else if (name.equals("shift")) {
                 String[] enumValue = (String[]) val;
                 if (!enumValue[0].equals("Lorg/spongepowered/asm/mixin/injection/At$Shift;")) {
@@ -266,7 +266,16 @@ public class MixinAtAnnotation {
         }
 
         // TODO implement unsafe
-        return new MixinAtAnnotation(value, factory.get(value).create(args, constraint), slice, shift, false);
+
+        InjectionPointConstraint[] constraints;
+        if (targetSelector != null) {
+            constraints = new InjectionPointConstraint[1];
+            constraints[0] = targetSelector;
+        } else {
+            constraints = new InjectionPointConstraint[0];
+        }
+
+        return new MixinAtAnnotation(value, factory.get(value).create(args, constraints), slice, shift, false);
     }
 
     @NotNull

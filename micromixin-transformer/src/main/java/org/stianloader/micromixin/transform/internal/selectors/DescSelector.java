@@ -9,13 +9,13 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
-import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
+import org.stianloader.micromixin.transform.api.InjectionPointConstraint;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.MemberDesc;
 import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.annotation.MixinDescAnnotation;
 
-public class DescSelector implements MixinTargetSelector, InjectionPointTargetConstraint {
+public class DescSelector implements MixinTargetSelector, InjectionPointConstraint {
 
     @NotNull
     private final MixinDescAnnotation desc;

@@ -7,14 +7,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.stianloader.micromixin.transform.api.InjectionPointConstraint;
 import org.stianloader.micromixin.transform.api.InjectionPointSelector;
 import org.stianloader.micromixin.transform.api.InjectionPointSelectorFactory.InjectionPointSelectorProvider;
-import org.stianloader.micromixin.transform.api.InjectionPointTargetConstraint;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.api.SlicedInjectionPointSelector;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
@@ -39,23 +41,22 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
 
         @Override
         @NotNull
-        public InjectionPointSelector create(@Nullable List<String> args, @Nullable InjectionPointTargetConstraint constraint) {
-            if (constraint == null) {
-                throw new MixinParseException("Broken mixin: No descriptor or type discriminator found in @At(\"" + this.getFullyQualifiedName() + "\"). Usage of the 'target' or 'desc' constraints is required in the INVOKE injection point.");
-            }
+        @ApiStatus.AvailableSince("0.7.0-a20241008")
+        @Contract(pure = true)
+        public InjectionPointSelector create(@Nullable List<String> args, @NotNull InjectionPointConstraint[] constraints) {
             if (args != null) {
                 throw new MixinParseException("Broken mixin: Superfluous discriminator found in @At(\"" + this.getFullyQualifiedName() + "\"). Usage of the 'args' constraints is not applicable to the " + this.getFullyQualifiedName() + " injection point.");
             }
-            return new InvokeInjectionPointSelector(constraint);
+            return new InvokeInjectionPointSelector(constraints);
         }
     };
 
     @NotNull
-    private final InjectionPointTargetConstraint constraint;
+    private final InjectionPointConstraint[] constraints;
 
-    private InvokeInjectionPointSelector(@NotNull InjectionPointTargetConstraint constraint) {
+    private InvokeInjectionPointSelector(@NotNull InjectionPointConstraint[] constraints) {
         super("org.spongepowered.asm.mixin.injection.points.BeforeInvoke", "INVOKE");
-        this.constraint = constraint;
+        this.constraints = constraints;
     }
 
     @Override
@@ -65,8 +66,15 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
         for (; insn != null; insn = insn.getNext()) {
-            if (insn instanceof MethodInsnNode && this.constraint.isValid(insn, remapper, sharedBuilder)) {
-                return insn;
+            if (insn instanceof MethodInsnNode) {
+                filter: {
+                    for (InjectionPointConstraint constraint : this.constraints) {
+                        if (!constraint.isValid(insn, remapper, sharedBuilder)) {
+                            break filter;
+                        }
+                    }
+                    return insn;
+                }
             }
             if(insn == guard) {
                 break;
@@ -90,12 +98,22 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
         for (; insn != null; insn = insn.getNext()) {
-            if (insn instanceof MethodInsnNode && this.constraint.isValid(insn, remapper, sharedBuilder)) {
-                matched.add(insn);
+            if (insn instanceof MethodInsnNode) {
+                filter: {
+                    for (InjectionPointConstraint constraint : this.constraints) {
+                        if (!constraint.isValid(insn, remapper, sharedBuilder)) {
+                            break filter;
+                        }
+                    }
+                    matched.add(insn);
+                }
             }
+
             if(insn == guard) {
                 break;
             }
+
+            assert insn != null : "Exhausted instruction list"; // This exists to satisfy eclipse. Of course, the error condition will be dealt without relying on assertions in practice.
         }
 
         if (insn == null) {

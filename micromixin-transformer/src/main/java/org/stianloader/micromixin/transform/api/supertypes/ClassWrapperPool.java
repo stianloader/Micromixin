@@ -121,7 +121,7 @@ public class ClassWrapperPool {
             if (wrapper == null) {
                 continue;
             }
-            wrappers.put(className, wrapper);
+            this.wrappers.put(className, wrapper);
             return wrapper;
         }
         return null;

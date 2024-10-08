@@ -6,9 +6,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public class InjectionPointSelectorFactory {
@@ -19,8 +21,21 @@ public class InjectionPointSelectorFactory {
         @NotNull
         Set<String> getAllNames();
 
+        /**
+         * Create an {@link InjectionPointSelector} that selects the instructions
+         * with the provided constraints. The selector is optionally further constrained by the arguments
+         * defined in the <code>&#64;At</code> annotation.
+         *
+         * @param args The arguments defined in the <code>&#64;At</code> annotation, null if no arguments were defined. May be empty.
+         * @param constraints The constraints defined in the <code>&#64;At</code> annotation. Any instruction matched by the selector must match all constraints.
+         * These constraints can limit the selected opcodes, constrain on {@link MethodInsnNode#name} and more.
+         * @return The selector using the requested semantics.
+         * @since 0.7.0-a20241008
+         */
         @NotNull
-        InjectionPointSelector create(@Nullable List<String> args, @Nullable InjectionPointTargetConstraint constraint);
+        @ApiStatus.AvailableSince("0.7.0-a20241008")
+        @Contract(pure = true)
+        InjectionPointSelector create(@Nullable List<String> args, @NotNull InjectionPointConstraint[] constraints);
     }
 
     @NotNull

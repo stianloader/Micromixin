@@ -49,7 +49,7 @@ public final class SimpleRemapper {
     @NotNull
     public String getRemappedFieldDescriptor(@NotNull String fieldDesc, @NotNull StringBuilder sharedBuilder) {
         sharedBuilder.setLength(0);
-        return remapSingleDesc(fieldDesc, sharedBuilder);
+        return this.remapSingleDesc(fieldDesc, sharedBuilder);
     }
 
     @NotNull
@@ -89,7 +89,7 @@ public final class SimpleRemapper {
             for (int i = 0; i < size; i++) {
                 @SuppressWarnings("unused") // We are using the cast as a kind of built-in automatic unit test
                 String bitvoid = (String) annotation.values.get(i++);
-                remapAnnotationValue(annotation.values.get(i), i, annotation.values, sharedStringBuilder);
+                this.remapAnnotationValue(annotation.values.get(i), i, annotation.values, sharedStringBuilder);
             }
         }
     }
@@ -98,7 +98,7 @@ public final class SimpleRemapper {
         if (value instanceof Type) {
             String type = ((Type) value).getDescriptor();
             sharedStringBuilder.setLength(0);
-            if (remapSignature(type, sharedStringBuilder)) {
+            if (this.remapSignature(type, sharedStringBuilder)) {
                 values.set(index, Type.getType(sharedStringBuilder.toString()));
             }
         } else if (value instanceof String[]) {
@@ -106,19 +106,19 @@ public final class SimpleRemapper {
             String descriptor = enumvals[0];
             String name = Objects.requireNonNull(enumvals[1]);
             String internalName = descriptor.substring(1, descriptor.length() - 1);
-            enumvals[1] = fieldRenames.optGet(internalName, descriptor, name);
-            String newInternalName = oldToNewClassName.get(internalName);
+            enumvals[1] = this.fieldRenames.optGet(internalName, descriptor, name);
+            String newInternalName = this.oldToNewClassName.get(internalName);
             if (newInternalName != null) {
                 enumvals[0] = 'L' + newInternalName + ';';
             }
         } else if (value instanceof AnnotationNode) {
-            remapAnnotation((AnnotationNode) value, sharedStringBuilder);
+            this.remapAnnotation((AnnotationNode) value, sharedStringBuilder);
         } else if (value instanceof List) {
             @SuppressWarnings("unchecked")
             List<Object> valueList = (List<Object>) value;
             int size = valueList.size();
             for (int i = 0; i < size; i++) {
-                remapAnnotationValue(valueList.get(i), i, valueList, sharedStringBuilder);
+                this.remapAnnotationValue(valueList.get(i), i, valueList, sharedStringBuilder);
             }
         } else {
             // Irrelevant
@@ -132,12 +132,12 @@ public final class SimpleRemapper {
             sharedStringBuilder.setLength(0);
 
             if (type.getSort() == Type.METHOD) {
-                if (remapSignature(type.getDescriptor(), sharedStringBuilder)) {
+                if (this.remapSignature(type.getDescriptor(), sharedStringBuilder)) {
                     bsmArgs[index] = Type.getMethodType(sharedStringBuilder.toString());
                 }
             } else if (type.getSort() == Type.OBJECT) {
                 String oldVal = type.getInternalName();
-                String remappedVal = remapInternalName(oldVal, sharedStringBuilder);
+                String remappedVal = this.remapInternalName(oldVal, sharedStringBuilder);
                 if (oldVal != remappedVal) { // Instance comparison intended
                     bsmArgs[index] = Type.getObjectType(remappedVal);
                 }
@@ -148,8 +148,8 @@ public final class SimpleRemapper {
             Handle handle = (Handle) bsmArg;
             String oldName = handle.getName();
             String hOwner = handle.getOwner();
-            String newName = methodRenames.optGet(hOwner, handle.getDesc(), oldName);
-            String newOwner = oldToNewClassName.get(hOwner);
+            String newName = this.methodRenames.optGet(hOwner, handle.getDesc(), oldName);
+            String newOwner = this.oldToNewClassName.get(hOwner);
             boolean modified = oldName != newName;
             if (newOwner != null) {
                 hOwner = newOwner;
@@ -172,23 +172,23 @@ public final class SimpleRemapper {
     }
 
     public void remapClassName(@NotNull String oldName, @NotNull String newName) {
-        oldToNewClassName.put(oldName, newName);
+        this.oldToNewClassName.put(oldName, newName);
     }
 
     public void remapClassNames(Map<String, String> mappings) {
-        oldToNewClassName.putAll(mappings);
+        this.oldToNewClassName.putAll(mappings);
     }
 
     public void remapField(@NotNull String owner, @NotNull String desc, @NotNull String oldName, @NotNull String newName) {
-        fieldRenames.put(owner, desc, oldName, newName);
+        this.fieldRenames.put(owner, desc, oldName, newName);
     }
 
     @NotNull
     public String remapInternalName(@NotNull String internalName, @NotNull StringBuilder sharedStringBuilder) {
         if (internalName.codePointAt(0) == '[') {
-            return remapSingleDesc(internalName, sharedStringBuilder);
+            return this.remapSingleDesc(internalName, sharedStringBuilder);
         } else {
-            String remapped = oldToNewClassName.get(internalName);
+            String remapped = this.oldToNewClassName.get(internalName);
             if (remapped != null) {
                 return remapped;
             }
@@ -197,11 +197,11 @@ public final class SimpleRemapper {
     }
 
     public void remapMethod(@NotNull String owner, @NotNull String desc, @NotNull String oldName, @NotNull String newName) {
-        methodRenames.put(owner, desc, oldName, newName);
+        this.methodRenames.put(owner, desc, oldName, newName);
     }
 
     public boolean remapSignature(String signature, StringBuilder out) {
-        return remapSignature(out, signature, 0, signature.length());
+        return this.remapSignature(out, signature, 0, signature.length());
     }
 
     private boolean remapSignature(StringBuilder signatureOut, String signature, int start, int end) {
@@ -222,7 +222,7 @@ public final class SimpleRemapper {
                 int codepoint = signature.codePointAt(++endObject);
                 if (codepoint == ';') {
                     String name = signature.substring(start, endObject);
-                    String newName = oldToNewClassName.get(name);
+                    String newName = this.oldToNewClassName.get(name);
                     boolean modified = false;
                     if (newName != null) {
                         name = newName;
@@ -231,7 +231,7 @@ public final class SimpleRemapper {
                     signatureOut.appendCodePoint(type);
                     signatureOut.append(name);
                     signatureOut.append(';');
-                    modified |= remapSignature(signatureOut, signature, ++endObject, end);
+                    modified |= this.remapSignature(signatureOut, signature, ++endObject, end);
                     return modified;
                 } else if (codepoint == '<') {
                     // generics - please no
@@ -249,7 +249,7 @@ public final class SimpleRemapper {
                         }
                     }
                     String name = signature.substring(start, endObject);
-                    String newName = oldToNewClassName.get(name);
+                    String newName = this.oldToNewClassName.get(name);
                     boolean modified = false;
                     if (newName != null) {
                         name = newName;
@@ -258,11 +258,11 @@ public final class SimpleRemapper {
                     signatureOut.append('L');
                     signatureOut.append(name);
                     signatureOut.append('<');
-                    modified |= remapSignature(signatureOut, signature, endObject + 1, endGenerics++);
+                    modified |= this.remapSignature(signatureOut, signature, endObject + 1, endGenerics++);
                     signatureOut.append('>');
                     // apparently that can be rarely be a '.', don't ask when or why exactly this occours
                     signatureOut.appendCodePoint(signature.codePointAt(endGenerics));
-                    modified |= remapSignature(signatureOut, signature, ++endGenerics, end);
+                    modified |= this.remapSignature(signatureOut, signature, ++endGenerics, end);
                     return modified;
                 }
             }
@@ -306,6 +306,6 @@ public final class SimpleRemapper {
     }
 
     public void removeMethodRemap(@NotNull String owner, @NotNull String desc, @NotNull String name) {
-        methodRenames.remove(owner, desc, name);
+        this.methodRenames.remove(owner, desc, name);
     }
 }

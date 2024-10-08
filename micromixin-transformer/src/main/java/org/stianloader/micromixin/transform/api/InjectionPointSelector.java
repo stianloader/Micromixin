@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.ApiStatus.ScheduledForRemoval;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,7 +73,11 @@ public abstract class InjectionPointSelector {
     public abstract Collection<? extends AbstractInsnNode> getMatchedInstructions(@NotNull MethodNode method, @Nullable SlicedInjectionPointSelector from, @Nullable SlicedInjectionPointSelector to, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 
     /**
-     * Checks whether the injection point can be used in conjunction with the Redirect-annotation.
+     * <b>WARNING WARNING WARNING</b> The method was deprecated for removal in the 0.6.X lifecycle and
+     * will get removed at an unspecified point in time (this might fall within the 0.7.X lifecycle!).
+     *  This method is no longer considered to be part of the public API.
+     *
+     * <p>Checks whether the injection point can be used in conjunction with the Redirect-annotation.
      * Generally should only be true if this injection point selector can select method instruction nodes.
      *
      * @return True if usable in redirects, false otherwise.
@@ -83,6 +88,7 @@ public abstract class InjectionPointSelector {
      */
     @Deprecated
     @ScheduledForRemoval
+    @ApiStatus.OverrideOnly
     public boolean supportsRedirect() {
         return true;
     }

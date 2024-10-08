@@ -65,13 +65,13 @@ public class ClassWrapper {
 
             allInterfacesCache = new HashSet<String>();
             for (String interfaceName : getSuperInterfacesName()) {
-                allInterfacesCache.addAll(pool.get(interfaceName).getAllImplementatingInterfaces());
+                allInterfacesCache.addAll(this.pool.get(interfaceName).getAllImplementatingInterfaces());
             }
 
-            if (itf) {
-                allInterfacesCache.add(name);
+            if (this.itf) {
+                allInterfacesCache.add(this.name);
             } else {
-                allInterfacesCache.addAll(pool.get(superName).getAllImplementatingInterfaces());
+                allInterfacesCache.addAll(this.pool.get(superName).getAllImplementatingInterfaces());
             }
         }
         return allInterfacesCache;
@@ -79,38 +79,38 @@ public class ClassWrapper {
 
     @NotNull
     public String getName() {
-        return name;
+        return this.name;
     }
 
     @Nullable
     public String getSuper() {
-        return superName;
+        return this.superName;
     }
 
     @NotNull
     public String[] getSuperInterfacesName() {
-        return superInterfaces;
+        return this.superInterfaces;
     }
 
     public ClassWrapper getSuperWrapper() {
         String superName = getSuper();
         if (superName == null) {
-            throw new IllegalStateException(name + " does not have a super type.");
+            throw new IllegalStateException(this.name + " does not have a super type.");
         }
-        return pool.get(superName);
+        return this.pool.get(superName);
     }
 
     @Override
     public int hashCode() {
-        return getName().hashCode();
+        return this.getName().hashCode();
     }
 
     public boolean isInterface() {
-        return itf;
+        return this.itf;
     }
 
     @Override
     public String toString() {
-        return String.format("ClassWrapper[name=%s, itf=%b, extends=%s, implements=%s]", name, itf, superName, Arrays.toString(superInterfaces));
+        return String.format("ClassWrapper[name=%s, itf=%b, extends=%s, implements=%s]", this.name, this.itf, this.superName, Arrays.toString(this.superInterfaces));
     }
 }
