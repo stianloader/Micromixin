@@ -24,14 +24,11 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     private final boolean silent;
 
     @NotNull
-    private final MixinLoggingFacade logger;
-
-    @NotNull
-    private final String uniquePrefix = "$unique$" + Long.toHexString(UID_COUNTER.getAndIncrement()) + "$";
+    private final String uniquePrefix = "$unique$" + Long.toHexString(MixinUniqueAnnotation.UID_COUNTER.getAndIncrement()) + "$";
 
     private MixinUniqueAnnotation(boolean silent, @NotNull MixinLoggingFacade logger) {
+        super(logger);
         this.silent = silent;
-        this.logger = logger;
     }
 
     @NotNull

@@ -23,7 +23,7 @@ public interface LabelNodeMapper {
         @Override
         @NotNull
         public LabelNode apply(LabelNode label) {
-            LabelNode l = labelMap.get(label);
+            LabelNode l = this.labelMap.get(label);
             if (l == null) {
               l = new LabelNode();
               this.labelMap.put(label, l);

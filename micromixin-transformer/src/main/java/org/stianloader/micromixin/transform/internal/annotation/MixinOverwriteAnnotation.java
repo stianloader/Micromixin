@@ -20,9 +20,6 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
     @Nullable
     private final List<String> aliases;
 
-    @NotNull
-    private final MixinLoggingFacade logger;
-
     /**
      * Nag flag that is set whenever {@link #aliases} are being used to refer to a non-private member:
      * A feature that is not supported in the spongeian mixin implementation. As such, a warning is logged
@@ -36,8 +33,8 @@ public final class MixinOverwriteAnnotation extends AbstractOverlayAnnotation<Mi
     private boolean naggedInvalidAlias;
 
     private MixinOverwriteAnnotation(@Nullable List<String> aliases, @NotNull MixinLoggingFacade logger) {
+        super(logger);
         this.aliases = aliases;
-        this.logger = logger;
     }
 
     @NotNull

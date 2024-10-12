@@ -1,5 +1,8 @@
 package org.stianloader.micromixin.transform.internal.annotation;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -14,13 +17,6 @@ import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 
 public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
-
-    @NotNull
-    private final MethodNode src;
-
-    public VirtualClInitMergeAnnotation(@NotNull MethodNode src) {
-        this.src = src;
-    }
 
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
@@ -50,12 +46,13 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
             previousOutInsn = new LabelNode();
             target.instructions.insertBefore(nextOutInsn, previousOutInsn);
         }
-        AbstractInsnNode startInInsn = src.instructions.getFirst();
-        AbstractInsnNode endInInsn = src.instructions.getLast();
+        AbstractInsnNode startInInsn = source.method.instructions.getFirst();
+        AbstractInsnNode endInInsn = source.method.instructions.getLast();
         if (startInInsn == null || endInInsn == null) {
-            throw new IllegalStateException("abstract clinit method: " + source.owner.name + "." + source.getName() + source.getDesc());
+            throw new IllegalStateException("Abstract clinit method: " + source.owner.name + "." + source.getName() + source.getDesc());
         }
-        CodeCopyUtil.copyTo(src, startInInsn, endInInsn, sourceStub, target, previousOutInsn, to, remapper, hctx.lineAllocator, true, false);
+        Map<LabelNode, LabelNode> labelMap = new HashMap<LabelNode, LabelNode>();
+        CodeCopyUtil.copyTo(source.method, startInInsn, endInInsn, sourceStub, target, previousOutInsn, to, remapper, hctx.lineAllocator, labelMap, true, false);
     }
 
     @Override

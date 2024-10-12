@@ -5,16 +5,15 @@ import java.util.List;
 import org.jetbrains.annotations.ApiStatus.AvailableSince;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.MixinTransformer;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
@@ -82,12 +81,15 @@ public class MicromixinCanonicalOverwriteAnnotation extends MixinAnnotation<Mixi
     @NotNull
     private final MethodNode injectSource;
     @NotNull
+    private final MixinLoggingFacade logger;
+    @NotNull
     private final MixinTargetSelector selector;
 
     private MicromixinCanonicalOverwriteAnnotation(@NotNull MethodNode injectSource,
             @NotNull MixinTargetSelector targetSelector, @NotNull MixinTransformer<?> transformer) {
         this.injectSource = injectSource;
         this.selector = targetSelector;
+        this.logger = transformer.getLogger();
     }
 
     @Override
@@ -139,16 +141,7 @@ public class MicromixinCanonicalOverwriteAnnotation extends MixinAnnotation<Mixi
             targetMethod.instructions.add(new InsnNode(ASMUtil.getReturnOpcode(source.getDesc())));
         }
 
-        AbstractInsnNode firstInInsn = this.injectSource.instructions.getFirst();
-        AbstractInsnNode lastInInsn = this.injectSource.instructions.getLast();
-        LabelNode firstOutInsn = new LabelNode();
-        handlerMethod.instructions.add(firstOutInsn);
-
-        if (firstInInsn == null || lastInInsn == null) {
-            throw new IllegalStateException("Injection source method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " is an empty method?");
-        }
-
-        CodeCopyUtil.copyTo(this.injectSource, firstInInsn, lastInInsn, sourceStub, handlerMethod, firstOutInsn, to, remapper, hctx.lineAllocator, false, false);
+        CodeCopyUtil.copyOverwrite(sourceStub, this.injectSource, to, handlerMethod, remapper, hctx.lineAllocator, this.logger, false);
     }
 
     @Override

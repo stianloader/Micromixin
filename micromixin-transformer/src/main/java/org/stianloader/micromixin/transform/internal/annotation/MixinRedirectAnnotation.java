@@ -161,7 +161,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         if (!this.at.supportsRedirect()) {
             throw new IllegalStateException("Illegal mixin: " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " uses selector @At(\"" + this.at.getQualifiedSelectorName() + "\") which does not support usage within a @Redirect context.");
         }
-        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + "redirect$" + this.injectSource.name, remapper, hctx.lineAllocator);
+        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + "redirect$" + this.injectSource.name, remapper, hctx.lineAllocator, this.transformer.getLogger());
         Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
         for (MixinTargetSelector selector : selectors) {
             MethodNode targetMethod = selector.selectMethod(to, sourceStub);

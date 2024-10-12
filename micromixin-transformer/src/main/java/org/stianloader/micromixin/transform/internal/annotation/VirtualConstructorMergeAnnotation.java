@@ -125,7 +125,8 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
                 MethodInsnNode targetInsn = VirtualConstructorMergeAnnotation.getConstructorInvokeInsn(to, m);
                 if (targetInsn.owner.equals(to.superName) || targetInsn.owner.equals(to.name)) {
                     // FIXME Relocate local variables
-                    CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, hctx.lineAllocator, true, false);
+                    Map<LabelNode, LabelNode> labelMap = new HashMap<LabelNode, LabelNode>();
+                    CodeCopyUtil.copyTo(source.method, firstInsn, lastInsn, sourceStub, m, targetInsn, to, remapper, hctx.lineAllocator, labelMap, true, false);
                 } else {
                     throw new AssertionError("Superconstructor call does not have the expected owner. Expected: " + to.superName + ", actual " + targetInsn.owner + " for class " + to.name);
                 }

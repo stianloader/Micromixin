@@ -22,6 +22,7 @@ public class MixinFieldStub implements ClassMemberStub {
     @NotNull
     public static MixinFieldStub parse(@NotNull ClassNode owner, @NotNull FieldNode field, @NotNull MixinTransformer<?> transformer, @NotNull StringBuilder sharedBuilder) {
         List<MixinAnnotation<MixinFieldStub>> annotations = new ArrayList<MixinAnnotation<MixinFieldStub>>();
+
         if (field.visibleAnnotations != null) {
             for (AnnotationNode annot : field.visibleAnnotations) {
                 if (annot.desc.startsWith("Lorg/spongepowered/asm/")) {
@@ -39,8 +40,9 @@ public class MixinFieldStub implements ClassMemberStub {
                 }
             }
         }
+
         if (annotations.isEmpty()) {
-            annotations.add(new VirtualFieldOverlayAnnotation());
+            annotations.add(new VirtualFieldOverlayAnnotation(transformer.getLogger()));
         }
 
         MixinFieldStub stub = new MixinFieldStub(owner, field, Collections.unmodifiableCollection(annotations), transformer.getLogger());
