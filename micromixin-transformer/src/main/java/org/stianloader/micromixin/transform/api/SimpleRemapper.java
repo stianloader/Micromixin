@@ -279,7 +279,7 @@ public final class SimpleRemapper {
         default:
             // primitive
             signatureOut.appendCodePoint(type);
-            return remapSignature(signatureOut, signature, start, end); // Did not modify the signature - but following operations could
+            return this.remapSignature(signatureOut, signature, start, end); // Did not modify the signature - but following operations could
         }
     }
 
@@ -291,7 +291,7 @@ public final class SimpleRemapper {
         }
         int length = input.length();
         String internalName = input.substring(indexofL + 1, length - 1);
-        String newInternalName = oldToNewClassName.get(internalName);
+        String newInternalName = this.oldToNewClassName.get(internalName);
         if (newInternalName == null) {
             return input;
         }

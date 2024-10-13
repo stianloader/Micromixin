@@ -133,6 +133,7 @@ public class CodeCopyUtil {
         List<LocalVariableNode> sourceLVT = source.localVariables;
         if (sourceLVT != null) {
             target.localVariables = new ArrayList<LocalVariableNode>();
+            StringBuilder builder = new StringBuilder();
 
             for (LocalVariableNode lvn : sourceLVT) {
                 LabelNode lvnMappedStart = labelMap.get(lvn.start);
@@ -152,7 +153,13 @@ public class CodeCopyUtil {
                     continue;
                 }
 
-                target.localVariables.add(new LocalVariableNode(lvn.name, lvn.desc, lvn.signature, lvnMappedStart, lvnMappedEnd, lvn.index));
+                String mappedDesc = remapper.remapSingleDesc(lvn.desc, builder);
+                builder.setLength(0);
+                String mappedSignature = lvn.signature;
+                if (mappedSignature != null && remapper.remapSignature(mappedSignature, builder)) {
+                    mappedSignature = builder.toString();
+                }
+                target.localVariables.add(new LocalVariableNode(lvn.name, mappedDesc, mappedSignature, lvnMappedStart, lvnMappedEnd, lvn.index));
             }
         } else {
             List<LocalVariableNode> targetLVT = target.localVariables;
