@@ -256,12 +256,12 @@ public class MixinAtAnnotation {
                 } else if (enumValue[1].equals("AFTER")) {
                     shift = 1;
                 } else if (enumValue[1].equals("BY")) {
-                    shiftByFlags |= 0b01;
+                    shiftByFlags |= 1; // = 0b01
                 } else {
                     throw new MixinParseException("Unimplemented enum value for @At.shift: " + Arrays.toString(enumValue));
                 }
             } else if (name.equals("by")) {
-                shiftByFlags |= 0b10;
+                shiftByFlags |= 2; // 0b10
                 shift = ((Integer) val).intValue();
             } else {
                 throw new MixinParseException("Unimplemented key in @At: " + name);
