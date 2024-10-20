@@ -227,6 +227,7 @@ public class MixinAtAnnotation {
         List<String> args = null;
         InjectionPointConstraint targetSelector = null;
         int shift = 0;
+        int shiftByFlags = 0; // 0b10 = At.by set, 0b01 = At.shift set
 
         for (int i = 0; i < atValue.values.size(); i += 2) {
             String name = (String) atValue.values.get(i);
@@ -254,15 +255,25 @@ public class MixinAtAnnotation {
                     shift = -1;
                 } else if (enumValue[1].equals("AFTER")) {
                     shift = 1;
+                } else if (enumValue[1].equals("BY")) {
+                    shiftByFlags |= 0b01;
                 } else {
                     throw new MixinParseException("Unimplemented enum value for @At.shift: " + Arrays.toString(enumValue));
                 }
+            } else if (name.equals("by")) {
+                shiftByFlags |= 0b10;
+                shift = ((Integer) val).intValue();
             } else {
                 throw new MixinParseException("Unimplemented key in @At: " + name);
             }
         }
+
         if (value == null) {
             throw new MixinParseException("The required field \"value\" is missing.");
+        }
+
+        if (((shiftByFlags >> 1) ^ shiftByFlags) != 0) {
+            throw new MixinParseException("The value of @At.shift is inconsistent with the element of @At.by: If @At.shift is not set to Shift.BY, then @At.by may not be defined. Inversely, if @At.shift is set to Shift.BY, then @At.by has to be set. One of these two constraints has been violated.");
         }
 
         // TODO implement unsafe

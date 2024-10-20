@@ -17,7 +17,6 @@ public @interface At {
      * An enumeration defining the available modes of shifting as consumed by {@link At#shift()}.
      */
     public enum Shift {
-
         /**
          * No shift. The instruction defined by the injection point selector of the {@link At}
          * will be used as-is.
@@ -36,7 +35,28 @@ public @interface At {
          * point selector defined by {@link At#value()} (with the corresponding injection point
          * constraints).
          */
-        AFTER;
+        AFTER,
+
+        /**
+         * Use an instruction that is immediately before n instructions after the instruction
+         * selected by the injection point selector defined by {@link At#value()} (with the corresponding
+         * injection point constraints) if {@link At#by()} is a positive value, otherwise
+         * select the instruction immediately before n instructions before the instruction selected
+         * by the injection point selector, with n being the absolute value of {@link At#by()}.
+         *
+         * <p>Simplified, using this {@link Shift} mode results in arbitrary shifts by n instructions
+         * (for n &gt; 0, the shift is forwards while for n &lt; 0 the shift is backwards. For n = 0
+         * no shift occurs). This n is defined using {@link At#by()} (default value for that property is
+         * 0).
+         *
+         * <p>Although permissible when using micromixin at this point in time, other mixin implementations
+         * (and potentially future iterations of micromixin) may produce warnings or application failures
+         * when using {@link Shift#BY} in combination with a {@link At#by()} that is a very large value.
+         * As a rule of thumb, an {@link At#by()} smaller than -3 or larger than 3 are to be avoided.
+         * Reason for this is that {@link At#by()} is rather blind, enabling the possibility of writing
+         * injection points that are more unstable than they actually need to be.
+         */
+        BY;
     }
 
     /**
@@ -63,6 +83,31 @@ public @interface At {
      * @return The arguments to pass to the injection point provider for further discrimination.
      */
     public String[] args() default { };
+
+    /**
+     * Define by how many instructions the selection should be shifted by.
+     *
+     * <p>The exact effects are explained in {@link Shift#BY} but simplified,
+     * using {@link Shift#BY} for {@link At#shift()} results in arbitrary shifts by n
+     * instructions (for n &gt; 0, the shift is forwards while for n &lt; 0 the shift is backwards.
+     * For n = 0 no shift occurs). This n is defined using {@link At#by()} (default value for this
+     * property is 0).
+     *
+     * <p>Although permissible when using micromixin at this point in time, other mixin implementations
+     * (and potentially future iterations of micromixin) may produce warnings or application failures
+     * when using {@link Shift#BY} in combination with a {@link At#by()} that is a very large value.
+     * As a rule of thumb, an {@link At#by()} smaller than -3 or larger than 3 are to be avoided.
+     * Reason for this is that {@link At#by()} is rather blind, enabling the possibility of writing
+     * injection points that are more unstable than they actually need to be.
+     *
+     * <p><b>This annotation element has no effect if {@link At#shift()} is not set to {@link Shift#BY}.</b>
+     * It is undefined whether it is an error to define an {@link At#by()} when {@link At#shift()} is not
+     * {@link Shift#BY}.
+     *
+     * @return The amounts of instructions to shift the selection by.
+     * @see Shift#BY
+     */
+    public int by() default 0;
 
     /**
      * The targeted signature. Usage of {@link Desc} may result in better compile-time error
@@ -93,7 +138,7 @@ public @interface At {
      * <p>By default, the instruction is not shifted. This corresponds to the behaviour of {@link Shift#NONE}.
      *
      * <p>It is not defined whether "virtual" instructions (for example LineInsnNodes, FrameInsnNodes
-     * and LabelNodes)  are counted towards the shift or whether they are ignored.
+     * and LabelNodes) are counted towards the shift or whether they are ignored.
      * This behaviour may be subject to change depending on the behaviour of other mixin implementations
      * as well as the (un-)intuitive semantics of such counting. The spongeian mixin documentation
      * implicitly leaves this as an implementation detail.
