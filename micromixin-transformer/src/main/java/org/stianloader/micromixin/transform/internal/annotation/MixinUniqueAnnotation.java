@@ -10,6 +10,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
 import org.stianloader.micromixin.transform.api.SimpleRemapper;
 import org.stianloader.micromixin.transform.internal.ClassMemberStub;
+import org.stianloader.micromixin.transform.internal.HandlerContextHelper;
 import org.stianloader.micromixin.transform.internal.MixinFieldStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
@@ -48,12 +49,12 @@ public class MixinUniqueAnnotation<T extends ClassMemberStub> extends AbstractOv
     }
 
     @Override
-    public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public void collectMappings(@NotNull T source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinFieldStub && (((MixinFieldStub) source).field.access & Opcodes.ACC_PUBLIC) != 0) {
             return; // @Unique does nothing on public fields
         }
-        super.collectMappings(source, target, remapper, sharedBuilder);
+        super.collectMappings(source, hctx, target, remapper, sharedBuilder);
     }
 
     @Override

@@ -6,18 +6,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Class that copies functionality from java.util.Objects
- * that is not present on java 6.
+ * Class that copies functionality from java.util.Objects that is not present on java 6.
  *
- * As this is the implementation under Java 9 and above, we can simply delegate the calls back to
+ * <p>As this is the active implementation under Java 9 and above, we can simply delegate the calls back to
  * java.util.Objects, which may have more optimised implementations of the methods, thus
  * aiding JIT.
  */
 public final class Objects {
-
-    private Objects() {
-        throw new AssertionError();
-    }
 
     public static Throwable addSuppressed(Throwable throwable, List<? extends Throwable> suppressed) {
         suppressed.forEach(throwable::addSuppressed);
@@ -45,5 +40,10 @@ public final class Objects {
     @NotNull
     public static String toString(@Nullable Object o) {
         return java.util.Objects.toString(o);
+    }
+
+    @NotNull
+    public static String unsignedLongToString(long value, int radix) {
+        return Long.toUnsignedString(value, radix);
     }
 }

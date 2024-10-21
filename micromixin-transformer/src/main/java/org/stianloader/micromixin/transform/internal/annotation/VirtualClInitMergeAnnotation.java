@@ -56,8 +56,8 @@ public class VirtualClInitMergeAnnotation extends MixinAnnotation<MixinMethodStu
     }
 
     @Override
-    public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public void collectMappings(@NotNull MixinMethodStub source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
 }

@@ -202,7 +202,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator, this.transformer.getLogger());
+        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, remapper, hctx.lineAllocator, this.transformer.getLogger());
         Map<AbstractInsnNode, MethodNode> matched = new HashMap<AbstractInsnNode, MethodNode>();
         for (MixinTargetSelector selector : this.selectors) {
             for (SlicedInjectionPointSelector at : this.at) {
@@ -685,11 +685,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     }
 
     private static int getCallbackInfoIndex(@NotNull MethodNode method, boolean cancellable) {
-        int preallocated = searchCallbackInfoIndex(method, cancellable);
+        int preallocated = MixinInjectAnnotation.searchCallbackInfoIndex(method, cancellable);
         if (preallocated != -1) {
             return preallocated;
         }
-        int index = scanNextFreeLVTIndex(method);
+        int index = MixinInjectAnnotation.scanNextFreeLVTIndex(method);
         InsnList injected = new InsnList();
         injected.add(new TypeInsnNode(Opcodes.NEW, ASMUtil.CALLBACK_INFO_NAME));
         injected.add(new InsnNode(Opcodes.DUP));
@@ -702,10 +702,9 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
     }
 
     @Override
-    public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper,
-            @NotNull StringBuilder sharedBuilder) {
-        // NOP
+    public void collectMappings(@NotNull MixinMethodStub source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        remapper.remapMethod(source.getOwner().name, source.getDesc(), source.getName(), hctx.generateUniqueLocalPrefix() + source.getName());
     }
 
     private void captureArguments(@NotNull MixinStub sourceStub, @NotNull InsnList output, @NotNull ClassNode targetClass, @NotNull MethodNode targetMethod) {

@@ -78,9 +78,14 @@ public final class SimpleRemapper {
         return this.methodRenames.optGet(ownerName, methodDesc, methodName);
     }
 
+    @Nullable
+    public String getRemappedMethodNameFast(@NotNull String ownerName, @NotNull String methodName, @NotNull String methodDesc) {
+        return this.methodRenames.get(ownerName, methodDesc, methodName);
+    }
+
     private void remapAnnotation(AnnotationNode annotation, StringBuilder sharedStringBuilder) {
         String internalName = annotation.desc.substring(1, annotation.desc.length() - 1);
-        String newInternalName = oldToNewClassName.get(internalName);
+        String newInternalName = this.oldToNewClassName.get(internalName);
         if (newInternalName != null) {
             annotation.desc = 'L' + newInternalName + ';';
         }

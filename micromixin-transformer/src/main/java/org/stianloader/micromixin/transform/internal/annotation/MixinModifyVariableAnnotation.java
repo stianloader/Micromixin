@@ -202,7 +202,7 @@ public class MixinModifyVariableAnnotation extends MixinAnnotation<MixinMethodSt
     @Override
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub,
             @NotNull MixinMethodStub source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, hctx.generateUniqueLocalPrefix() + this.injectSource.name, remapper, hctx.lineAllocator, this.logger);
+        MethodNode handlerNode = CodeCopyUtil.copyHandler(this.injectSource, sourceStub, to, remapper, hctx.lineAllocator, this.logger);
         Collection<InjectionPointReference> matched = ASMUtil.enumerateTargets(this.selectors, this.slicedAts, to, sourceStub, this.injectSource, this.require, this.expect, this.allow, remapper, sharedBuilder, this.logger);
         String argumentType = ASMUtil.getReturnType(this.injectSource.desc);
         int computationalArgumentType = argumentType.codePointAt(0);
@@ -365,9 +365,8 @@ public class MixinModifyVariableAnnotation extends MixinAnnotation<MixinMethodSt
     }
 
     @Override
-    public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper,
-            @NotNull StringBuilder sharedBuilder) {
-        // NOP
+    public void collectMappings(@NotNull MixinMethodStub source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+        remapper.remapMethod(source.getOwner().name, source.getDesc(), source.getName(), hctx.generateUniqueLocalPrefix() + source.getName());
     }
 }

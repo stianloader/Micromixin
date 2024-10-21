@@ -108,7 +108,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
     }
 
     @Override
-    public void collectMappings(@NotNull T source, @NotNull ClassNode target,
+    public void collectMappings(@NotNull T source, @NotNull HandlerContextHelper hctx, @NotNull ClassNode target,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
             this.applyMethod(source, null, target, remapper, sharedBuilder, NOPMultiplexLineNumberAllocator.INSTANCE, true);

@@ -82,7 +82,7 @@ public class MixinFieldStub implements ClassMemberStub {
                                 @NotNull MixinStub stub, @NotNull SimpleRemapper out,
                                 @NotNull StringBuilder sharedBuilder) {
         for (MixinAnnotation<MixinFieldStub> annotation : this.annotations) {
-            annotation.collectMappings(this, target, out, sharedBuilder);
+            annotation.collectMappings(this, hctx, target, out, sharedBuilder);
         }
     }
 

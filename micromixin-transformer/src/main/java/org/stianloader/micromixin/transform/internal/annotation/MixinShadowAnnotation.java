@@ -151,12 +151,12 @@ public final class MixinShadowAnnotation<T extends ClassMemberStub> extends Mixi
     }
 
     @Override
-    public void collectMappings(@NotNull T source, @NotNull ClassNode target,
-                                @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public void collectMappings(@NotNull T source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         if (source instanceof MixinMethodStub) {
-            apply((MixinMethodStub) source, target, remapper, sharedBuilder);
+            this.apply((MixinMethodStub) source, target, remapper, sharedBuilder);
         } else if (source instanceof MixinFieldStub) {
-            apply((MixinFieldStub) source, target, remapper, sharedBuilder);
+            this.apply((MixinFieldStub) source, target, remapper, sharedBuilder);
         } else {
             throw new UnsupportedOperationException("Unknown/Unsupported implementation of ClassMemberStub: " + source.getClass().getName());
         }

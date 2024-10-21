@@ -25,17 +25,17 @@ public class MemberRenameMap {
     }
 
     public void clear() {
-        renames.clear();
+        this.renames.clear();
     }
 
     @Nullable
     public String get(@NotNull String owner, @NotNull String descriptor, @NotNull String oldName) {
-        return renames.get(new MemberDesc(owner, oldName, descriptor));
+        return this.renames.get(new MemberDesc(owner, oldName, descriptor));
     }
 
     @NotNull
     public String getOrDefault(@NotNull String owner, @NotNull String descriptor, @NotNull String oldName, @NotNull String defaultValue) {
-        String o = renames.get(new MemberDesc(owner, oldName, descriptor));
+        String o = this.renames.get(new MemberDesc(owner, oldName, descriptor));
         if (o == null) {
             return defaultValue;
         }
@@ -45,7 +45,7 @@ public class MemberRenameMap {
     @SuppressWarnings("null")
     @NotNull
     public String optGet(@NotNull String owner, @NotNull String descriptor, @NotNull String oldName) {
-        String o = renames.get(new MemberDesc(owner, oldName, descriptor));
+        String o = this.renames.get(new MemberDesc(owner, oldName, descriptor));
         if (o == null) {
             return oldName;
         }
@@ -60,20 +60,20 @@ public class MemberRenameMap {
             throw new IllegalArgumentException("newName is not a valid java identifier. It must not contain any of the following character: . ; [ /. However the string is:\"" + newName + "\"");
         }
         MemberDesc ref = new MemberDesc(owner, name, descriptor);
-        String oldMapping = renames.get(ref);
+        String oldMapping = this.renames.get(ref);
         if (oldMapping == null) {
-            renames.put(ref, Objects.requireNonNull(newName, "newName cannot be null."));
+            this.renames.put(ref, Objects.requireNonNull(newName, "newName cannot be null."));
         } else if (!oldMapping.equals(newName)) {
             throw new IllegalStateException("Overriding member rename for member " + ref.toString());
         }
     }
 
     public void remove(@NotNull String owner, @NotNull String desc, @NotNull String name) {
-        renames.remove(new MemberDesc(owner, name, desc));
+        this.renames.remove(new MemberDesc(owner, name, desc));
     }
 
     public int size() {
-        return renames.size();
+        return this.renames.size();
     }
 
     public void putAllIfAbsent(MemberRenameMap other) {

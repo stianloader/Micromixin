@@ -2,6 +2,7 @@ package org.stianloader.micromixin.transform.internal.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -100,7 +101,15 @@ public final class Objects {
         }
     }
 
-    private Objects() {
-        throw new AssertionError();
+    @SuppressWarnings("null")
+    @NotNull
+    public static String unsignedLongToString(long value, int radix) {
+        if (value >= 0) {
+            return Long.toString(value, radix);
+        }
+
+        BigInteger lsb = BigInteger.valueOf(value & (~0 >>> 16));
+        BigInteger msb = BigInteger.valueOf(value >>> 16).shiftLeft(16);
+        return lsb.add(msb).toString(radix);
     }
 }

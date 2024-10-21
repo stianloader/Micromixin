@@ -145,7 +145,7 @@ public class MicromixinCanonicalOverwriteAnnotation extends MixinAnnotation<Mixi
     }
 
     @Override
-    public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
+    public void collectMappings(@NotNull MixinMethodStub source, @NotNull HandlerContextHelper hctx, @NotNull ClassNode target,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // NOP
     }

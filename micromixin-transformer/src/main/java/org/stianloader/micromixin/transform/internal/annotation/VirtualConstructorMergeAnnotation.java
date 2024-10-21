@@ -267,8 +267,8 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     }
 
     @Override
-    public void collectMappings(@NotNull MixinMethodStub source, @NotNull ClassNode target,
-            @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
+    public void collectMappings(@NotNull MixinMethodStub source, @NotNull HandlerContextHelper hctx,
+            @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         // NOP
     }
 

@@ -12,7 +12,7 @@ import org.stianloader.micromixin.transform.internal.MixinStub;
 public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T>> {
     public abstract void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx, @NotNull MixinStub sourceStub, @NotNull T source, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 
-    public abstract void collectMappings(@NotNull T source, @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
+    public abstract void collectMappings(@NotNull T source, @NotNull HandlerContextHelper hctx, @NotNull ClassNode target, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder);
 
     @Override
     public int compareTo(MixinAnnotation<T> o) {
@@ -40,7 +40,7 @@ public abstract class MixinAnnotation<T> implements Comparable<MixinAnnotation<T
      * knowledge of the class the mixin handler targets. If the target class or a member from there
      * is required to be known during validation, such validation should be done within
      * {@link #apply(ClassNode, HandlerContextHelper, MixinStub, Object, SimpleRemapper, StringBuilder)}
-     * or {@link #collectMappings(Object, ClassNode, SimpleRemapper, StringBuilder)}.
+     * or {@link #collectMappings(Object, HandlerContextHelper, ClassNode, SimpleRemapper, StringBuilder)}.
      *
      * @param source The mixin handler source member which has this annotation annotated.
      * @param logger The logger to print warnings, errors or informational statements to.

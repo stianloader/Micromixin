@@ -42,7 +42,7 @@ import org.stianloader.micromixin.transform.internal.util.smap.MultiplexLineNumb
 public class CodeCopyUtil {
     @NotNull
     public static MethodNode copyHandler(@NotNull MethodNode source, @NotNull MixinStub sourceStub,
-            final @NotNull ClassNode target, @NotNull String handlerName, @NotNull SimpleRemapper remapper,
+            final @NotNull ClassNode target, @NotNull SimpleRemapper remapper,
             @NotNull MultiplexLineNumberAllocator lineAllocator, @NotNull MixinLoggingFacade logger) {
         // WARNING: This method is what many would call to be "bugged". That is intended!
         // To those wondering, this method does not properly remap INVOKESTATIC methods because
@@ -50,7 +50,19 @@ public class CodeCopyUtil {
         // I am not really satisfied with reproducing that bug, but what can I do there?
         // The tests would only need to run in micromixin presence then, which I mean can be arranged
         // but still feels odd.
+
         final ClassNode sourceClass = sourceStub.sourceNode;
+        String handlerName = remapper.getRemappedMethodNameFast(sourceClass.name, source.name, source.desc);
+        if (handlerName == null) {
+            logger.warn(CodeCopyUtil.class, "No remapped name was specified for method '{}.{}{}'. This remapped name should be specified in the MixinAnnotation#collectMappings step. This may prevent handler methods from calling each other.", sourceClass.name, source.name, source.desc);
+            // try to recover from this error condition. However, while this allows the handler to call itself
+            // and likely (but not definitely) prevents collisions, it might not always be able to get other
+            // handler methods to be able to call each other - which would be the case if the mappings discovery
+            // would be done at an earlier stage (e.g. MixinAnnotation#collectMappings)
+            handlerName = "$micromixinCodeCopyUtil$fallbackName$" + Objects.unsignedLongToString(Atomics.randomLong(), Character.MAX_RADIX) + "$" + source.name;
+            remapper.remapMethod(sourceClass.name, source.desc, source.name, handlerName);
+        }
+
         MethodNode handler = new MethodNode();
         handler.name = handlerName;
         handler.desc = CodeCopyUtil.remapDesc(source.desc, sourceClass, target);
