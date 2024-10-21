@@ -53,6 +53,7 @@
     "ModifyVariableMixins",
     "ModifyVariableMixins$InvalidExtraneousArg",
     "MultiInjectTestMixins",
+    "RecursiveHandlerMixins",
     "SliceTestMixins",
     "SliceTestMixins$AmbigiousSliceTestMixin",
     "SliceTestMixins$AmbigiousToSliceMixin",

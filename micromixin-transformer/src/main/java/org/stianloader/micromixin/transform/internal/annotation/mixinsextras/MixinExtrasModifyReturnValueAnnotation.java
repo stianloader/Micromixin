@@ -200,7 +200,7 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
         }
 
         if (selectors.isEmpty()) {
-            throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
+            throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin. Did you forget to specify 'method' or 'target'?");
         }
 
         if (allow < require) {

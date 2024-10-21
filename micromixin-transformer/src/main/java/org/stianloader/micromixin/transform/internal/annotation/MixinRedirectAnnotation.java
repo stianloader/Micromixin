@@ -112,9 +112,10 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 selectors.add(new StringSelector(Objects.requireNonNull(s)));
             }
         }
+
         if (selectors.isEmpty()) {
             // IMPLEMENT what about injector groups?
-            throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin.");
+            throw new MixinParseException("No available selectors: Mixin " + node.name + "." + method.name + method.desc + " does not match anything and is not a valid mixin. Did you forget to specify 'method' or 'target'?");
         }
 
         if (at == null) {

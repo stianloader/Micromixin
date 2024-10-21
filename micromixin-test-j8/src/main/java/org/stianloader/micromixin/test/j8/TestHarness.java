@@ -22,6 +22,7 @@ import org.stianloader.micromixin.test.j8.targets.ModifyConstantAuxiliaryTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyConstantTest;
 import org.stianloader.micromixin.test.j8.targets.ModifyVariableTest;
 import org.stianloader.micromixin.test.j8.targets.MultiInjectTest;
+import org.stianloader.micromixin.test.j8.targets.RecursiveHandlerTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest;
 import org.stianloader.micromixin.test.j8.targets.SliceTest.AmbigiousSliceTest;
 import org.stianloader.micromixin.test.j8.targets.StringTargetTest;
@@ -63,7 +64,19 @@ public class TestHarness {
         runCanonicalOverwriteTest(report);
         runInjectReturnTest(report);
         runConstructorMergingTest(report);
+        runRecursiveHandlerTest(report);
         return report;
+    }
+
+    public static void runRecursiveHandlerTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnit("RecursiveHandlerTest.handlerRedirectVirtual", () -> {
+            new RecursiveHandlerTest().handlerRedirectVirtual();
+        });
+
+        LoggerFactory.getLogger(TestHarness.class).info("RecursiveHandlerTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runConstructorMergingTest(@NotNull TestReport report) {

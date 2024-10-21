@@ -107,7 +107,7 @@ feature compatibility with the spongeian mixin implementation.
  - `@Coerce` (Sponge)
  - `@ModifyArgs` (Sponge)
  - `@Local`, `@Share` (MixinExtras)
- - `@At` targets in constructors before final return (Fabric) 
+ - `@At` targets in constructors before final return (Fabric)
  - `@At` targets in constructors before final return via unsafe (Sponge)
  - Regex support in `Inject.method`, `Redirect.method`, `At.target` and similar (???)
  - Redirecting fields, array loads, array stores, array length operations, etc. (Sponge)
