@@ -38,6 +38,7 @@
     "ConstructorInjectionMixins$RedirectInConstructorVirtualCapture",
     "ConstructorMergingMixins",
     "InjectionHeadTestMixins",
+    "InjectionPointMixins",
     "InjectorRemapTestMixins",
     "InjectReturnTestMixins",
     "LocalCaptureTestMixins",

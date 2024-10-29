@@ -12,6 +12,7 @@ import org.stianloader.micromixin.test.j8.targets.ConstructorInjectionTest;
 import org.stianloader.micromixin.test.j8.targets.ConstructorMergingTest;
 import org.stianloader.micromixin.test.j8.targets.InjectReturnTest;
 import org.stianloader.micromixin.test.j8.targets.InjectionHeadTest;
+import org.stianloader.micromixin.test.j8.targets.InjectionPointTest;
 import org.stianloader.micromixin.test.j8.targets.InjectorRemapTest;
 import org.stianloader.micromixin.test.j8.targets.LocalCaptureTest;
 import org.stianloader.micromixin.test.j8.targets.MixinOverwriteTest;
@@ -65,7 +66,39 @@ public class TestHarness {
         runInjectReturnTest(report);
         runConstructorMergingTest(report);
         runRecursiveHandlerTest(report);
+        runInjectionPointTest(report);
         return report;
+    }
+
+    public static void runInjectionPointTest(@NotNull TestReport report) {
+        TestSet set = new TestSet();
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewDescString", () -> {
+            return new InjectionPointTest().targetBeforeNewDescString(new MutableInt());
+        }, 1);
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewFQNString", () -> {
+            return new InjectionPointTest().targetBeforeNewFQNString(new MutableInt());
+        }, 1);
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewOwnerDescString", () -> {
+            return new InjectionPointTest().targetBeforeNewOwnerDescString(new MutableInt());
+        }, 2);
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewOwnerDotDescString", () -> {
+            return new InjectionPointTest().targetBeforeNewOwnerDotDescString(new MutableInt());
+        }, 2);
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewOwnerDotString", () -> {
+            return new InjectionPointTest().targetBeforeNewOwnerDotString(new MutableInt());
+        }, 2);
+
+        set.addUnitAssertEquals("InjectionPointTest.targetBeforeNewOwnerString", () -> {
+            return new InjectionPointTest().targetBeforeNewOwnerString(new MutableInt());
+        }, 2);
+
+        LoggerFactory.getLogger(TestHarness.class).info("InjectionPointTest:");
+        set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }
 
     public static void runRecursiveHandlerTest(@NotNull TestReport report) {
