@@ -33,6 +33,21 @@ public class CanonicalOverwriteMixins {
         }
     }
 
+    @Mixin(CanonicalOverwriteTest.OverwriteImplicitLVT.class)
+    private static class OverwriteImplicitLVT implements CanonicalOverwriteTest.CanonicalOverwriteInterfaceLVT {
+        @CanonicalOverwrite
+        @Override
+        public int invokeMethodLVT(int arg0, int arg1) {
+            Integer hashcode = Integer.valueOf(((CanonicalOverwriteTest.CanonicalOverwriteInterfaceLVT) this).hashCode());
+            if ((hashcode ^ hashcode.intValue()) != 0) {
+                throw new AssertionError();
+            }
+
+            long sum = arg0 + arg1;
+            return (int) sum;
+        }
+    }
+
     @Mixin(CanonicalOverwriteTest.OverwriteInterfaceMissing.class)
     private static class OverwriteInterfaceMissing {
         @CanonicalOverwrite

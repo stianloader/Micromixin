@@ -59,9 +59,9 @@ public class CanonicalOverwriteInjector extends Injector {
         int localIdx;
         int invokeOpcode;
         if ((target.method.access & Opcodes.ACC_STATIC) == 0) {
-            localIdx = 0;
-        } else {
             localIdx = 1;
+        } else {
+            localIdx = 0;
         }
 
         if (this.isStatic) {

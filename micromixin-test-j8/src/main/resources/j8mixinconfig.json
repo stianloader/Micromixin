@@ -20,6 +20,7 @@
     "CanonicalOverwriteMixins$OverwriteExplicitDiffer",
     "CanonicalOverwriteMixins$OverwriteExplicitIdentity",
     "CanonicalOverwriteMixins$OverwriteImplicit",
+    "CanonicalOverwriteMixins$OverwriteImplicitLVT",
     "CanonicalOverwriteMixins$OverwriteInterfaceMissing",
     "CanonicalOverwriteMixins$OverwriteTargetNotPresentExplicit",
     "CanonicalOverwriteMixins$OverwriteTargetNotPresentImplicit",

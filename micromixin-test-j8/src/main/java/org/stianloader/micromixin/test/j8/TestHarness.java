@@ -206,6 +206,7 @@ public class TestHarness {
         set.addUnitAssertEquals("OverwriteExplicitDiffer.invokeMethodIOverwritten", new CanonicalOverwriteTest.OverwriteExplicitDiffer()::invokeMethodIOverwritten, 1);
         set.addUnitAssertEquals("OverwriteExplicitDiffer.invokeMethodI", ((CanonicalOverwriteTest.CanonicalOverwriteInterfaceI) (Object) new CanonicalOverwriteTest.OverwriteExplicitDiffer())::invokeMethodI, 1);
         set.addUnit("OverwriteExplicitIdentity.invokeMethodOne", new CanonicalOverwriteTest.OverwriteExplicitIdentity()::invokeMethodOne);
+        set.addUnitAssertEquals("OverwriteImplicitLVT.invokeMethodLVT", () -> new CanonicalOverwriteTest.OverwriteImplicitLVT().invokeMethodLVT(4, 7), 11);
 
         LoggerFactory.getLogger(TestHarness.class).info("CanonicalOverwriteTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));

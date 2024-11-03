@@ -10,6 +10,10 @@ public class CanonicalOverwriteTest {
         int invokeMethodI();
     }
 
+    public static interface CanonicalOverwriteInterfaceLVT {
+        int invokeMethodLVT(int arg0, int arg1);
+    }
+
     public static class OverwriteExplicitDiffer {
         public int invokeMethodIOverwritten() {
             return 0;
@@ -25,6 +29,12 @@ public class CanonicalOverwriteTest {
     public static class OverwriteImplicit {
         public void invokeMethodOne() {
             throw new AssertionError("Did not overwrite.");
+        }
+    }
+
+    public static class OverwriteImplicitLVT {
+        public int invokeMethodLVT(int arg0, int arg1) {
+            throw new AssertionError("Did not overwrite");
         }
     }
 
