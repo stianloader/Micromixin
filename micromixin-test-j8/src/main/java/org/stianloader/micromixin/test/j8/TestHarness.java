@@ -97,6 +97,14 @@ public class TestHarness {
             return new InjectionPointTest().targetBeforeNewOwnerString(new MutableInt());
         }, 2);
 
+        set.addUnitAssertEquals("InjectionPointTest.FieldInjectDescInt", () -> {
+            return new InjectionPointTest.FieldInjectDescInt().computeFieldSum();
+        }, 3);
+
+        set.addUnitAssertEquals("InjectionPointTest.FieldInjectDescObject", () -> {
+            return new InjectionPointTest.FieldInjectDescObject().computeFieldSum();
+        }, 3);
+
         LoggerFactory.getLogger(TestHarness.class).info("InjectionPointTest:");
         set.executeAll(report, LoggerFactory.getLogger(TestHarness.class));
     }

@@ -40,6 +40,8 @@
     "ConstructorMergingMixins",
     "InjectionHeadTestMixins",
     "InjectionPointMixins",
+    "InjectionPointMixins$FieldInjectDescInt",
+    "InjectionPointMixins$FieldInjectDescObject",
     "InjectorRemapTestMixins",
     "InjectReturnTestMixins",
     "LocalCaptureTestMixins",
