@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    api "org.stianloader:sponge-mixin:0.16.4-0.8.7-1-a20250904"
+    api "org.stianloader:sponge-mixin:0.16.4-0.8.7-1-a20250906"
 
     // Dependency required by mixin, but the dependency is not transitively provided.
     // We need it however.
@@ -66,7 +66,7 @@ sourceSets {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(6)
+        languageVersion = JavaLanguageVersion.of(8)
     }
     toolchain {
         languageVersion = JavaLanguageVersion.of(11)
@@ -75,12 +75,16 @@ java {
 
 compileJava {
     javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(6)
+        languageVersion = JavaLanguageVersion.of(8)
     }
 
-    sourceCompatibility = '1.6'
-    targetCompatibility = '1.6'
     modularity.inferModulePath.set(true)
+
+    doFirst {
+        // This is needed as Mixin is compiled with J8 (but could in theory be J6 compatible)
+        sourceCompatibility = '1.6'
+        targetCompatibility = '1.6'
+    }
 }
 
 compileJava9Java {
