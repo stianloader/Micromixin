@@ -1,5 +1,5 @@
 module org.stianloader.micromixin.annotations {
-    requires org.jetbrains.annotations;
+    requires static org.jetbrains.annotations;
 
     exports org.spongepowered.asm.mixin.injection;
     exports org.spongepowered.asm.mixin;

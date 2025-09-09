@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    api "org.stianloader:sponge-mixin:0.16.4-0.8.7-1-a20250906"
+    compileOnly "org.stianloader:sponge-mixin:0.16.4-0.8.7-1-a20250906"
 
     // Dependency required by mixin, but the dependency is not transitively provided.
     // We need it however.

@@ -1,0 +1,161 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'eclipse'
+    id 'signing'
+}
+
+group = 'org.stianloader'
+def archivesBaseName = 'micromixin-testing-suite-neo'
+version = '0.8.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        name 'stianloader'
+        url 'https://stianloader.org/maven'
+    }
+}
+
+dependencies {
+    api 'org.ow2.asm:asm:9.8'
+    api 'org.ow2.asm:asm-commons:9.8'
+    api 'org.ow2.asm:asm-tree:9.8'
+    api 'org.ow2.asm:asm-util:9.8'
+    // https://stianloader.org/maven/org/stianloader/picoresolve
+    api 'org.stianloader:picoresolve:1.0.0-a20250903'
+    // https://mvnrepository.com/artifact/org.json/json
+    api 'org.json:json:20250517'
+
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
+    compileOnly 'org.jetbrains:annotations:26.0.2-1'
+    compileOnly project(":micromixin-annotations")
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+compileJava {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+
+    options.release = 17
+    modularity.inferModulePath = true
+}
+
+jar {
+    into('META-INF/LICENSES/' + archivesBaseName) {
+        from project.rootProject.file("LICENSE")
+    }
+
+    manifest {
+        attributes 'Multi-Release': true
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier = 'sources'
+
+    from sourceSets.main.allSource
+
+    into('META-INF/LICENSES/' + archivesBaseName) {
+        from project.rootProject.file("LICENSE")
+    }
+}
+
+task runTestSuite(type: JavaExec, dependsOn: jar) {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+
+    dependsOn ":micromixin-annotations:compileJava9moduleJava"
+    dependsOn ":micromixin-transformer:compileJava9moduleJava"
+
+    classpath = sourceSets.main.runtimeClasspath
+    classpath -= project.files(compileJava.destinationDirectory.asFile)
+    classpath += project.files(jar.archiveFile.get().asFile)
+
+    modularity.inferModulePath = true
+    ignoreExitValue = true
+    workingDir(project.projectDir)
+    args("micromixin-test-config-gradle.json")
+    mainModule = "org.stianloader.micromixin.testneo"
+    mainClass = "org.stianloader.micromixin.testneo.MicromixinTestingSuiteNeo"
+}
+
+clean {
+    delete ".maven"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId project.group
+            artifactId project.archivesBaseName
+
+            from components['java']
+            artifact sourcesJar
+
+            pom {
+                name = 'Micromixin Testing Suite Neo'
+                description = "A testing framework to ascertain the class transforming capabilities of SLL-derived modloaders."
+                url = 'https://github.com/stianloader/Micromixin'
+                inceptionYear = '2025'
+
+                licenses {
+                    license {
+                        name = 'BSD-2-Clause'
+                        url = 'https://opensource.org/license/bsd-2-clause/'
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'geolykt'
+                        name = 'Emeric "Geolykt" Werner'
+                        email = 'mail@geolykt.de'
+                        timezone = 'Europe/Berlin'
+                        url = 'https://geolykt.de/'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/stianloader/Micromixin.git'
+                    developerConnection = 'scm:git:ssh://github.com:stianloader/Micromixin.git'
+                    url = 'https://github.com/stianloader/Micromixin/tree/main'
+                }
+
+                issueManagement {
+                    system = 'Github'
+                    url = 'https://github.com/stianloader/Micromixin/issues'
+                }
+            }
+        }
+    }
+
+    repositories {
+        if (providers.gradleProperty('publishRepo').isPresent()) {
+            System.out.println("Publishing to " + providers.gradleProperty('publishRepo').get())
+            maven {
+                url providers.gradleProperty('publishRepo').get()
+                allowInsecureProtocol = true
+            }
+        } else {
+            System.out.println("Publishing to the local maven repository")
+            mavenLocal()
+        }
+    }
+}
+
+if (providers.gradleProperty('signedPublish').isPresent() && Boolean.parseBoolean(providers.gradleProperty('signedPublish').get())) {
+    signing {
+        useGpgCmd()
+        sign publishing.publications.maven
+    }
+}

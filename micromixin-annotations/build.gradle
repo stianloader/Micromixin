@@ -15,7 +15,6 @@ repositories {
 }
 
 dependencies {
-    api project(":micromixin-runtime")
     compileOnly 'org.jetbrains:annotations-java5:24.1.0'
 }
 
@@ -114,10 +113,6 @@ jar {
     manifest {
         attributes 'Multi-Release': true
     }
-
-    exclude '*/callback/CallbackInfo.class'
-    exclude '*/callback/CallbackInfoReturnable.class'
-    exclude '*/callback/CancellationException.class'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {

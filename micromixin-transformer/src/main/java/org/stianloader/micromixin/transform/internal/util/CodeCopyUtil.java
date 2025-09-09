@@ -179,6 +179,8 @@ public class CodeCopyUtil {
                 targetLVT.clear();
             }
         }
+
+        ASMUtil.copyAnnotations(source, target);
     }
 
     public static void copyTo(@NotNull MethodNode source, @NotNull AbstractInsnNode startInInsn, @NotNull AbstractInsnNode endInInsn, @NotNull MixinStub sourceStub,

@@ -90,7 +90,7 @@ public abstract class AbstractOverlayAnnotation<T extends ClassMemberStub> exten
 
         // Remove the old method
         if (overwritten != null) {
-            // TODO How about copying access modifiers (such as synchronised) and annotations?
+            // TODO How about copying access modifiers (such as synchronised)?
             // How about exceptions?
             if (!target.methods.remove(overwritten)) {
                 throw new IllegalStateException("Tried to remove a method that does not exist.");

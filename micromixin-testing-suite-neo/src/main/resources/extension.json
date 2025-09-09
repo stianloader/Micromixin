@@ -1,0 +1,7 @@
+{
+    "entrypoint": "org.stianloader.micromixin.testneo.testenv.TestingEnvironmentExtension",
+    "name": "TestingEnvironmentExtension",
+    "author": "Geolykt",
+    "version": "0.8.0",
+    "mixinConfig": "micromixin-test-neo-mixins.json"
+}

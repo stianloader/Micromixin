@@ -28,6 +28,7 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LocalVariableAnnotationNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
@@ -63,6 +64,112 @@ public class ASMUtil {
             return insn;
         }
         return next;
+    }
+
+    @Nullable
+    private static <T extends AnnotationNode> List<T> copyAnnotationList(@Nullable List<T> annotations) {
+        if (annotations == null) {
+            return null;
+        }
+
+        List<T> copy = new ArrayList<T>();
+        for (AnnotationNode annotation : annotations) {
+            AnnotationNode clonedAnnotation;
+            if (annotation.getClass() == AnnotationNode.class) {
+                clonedAnnotation = new AnnotationNode(annotation.desc);
+            } else if (annotation.getClass() == TypeAnnotationNode.class) {
+                TypeAnnotationNode typeAnnot = (TypeAnnotationNode) annotation;
+                clonedAnnotation = new TypeAnnotationNode(typeAnnot.typeRef, typeAnnot.typePath, typeAnnot.desc);
+            } else {
+                // TODO this doesn't support LocalVariableAnnotationNode.
+                // That being said, LVT annotations are a bit more finicky. It would need a bit more involvement.
+                throw new IllegalStateException("Unuspported annotation class: " + annotation.getClass());
+            }
+            annotation.accept(clonedAnnotation);
+            @SuppressWarnings("unchecked")
+            T clonedAnnotationCast = (T) clonedAnnotation;
+            copy.add(clonedAnnotationCast);
+        }
+
+        return copy;
+    }
+
+    /**
+     * Copy all visible and invisible annotations from a method to a different method,
+     * excluding {@link LocalVariableAnnotationNode}s which will not be copied due to their
+     * reliance on {@link LabelNode}.
+     *
+     * <p>This method creates independently operating copies. That is, if the annotations in
+     * {@code from} where to be modified after invoking this method, the annotations in
+     * {@code to} will not be affected.
+     *
+     * <p>This method will copy even when an annotation shouldn't be present more than once.
+     * Neither will this method honour Java 8's {@code Repeatable.value()}.
+     *
+     * @param from The {@link MethodNode} to copy the annotations from.
+     * @param to The {@link MethodNode} to copy the annotations to.
+     * @since 0.8.0
+     */
+    public static void copyAnnotations(@NotNull MethodNode from, @NotNull MethodNode to) {
+        to.invisibleAnnotations = ASMUtil.mergeAnnotationLists(to.invisibleAnnotations, from.invisibleAnnotations);
+        to.invisibleTypeAnnotations = ASMUtil.mergeAnnotationLists(to.invisibleTypeAnnotations, from.invisibleTypeAnnotations);
+        List<AnnotationNode>[] invisibleParameterAnnotationsA = to.invisibleParameterAnnotations;
+        List<AnnotationNode>[] invisibleParameterAnnotationsB = from.invisibleParameterAnnotations;
+        if (invisibleParameterAnnotationsA == null && invisibleParameterAnnotationsB != null) {
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[invisibleParameterAnnotationsB.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.copyAnnotationList(invisibleParameterAnnotationsB[i]);
+            }
+            to.invisibleParameterAnnotations = copy;
+        } else if (invisibleParameterAnnotationsB == null && invisibleParameterAnnotationsA != null) {
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[invisibleParameterAnnotationsA.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.copyAnnotationList(invisibleParameterAnnotationsA[i]);
+            }
+            to.invisibleParameterAnnotations = copy;
+        } else if (invisibleParameterAnnotationsA != null && invisibleParameterAnnotationsB != null) {
+            if (invisibleParameterAnnotationsA.length != invisibleParameterAnnotationsB.length) {
+                throw new IllegalStateException("invisibleParameterAnnotations length mismatch");
+            }
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[invisibleParameterAnnotationsA.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.mergeAnnotationLists(invisibleParameterAnnotationsA[i], invisibleParameterAnnotationsB[i]);
+            }
+            to.invisibleParameterAnnotations = copy;
+        }
+
+        to.visibleAnnotations = ASMUtil.mergeAnnotationLists(to.visibleAnnotations, from.visibleAnnotations);
+        to.visibleTypeAnnotations = ASMUtil.mergeAnnotationLists(to.visibleTypeAnnotations, from.visibleTypeAnnotations);
+        List<AnnotationNode>[] visibleParameterAnnotationsA = to.visibleParameterAnnotations;
+        List<AnnotationNode>[] visibleParameterAnnotationsB = from.visibleParameterAnnotations;
+        if (visibleParameterAnnotationsA == null && visibleParameterAnnotationsB != null) {
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[visibleParameterAnnotationsB.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.copyAnnotationList(visibleParameterAnnotationsB[i]);
+            }
+            to.visibleParameterAnnotations = copy;
+        } else if (visibleParameterAnnotationsB == null && visibleParameterAnnotationsA != null) {
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[visibleParameterAnnotationsA.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.copyAnnotationList(visibleParameterAnnotationsA[i]);
+            }
+            to.visibleParameterAnnotations = copy;
+        } else if (visibleParameterAnnotationsA != null && visibleParameterAnnotationsB != null) {
+            if (visibleParameterAnnotationsA.length != visibleParameterAnnotationsB.length) {
+                throw new IllegalStateException("invisibleParameterAnnotations length mismatch");
+            }
+            @SuppressWarnings("unchecked")
+            List<AnnotationNode>[] copy = new List[visibleParameterAnnotationsA.length];
+            for (int i = copy.length; i-- != 0;) {
+                copy[i] = ASMUtil.mergeAnnotationLists(visibleParameterAnnotationsA[i], visibleParameterAnnotationsB[i]);
+            }
+            to.visibleParameterAnnotations = copy;
+        }
     }
 
     @NotNull
@@ -606,6 +713,19 @@ public class ASMUtil {
         usageSiteOutput.add(new VarInsnNode(Opcodes.ALOAD, sharedIndex));
 
         return sharedIndex;
+    }
+
+    private static <T extends AnnotationNode> List<T> mergeAnnotationLists(@Nullable List<T> annotationsA, @Nullable List<T> annotationsB) {
+        List<T> annotationsACopy = ASMUtil.copyAnnotationList(annotationsA);
+        List<T> annotationsBCopy = ASMUtil.copyAnnotationList(annotationsB);
+
+        if (annotationsACopy == null) {
+            return annotationsBCopy;
+        } else if (annotationsBCopy != null) {
+            annotationsACopy.addAll(annotationsBCopy);
+        }
+
+        return annotationsACopy;
     }
 
     /**
