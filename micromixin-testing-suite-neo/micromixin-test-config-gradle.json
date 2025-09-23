@@ -5,7 +5,7 @@
                 {
                     "groupId": "org.stianloader",
                     "artifactId": "launcher-mixin-fabric",
-                    "version": "4.0.0-a20250907",
+                    "version": "4.0.0-a20250922",
                     "excludes": [
                         "org.stianloader:picoresolve",
                         "net.fabricmc:sponge-mixin",
@@ -39,7 +39,7 @@
                 {
                     "groupId": "org.stianloader",
                     "artifactId": "launcher-micromixin",
-                    "version": "4.0.0-a20250909",
+                    "version": "4.0.0-a20250922",
                     "excludes": [
                         "org.stianloader:picoresolve",
                         "org.stianloader:micromixin-transformer",

@@ -18,7 +18,12 @@ public class ReflectionClassWrapperProvider implements ClassWrapperProvider {
         try {
             clazz = Class.forName(className.replace('/', '.'), false, this.loader);
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Unable to resolve class: " + className, e);
+            // This swallows an exception which is not exactly ideal in my opinion, but
+            // that's the best we can do without a lot of obviously overkill architecture
+            // in the background (i.e. a lot of static ThreadLocals and hidden inter-class
+            // communication to inform MixinTransformer of exceptions that should be printed
+            // in case of a transformation failure)
+            return null;
         }
         boolean itf = clazz.isInterface();
         String superName;

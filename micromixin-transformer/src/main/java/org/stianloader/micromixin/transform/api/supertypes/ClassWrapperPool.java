@@ -1,6 +1,7 @@
 package org.stianloader.micromixin.transform.api.supertypes;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,16 +16,17 @@ public class ClassWrapperPool {
 
     @NotNull
     private final List<ClassWrapperProvider> providers;
+    @NotNull
     protected final Map<String, ClassWrapper> wrappers;
 
     public ClassWrapperPool() {
-        this(new ArrayList<ClassWrapperProvider>());
+        this(Collections.<ClassWrapperProvider>emptyList());
     }
 
     public ClassWrapperPool(@NotNull List<ClassWrapperProvider> providers) {
         this.wrappers = new HashMap<String, ClassWrapper>();
         this.wrappers.put("java/lang/Object", new ClassWrapper("java/lang/Object", null, new String[0], false, this));
-        this.providers = providers;
+        this.providers = new ArrayList<ClassWrapperProvider>(providers);
     }
 
     @NotNull
@@ -34,19 +36,18 @@ public class ClassWrapperPool {
         return this;
     }
 
-    public boolean canAssign(ClassWrapper superType, ClassWrapper subType) {
+    public boolean canAssign(@NotNull ClassWrapper superType, @NotNull ClassWrapper subType) {
         final String name = superType.getName();
         if (superType.isInterface()) {
-            return isImplementingInterface(subType, name);
+            return this.isImplementingInterface(subType, name);
         } else {
-            while (subType != null) {
-                if (name.equals(subType.getName()) || name.equals(subType.getSuper())) {
+            for (ClassWrapper type = subType; type != null; type = type.getSuperWrapper()) {
+                if (name.equals(type.getName()) || name.equals(type.getSuper())) {
                     return true;
                 }
-                if (subType.getName().equals("java/lang/Object")) {
+                if (type.getName().equals("java/lang/Object")) {
                     return false;
                 }
-                subType = subType.getSuperWrapper();
             }
         }
         return false;
@@ -54,14 +55,15 @@ public class ClassWrapperPool {
 
     @NotNull
     public ClassWrapper get(@NotNull String className) {
-        ClassWrapper wrapper = optGet(className);
+        ClassWrapper wrapper = this.optGet(className);
         if (wrapper != null) {
             return wrapper;
         }
-        throw new IllegalStateException("Wrapper for class not found: " + className);
+        throw new IllegalStateException("Wrapper for class not found for class: " + className);
     }
 
-    public ClassWrapper getCommonSuperClass(ClassWrapper class1, ClassWrapper class2) {
+    @NotNull
+    public ClassWrapper getCommonSuperClass(@NotNull ClassWrapper class1, @NotNull ClassWrapper class2) {
         if (class1.getName().equals("java/lang/Object")) {
             return class1;
         }
@@ -69,16 +71,16 @@ public class ClassWrapperPool {
             return class2;
         }
         // isAssignableFrom = class1 = class2;
-        if (canAssign(class1, class2)) {
+        if (this.canAssign(class1, class2)) {
             return class1;
         }
-        if (canAssign(class2, class1)) {
+        if (this.canAssign(class2, class1)) {
             return class2;
         }
         if (class1.isInterface() || class2.isInterface()) {
-            return get("java/lang/Object");
+            return this.get("java/lang/Object");
         }
-        return getCommonSuperClass(class1, get(Objects.requireNonNull(class2.getSuper())));
+        return this.getCommonSuperClass(class1, this.get(Objects.requireNonNull(class2.getSuper())));
     }
 
     /**
@@ -99,7 +101,7 @@ public class ClassWrapperPool {
             if (interfaces.equals(interfaceName)) {
                 return true;
             } else {
-                if (isImplementingInterface(get(interfaces), interfaceName)) {
+                if (this.isImplementingInterface(this.get(interfaces), interfaceName)) {
                     return true;
                 }
             }
@@ -107,7 +109,7 @@ public class ClassWrapperPool {
         if (clazz.isInterface()) {
             return false;
         }
-        return isImplementingInterface(clazz.getSuperWrapper(), interfaceName);
+        return this.isImplementingInterface(clazz.getSuperWrapper(), interfaceName);
     }
 
     @Nullable

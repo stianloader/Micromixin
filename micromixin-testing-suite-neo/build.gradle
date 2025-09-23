@@ -24,7 +24,7 @@ dependencies {
     api 'org.ow2.asm:asm-tree:9.8'
     api 'org.ow2.asm:asm-util:9.8'
     // https://stianloader.org/maven/org/stianloader/picoresolve
-    api 'org.stianloader:picoresolve:1.0.0-a20250903'
+    api 'org.stianloader:picoresolve:1.0.0-a20250923'
     // https://mvnrepository.com/artifact/org.json/json
     api 'org.json:json:20250517'
 
