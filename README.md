@@ -11,7 +11,8 @@ When providing source code freely on the internet I usually want to provide it i
 way that it can be compiled far into the future (well in more interconnected projects
 it gets a bit more complicated but still not too much of an issue), however in order to
 support Java 6 (this functionality was requested by someone interested in this project),
-<b>one needs to compile with Java 11 at most. Building with newer JDKs won't work.</b>
+one might require a Java 11 JDK for compilation alongside a Java 6 JDK. However,
+gradle should download the JDKs automatically or otherwise detect them on your filesystem. 
 
 Otherwise, this project can be built like any other project via `./gradlew build`.
 
@@ -42,24 +43,24 @@ Painpoints of the official Mixin implementation that this implementation seeks t
 The Micromixin framework comes in six modules.
 
  - "micromixin-annotations" includes all the traditional mixin annotations that are
-implemented by Micromixin - nothing more.
+implemented by Micromixin, alongside other classes required for those annotations
+to work (most notably CallbackInfo).
  - "micromixin-transformer" includes the transformer - i.e. it is the heart of the project.
- - "micromixin-runtime" includes everything needed to run transformed classes (such as the
-CallbackInfo classes).
  - "micromixin-test-j8" includes tests for Micromxin and is the least interesting part of
-the project.
+the project. However, these tests can be described as "legacy", in the long term
+micromixin-testing-suite-neo is supposed to handle all testing.
  - "micromixin-remapper", an add-on library for stianloader-remapper in order to remap
 mixin classes. It is developed under https://github.com/stianloader/micromixin-remapper
  - "micromixin-backports" includes micromixin-specific annotations and adds support for
 their use within mixin environments. Note: The backports do not come with an annotation
 processor bundled.
+ - "micromixin-testing-suite-neo" is a JPMS-enabled mixin environment capable of testing
+ multiple mixin implementations at the same time (provided they work under SLL and behave
+ well in an JPMS environment).
 
 <b>Warning: In 90% of cases you'll want to bundle micromixin-transformer alongside
-micromixin-runtime. Due to there being no strict dependencies between the classes,
+micromixin-annotations. Due to there being no strict dependencies between the classes,
 the dependency is not resolved by default.</b>
-micromixin-annotations should strictly be used for compilation only,
-micromixin-transformer should strictly be used for runtime transformation only,
-micromixin-runtime should most likely always be used.
 
 ## Maven
 
@@ -67,12 +68,12 @@ This project is available at https://stianloader.org/maven/ with following coord
  - groupid: org.stianloader
  - artifactid:
    * micromixin-transformer
-   * or micromixin-runtime
    * or micromixin-annotations
    * or micromixin-backports
+   * or micromixin-testing-suite-neo
 
  Available versions are listed under
- https://stianloader.org/maven/org/stianloader/micromixin-runtime/
+ https://stianloader.org/maven/org/stianloader/micromixin-transformer/
 
 In the future, "stable" releases may be offered under OSSRH (maven central).
 
