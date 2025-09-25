@@ -3,14 +3,17 @@ package org.stianloader.micromixin.testneo.testenv;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class TestReport implements AutoCloseable {
     public static class ClassReport implements AutoCloseable {
@@ -48,14 +51,16 @@ public class TestReport implements AutoCloseable {
         private static String buildDesc(@NotNull Method method) {
             StringBuilder sb = new StringBuilder("(");
             for (Class<?> arg : method.getParameterTypes()) {
-                sb.append(arg.toGenericString());
+                sb.append(arg.descriptorString());
             }
-            return sb.append(")").append(method.getReturnType().toGenericString()).toString();
+            return sb.append(")").append(method.getReturnType().descriptorString()).toString();
         }
 
         private boolean closed = false;
         @NotNull
         private final Set<@NotNull TestConstraint> failedConstraints = EnumSet.noneOf(TestConstraint.class);
+        @NotNull
+        private final Map<@NotNull TestConstraint, Throwable> failureCauses = new EnumMap<>(TestConstraint.class);
         @NotNull
         private final String memberDesc;
         @NotNull
@@ -94,6 +99,11 @@ public class TestReport implements AutoCloseable {
             return Collections.unmodifiableSet(this.failedConstraints);
         }
 
+        @Nullable
+        public Throwable getFailureCause(@NotNull TestConstraint constraint) {
+            return this.failureCauses.get(constraint);
+        }
+
         @Contract(pure = true)
         public int getFailures() {
             return this.failedConstraints.size();
@@ -123,6 +133,12 @@ public class TestReport implements AutoCloseable {
         @Contract(pure = false, mutates = "this", value = "null -> fail; !null -> this")
         @NotNull
         public MemberReport reportFailure(@NotNull TestConstraint constraint) {
+            return this.reportFailure(constraint, null);
+        }
+
+        @Contract(pure = false, mutates = "this", value = "null -> fail; !null -> this")
+        @NotNull
+        public MemberReport reportFailure(@NotNull TestConstraint constraint, @Nullable Throwable t) {
             if (this.closed) {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already closed");
             } else if (this.passedConstraints.contains(constraint)) {
@@ -131,6 +147,9 @@ public class TestReport implements AutoCloseable {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a failing constraint: " + constraint);
             }
             this.failedConstraints.add(constraint);
+            if (t != null) {
+                this.failureCauses.put(constraint, t);
+            }
             return this;
         }
 
@@ -151,7 +170,8 @@ public class TestReport implements AutoCloseable {
 
     public static enum TestConstraint {
         EXPECTED_ANNOTATIONS_PRESENT,
-        MEMBER_NAME_CONFORMITY;
+        MEMBER_NAME_CONFORMITY,
+        SIGNALLER_VALUE;
     }
 
     private boolean closed = false;
@@ -186,6 +206,22 @@ public class TestReport implements AutoCloseable {
 
         Set<ClassReport> classes = new TreeSet<>((a, b) -> a.className.compareTo(b.className));
         classes.addAll(this.reports);
+
+        for (ClassReport report : classes) {
+            for (MemberReport member : report.memberReports) {
+                for (TestConstraint constraint : member.getFailedConstraints()) {
+                    String message = "Member " + member.getPathString() + " failed constraint " + constraint;
+                    Throwable cause = member.getFailureCause(constraint);
+                    if (cause == null) {
+                        SLF4JLogger.error(TestReport.class, message);
+                    } else {
+                        SLF4JLogger.error(TestReport.class, message, cause);
+                    }
+                }
+            }
+        }
+
+        SLF4JLogger.info(TestReport.class, "Summary: ");
 
         for (ClassReport report : classes) {
             int passedCount = 0;

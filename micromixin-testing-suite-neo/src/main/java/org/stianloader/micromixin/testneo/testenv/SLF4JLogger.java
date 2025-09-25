@@ -18,6 +18,9 @@ public class SLF4JLogger {
     private static final MethodHandle MH_LOG_ERROR;
 
     @NotNull
+    private static final MethodHandle MH_LOG_ERROR_THROWABLE;
+
+    @NotNull
     private static final MethodHandle MH_LOG_INFO;
 
     @NotNull
@@ -33,6 +36,7 @@ public class SLF4JLogger {
             MH_LOG_INFO = lookup.findVirtual(loggerClass, "info", MethodType.methodType(void.class, String.class));
             MH_LOG_WARNING = lookup.findVirtual(loggerClass, "warn", MethodType.methodType(void.class, String.class));
             MH_LOG_ERROR = lookup.findVirtual(loggerClass, "error", MethodType.methodType(void.class, String.class));
+            MH_LOG_ERROR_THROWABLE = lookup.findVirtual(loggerClass, "error", MethodType.methodType(void.class, String.class, Throwable.class));
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
@@ -41,6 +45,22 @@ public class SLF4JLogger {
     public static void error(@NotNull Class<?> clazz, @NotNull String message) {
         try {
             SLF4JLogger.MH_LOG_ERROR.invoke(SLF4JLogger.MH_GET_LOGGER.invoke(clazz), message);
+        } catch (Throwable e) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else if (e instanceof Error) {
+                throw (Error) e;
+            } else if (e instanceof IOException) {
+                throw new UncheckedIOException((IOException) e);
+            } else {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void error(@NotNull Class<?> clazz, @NotNull String message, @NotNull Throwable t) {
+        try {
+            SLF4JLogger.MH_LOG_ERROR_THROWABLE.invoke(SLF4JLogger.MH_GET_LOGGER.invoke(clazz), message, t);
         } catch (Throwable e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
