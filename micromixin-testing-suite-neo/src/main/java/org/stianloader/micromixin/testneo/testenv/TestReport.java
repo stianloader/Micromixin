@@ -171,7 +171,8 @@ public class TestReport implements AutoCloseable {
     public static enum TestConstraint {
         EXPECTED_ANNOTATIONS_PRESENT,
         MEMBER_NAME_CONFORMITY,
-        SIGNALLER_VALUE;
+        SIGNALLER_VALUE,
+        TRANSFORMATION_FAILURE_EXPECTED;
     }
 
     private boolean closed = false;
@@ -209,6 +210,12 @@ public class TestReport implements AutoCloseable {
 
         for (ClassReport report : classes) {
             for (MemberReport member : report.memberReports) {
+                SLF4JLogger.debug(TestReport.class, "Member '{}'.'{}':'{}' passed following constraints: {}", member.owner.className, member.memberName, member.memberDesc, member.passedConstraints);
+            }
+        }
+
+        for (ClassReport report : classes) {
+            for (MemberReport member : report.memberReports) {
                 for (TestConstraint constraint : member.getFailedConstraints()) {
                     String message = "Member " + member.getPathString() + " failed constraint " + constraint;
                     Throwable cause = member.getFailureCause(constraint);
@@ -217,6 +224,9 @@ public class TestReport implements AutoCloseable {
                     } else {
                         SLF4JLogger.error(TestReport.class, message, cause);
                     }
+                }
+                if (member.getTotalConstraints() == 0) {
+                    SLF4JLogger.warn(TestReport.class, "Member " + member.getPathString() + " has no constraints!");
                 }
             }
         }
@@ -243,8 +253,10 @@ public class TestReport implements AutoCloseable {
                 } else {
                     SLF4JLogger.warn(TestReport.class, message);
                 }
-            } else {
+            } else if (passedMembers != 0) {
                 SLF4JLogger.info(TestReport.class, message);
+            } else {
+                SLF4JLogger.warn(TestReport.class, message);
             }
         }
     }

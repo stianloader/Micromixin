@@ -16,8 +16,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
@@ -59,7 +61,7 @@ public class MicromixinTestingSuiteNeo {
         try {
             jsonRoot = new JSONObject(Files.readString(configPath, StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new UncheckedIOException("Unable to read json cinfoguration file", e);
+            throw new UncheckedIOException("Unable to read json configuration file", e);
         }
 
         for (Object var10001 : jsonRoot.getJSONArray("runConfigurations")) {
@@ -167,18 +169,9 @@ public class MicromixinTestingSuiteNeo {
             List<URI> artifactURIs = new ArrayList<>(); // Converted to URLs for the classloader
             List<Path> artifactPaths = new ArrayList<>(); // For the module finder
 
-            if (runConfiguration.has("alsoInclude")) {
-                for (Object var10002 : runConfiguration.getJSONArray("alsoInclude")) {
-                    if (!(var10002 instanceof String)) {
-                        throw new IllegalStateException("'alsoInclude' contains element not instanceof String.");
-                    }
-                    Path alsoIncludePath = Paths.get((String) var10002);
-                    if (Files.notExists(alsoIncludePath)) {
-                        throw new IllegalStateException("'alsoInclude' references element that does not exist (" + alsoIncludePath + ").");
-                    }
-                    artifactURIs.add(alsoIncludePath.toUri());
-                    artifactPaths.add(alsoIncludePath);
-                }
+            Object alsoInclude = runConfiguration.opt("alsoInclude");
+            if (alsoInclude != null) {
+                MicromixinTestingSuiteNeo.handleAlsoInclude(alsoInclude, artifactURIs, artifactPaths);
             }
 
             CompletableFuture.allOf(tasks.toArray(new CompletableFuture<?>[0])).join();
@@ -262,6 +255,61 @@ public class MicromixinTestingSuiteNeo {
         }
     }
 
+    private static void handleAlsoInclude(@NotNull Object in, @NotNull Collection<URI> artifactURIs, @NotNull Collection<Path> artifactPaths) {
+        if (in instanceof JSONArray) {
+            for (Object var10002 : (JSONArray) in) {
+                if (var10002 instanceof JSONObject) {
+                    MicromixinTestingSuiteNeo.handleAlsoInclude(var10002, artifactURIs, artifactPaths);
+                    continue;
+                }
+                if (!(var10002 instanceof String)) {
+                    throw new IllegalStateException("'alsoInclude' contains element not instanceof String or JSONObject.");
+                }
+                Path alsoIncludePath = Paths.get((String) var10002);
+                if (Files.notExists(alsoIncludePath)) {
+                    throw new IllegalStateException("'alsoInclude' references element that does not exist (" + alsoIncludePath + ").");
+                }
+                artifactURIs.add(alsoIncludePath.toUri());
+                artifactPaths.add(alsoIncludePath);
+            }
+        } else if (in instanceof JSONObject) {
+            JSONObject alsoInclude = (JSONObject) in;
+            enum InclusionType {
+                EITHER
+            };
+            InclusionType inclusionType;
+            try {
+                inclusionType = InclusionType.valueOf(alsoInclude.getString("type").toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalStateException("Unexpected alsoInclude container type: " + alsoInclude.getString("type"), e);
+            }
+            for (Object v : alsoInclude.getJSONArray("values")) {
+                if (v == null) {
+                    throw new IllegalStateException("value in values array may not be null");
+                }
+                if (inclusionType == InclusionType.EITHER) {
+                    List<URI> a = new ArrayList<>();
+                    List<Path> b = new ArrayList<>();
+                    MicromixinTestingSuiteNeo.handleAlsoInclude(v, a, b);
+                    for (Path p : b) {
+                        String child = alsoInclude.getString("has");
+                        Objects.requireNonNull(child);
+                        if (Files.exists(p.resolve(child))) {
+                            artifactPaths.addAll(b);
+                            artifactURIs.addAll(a);
+                            return;
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+            }
+
+            throw new IllegalStateException("No case satisfies constraint.");
+        } else {
+            throw new IllegalStateException("'alsoInclude' must either be a JSON object or a JSON array, but it is " + in.getClass());
+        }
+    }
     @NotNull
     private static final DependencyLayer resolveAllChildren(@NotNull MavenResolver resolver, @NotNull List<@NotNull DependencyEdge> edges) {
         List<DependencyLayerElement> elements = new ArrayList<>();

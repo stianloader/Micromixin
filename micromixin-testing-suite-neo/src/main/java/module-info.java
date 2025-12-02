@@ -2,6 +2,7 @@ module org.stianloader.micromixin.testneo {
     requires org.stianloader.picoresolve;
     requires org.json;
     requires java.instrument;
+    requires org.objectweb.asm.tree;
     requires static org.stianloader.micromixin.annotations;
     requires static transitive org.jetbrains.annotations;
 

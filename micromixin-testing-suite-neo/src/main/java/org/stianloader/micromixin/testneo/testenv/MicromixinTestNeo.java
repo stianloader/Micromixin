@@ -1,13 +1,23 @@
 package org.stianloader.micromixin.testneo.testenv;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.OptionalInt;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.stianloader.micromixin.testneo.testenv.TestReport.ClassReport;
 import org.stianloader.micromixin.testneo.testenv.TestReport.MemberReport;
 import org.stianloader.micromixin.testneo.testenv.TestReport.TestConstraint;
@@ -65,7 +75,62 @@ public class MicromixinTestNeo {
     }
 
     private static void evaluateClass(@NotNull Class<?> transformedTargetClass, @NotNull ClassReport report) {
-        for (Method method : transformedTargetClass.getDeclaredMethods()) {
+        List<@NotNull Method> declaredMethods = new ArrayList<>(Arrays.asList(transformedTargetClass.getDeclaredMethods()));
+
+        // Fetch failing cases
+        try (InputStream is = transformedTargetClass.getClassLoader().getResourceAsStream(transformedTargetClass.getName().replace(".", "/") + ".class")) {
+            ClassReader cr = new ClassReader(is);
+            ClassNode node = new ClassNode();
+            cr.accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
+
+            List<AnnotationNode> annotations = node.invisibleAnnotations;
+            if (annotations != null) {
+                for (AnnotationNode an : node.invisibleAnnotations) {
+                    if (!an.desc.equals("Lorg/stianloader/micromixin/testneo/testenv/annotations/IncludeClasses$IncludeFailingClass;")) {
+                        continue;
+                    }
+                    List<Object> values = an.values;
+                    if (values == null) {
+                        throw new AssertionError();
+                    }
+                    for (int i = 0; i < values.size(); i += 2) {
+                        if (((String) values.get(i)).equals("value")) {
+                            for (Object o : (List<?>) values.get(i + 1)) {
+                                if (o == null) {
+                                    throw new AssertionError();
+                                } else if (!(o instanceof Type)) {
+                                    throw new AssertionError();
+                                }
+                                Type type = (Type) o;
+                                try (MemberReport mr = new MemberReport(report, "<clinit>/" + type.getClassName(), "()V")) {
+                                    boolean loaded = false;
+                                    boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
+                                    try {
+                                        SLF4JLogger.setThreadLoggingClassloadingFailures(false);
+                                        transformedTargetClass.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
+                                    } catch (ClassNotFoundException cnfe) {
+                                        continue;
+                                    } finally {
+                                        if (loaded) {
+                                            mr.reportFailure(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
+                                        } else {
+                                            mr.reportSucess(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
+                                        }
+                                        SLF4JLogger.setThreadLoggingClassloadingFailures(loggingCLFailures);
+                                    }
+                                }
+                            }
+                        } else {
+                            SLF4JLogger.error(MicromixinTestNeo.class, "Unknown annotation attribute: " + values.get(i));
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to read class bytecode for class " + transformedTargetClass.getName(), e);
+        }
+
+        for (Method method : declaredMethods) {
             try (MemberReport memberReport = new MemberReport(report, method)) {
                 ExpectedAnnotations expectedAnnotations = method.getDeclaredAnnotation(ExpectedAnnotations.class);
                 AssertMemberNames memberNames = method.getDeclaredAnnotation(AssertMemberNames.class);
@@ -128,7 +193,7 @@ public class MicromixinTestNeo {
                     try {
                         Object reciever = null;
                         if (!Modifier.isStatic(method.getModifiers())) {
-                            reciever = MicromixinTestNeo.evaluteConstructor(transformedTargetClass, expectSignaller.constructorArgs());
+                            reciever = MicromixinTestNeo.evaluteConstructor(method.getDeclaringClass(), expectSignaller.constructorArgs());
                         } else if (expectSignaller.constructorArgs().length != 0) {
                             throw new IllegalStateException("constructor arguments defined for static method.");
                         }

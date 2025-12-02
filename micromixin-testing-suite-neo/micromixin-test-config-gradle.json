@@ -4,6 +4,40 @@
             "artifacts": [
                 {
                     "groupId": "org.stianloader",
+                    "artifactId": "launcher-classtransform",
+                    "version": "4.0.0-a20251115",
+                    "excludes": [
+                        "org.stianloader:picoresolve",
+                        "org.json:json"
+                    ]
+                }
+            ],
+            "repositories": [
+                {
+                    "id": "stianloader",
+                    "uri": "https://stianloader.org/maven/"
+                },
+                {
+                    "id": "Central",
+                    "uri": "https://repo1.maven.org/maven2/"
+                }
+            ],
+            "alsoFetchLocally": false,
+            "alsoInclude": [ ],
+            "rootModules": [
+                "de.geolykt.starloader.launcher",
+                "org.fusesource.jansi",
+                "core"
+            ],
+            "setProperties": {
+                "jansi.force": false,
+                "org.stianloader.sll.log.level": "INFO"
+            }
+        },
+        {
+            "artifacts": [
+                {
+                    "groupId": "org.stianloader",
                     "artifactId": "launcher-mixin-fabric",
                     "version": "4.0.0-a20250922",
                     "excludes": [
@@ -32,7 +66,11 @@
             "rootModules": [
                 "de.geolykt.starloader.launcher",
                 "org.fusesource.jansi"
-            ]
+            ],
+            "setProperties": {
+                "jansi.force": false,
+                "org.stianloader.sll.log.level": "INFO"
+            }
         },
         {
             "artifacts": [
@@ -68,7 +106,8 @@
                 "org.fusesource.jansi"
             ],
             "setProperties": {
-                "jansi.force": true
+                "jansi.force": true,
+                "org.stianloader.sll.log.level": "INFO"
             }
         }
     ]

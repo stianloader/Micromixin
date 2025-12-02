@@ -63,8 +63,21 @@
             ],
             "alsoFetchLocally": false,
             "alsoInclude": [
-                "../micromixin-transformer/bin/java9module",
-                "../micromixin-annotations/bin/java9module"
+                {
+                    "type": "either",
+                    "has": "module-info.class",
+                    "values": [
+                        [ "../micromixin-transformer/bin/java9module" ],
+                        [ "../micromixin-transformer/build/classes/java/java9module" ]
+                    ]
+                }, {
+                    "type": "either",
+                    "has": "module-info.class",
+                    "values": [
+                        [ "../micromixin-annotations/bin/java9module" ],
+                        [ "../micromixin-annotations/build/classes/java/java9module" ]
+                    ]
+                }
             ],
             "rootModules": [
                 "de.geolykt.starloader.launcher",
