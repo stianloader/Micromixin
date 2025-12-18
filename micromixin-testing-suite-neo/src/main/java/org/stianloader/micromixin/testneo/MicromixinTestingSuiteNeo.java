@@ -209,6 +209,9 @@ public class MicromixinTestingSuiteNeo {
                 });
             }
 
+            JSONArray omittedCapabilities = runConfiguration.optJSONArray("omitCapabilities", new JSONArray());
+            System.getProperties().put("org.stianloader.micromixin.testneo.omitCapabilities", omittedCapabilities.toList());
+
             try {
                 ModuleFinder earlyFinder = ModuleFinder.of();
                 ModuleFinder lateFinder = ModuleFinder.of(artifactPaths.toArray(new Path[artifactPaths.size()]));

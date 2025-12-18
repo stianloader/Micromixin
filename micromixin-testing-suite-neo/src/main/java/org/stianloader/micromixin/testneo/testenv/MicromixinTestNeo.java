@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -156,20 +157,26 @@ public class MicromixinTestNeo {
                     }
                 }
 
+                testExpectedAnnotations:
                 if (expectedAnnotations != null) {
-                    boolean annotationsPresent = true;
+                    for (Object o : ((List<?>) System.getProperties().getOrDefault("org.stianloader.micromixin.testneo.omitCapabilities", Collections.emptyList()))) {
+                        System.err.println(o);
+                        System.err.println(expectedAnnotations.capability());
+                        if (o != null && o.toString().equals(expectedAnnotations.capability())) {
+                            System.err.println("BROKEN");
+                            memberReport.reportSkip(TestConstraint.EXPECTED_ANNOTATIONS_PRESENT);
+                            break testExpectedAnnotations;
+                        }
+                    }
 
                     for (Class<? extends Annotation> expectedAnnotation : expectedAnnotations.value()) {
                         if (method.getDeclaredAnnotation(expectedAnnotation) == null) {
                             memberReport.reportFailure(TestConstraint.EXPECTED_ANNOTATIONS_PRESENT, new IllegalStateException("Annotation " + expectedAnnotation + " not present."));
-                            annotationsPresent = false;
-                            break;
+                            break testExpectedAnnotations;
                         }
                     }
 
-                    if (annotationsPresent) {
-                        memberReport.reportSucess(TestConstraint.EXPECTED_ANNOTATIONS_PRESENT);
-                    }
+                    memberReport.reportSucess(TestConstraint.EXPECTED_ANNOTATIONS_PRESENT);
                 }
 
                 if (memberNames != null) {

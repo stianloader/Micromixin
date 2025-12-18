@@ -32,7 +32,10 @@
             "setProperties": {
                 "jansi.force": false,
                 "org.stianloader.sll.log.level": "INFO"
-            }
+            },
+            "omitCapabilities": [
+                "COPY_ANNOTATIONS"
+            ]
         },
         {
             "artifacts": [

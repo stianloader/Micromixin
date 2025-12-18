@@ -6,7 +6,7 @@ import org.stianloader.micromixin.testneo.testenv.annotations.ExpectedAnnotation
 
 public class OverwriteMixinsTarget {
 
-    @ExpectedAnnotations({Overwrite.class, AssertMemberName.class})
+    @ExpectedAnnotations(value = {Overwrite.class, AssertMemberName.class}, capability = "COPY_ANNOTATIONS")
     public static void runTests() {
         throw new IllegalStateException();
     }

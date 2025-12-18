@@ -11,7 +11,7 @@ import org.stianloader.micromixin.testneo.testenv.targets.OverwriteMixinsTarget;
 public class OverwriteMixins {
 
     @Overwrite
-    @ExpectedAnnotations({Overwrite.class, AssertMemberName.class})
+    @ExpectedAnnotations(value = {Overwrite.class, AssertMemberName.class})
     @AssertMemberName(constraint = AssertConstraint.IS, value = "runTests")
     public static void runTests() {
         System.out.println("Hello from transformed " + OverwriteMixins.class.getName() + " CL " + OverwriteMixins.class.getClassLoader());

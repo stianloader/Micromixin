@@ -69,6 +69,8 @@ public class TestReport implements AutoCloseable {
         private final ClassReport owner;
         @NotNull
         private final Set<@NotNull TestConstraint> passedConstraints = EnumSet.noneOf(TestConstraint.class);
+        @NotNull
+        private final Set<@NotNull TestConstraint> skippedConstraints = EnumSet.noneOf(TestConstraint.class);
 
         public MemberReport(@NotNull ClassReport owner, @NotNull Method method) {
             this(owner, method.getName(), MemberReport.buildDesc(method));
@@ -116,13 +118,18 @@ public class TestReport implements AutoCloseable {
         }
 
         @Contract(pure = true)
+        public int getSkipped() {
+            return this.skippedConstraints.size();
+        }
+
+        @Contract(pure = true)
         public int getSuccesses() {
             return this.passedConstraints.size();
         }
 
         @Contract(pure = true)
         public int getTotalConstraints() {
-            return this.failedConstraints.size() + this.passedConstraints.size();
+            return this.failedConstraints.size() + this.passedConstraints.size() + this.skippedConstraints.size();
         }
 
         @Contract(pure = true)
@@ -145,11 +152,29 @@ public class TestReport implements AutoCloseable {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as passed: " + constraint);
             } else if (this.failedConstraints.contains(constraint)) {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a failing constraint: " + constraint);
+            } else if (this.skippedConstraints.contains(constraint)) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a skipped constraint: " + constraint);
             }
             this.failedConstraints.add(constraint);
             if (t != null) {
                 this.failureCauses.put(constraint, t);
             }
+            return this;
+        }
+
+        @Contract(pure = false, mutates = "this", value = "null -> fail; !null -> this")
+        @NotNull
+        public MemberReport reportSkip(@NotNull TestConstraint constraint) {
+            if (this.closed) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already closed");
+            } else if (this.passedConstraints.contains(constraint)) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as passed: " + constraint);
+            } else if (this.failedConstraints.contains(constraint)) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a failing constraint: " + constraint);
+            } else if (this.skippedConstraints.contains(constraint)) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a skipped constraint: " + constraint);
+            }
+            this.skippedConstraints.add(constraint);
             return this;
         }
 
@@ -162,6 +187,8 @@ public class TestReport implements AutoCloseable {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as passed: " + constraint);
             } else if (this.failedConstraints.contains(constraint)) {
                 throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a failing constraint: " + constraint);
+            } else if (this.skippedConstraints.contains(constraint)) {
+                throw new IllegalStateException("Report (" + this.getPathString() + ") already contains constraint as a skipped constraint: " + constraint);
             }
             this.passedConstraints.add(constraint);
             return this;
@@ -236,16 +263,22 @@ public class TestReport implements AutoCloseable {
         for (ClassReport report : classes) {
             int passedCount = 0;
             int totalCount = 0;
+            int skipCount = 0;
             int passedMembers = 0;
             for (MemberReport member : report.memberReports) {
                 passedCount += member.getSuccesses();
                 totalCount += member.getTotalConstraints();
+                skipCount += member.getSkipped();
                 if (member.getFailures() == 0 && member.getTotalConstraints() != 0) {
                     passedMembers++;
                 }
             }
 
             String message = "<" + report.className + "> " + passedMembers + "/" + report.memberReports.size() + " members passed (" + passedCount + "/" + totalCount + " constraints passed total)";
+
+            if (skipCount != 0) {
+                message += " (" + skipCount + " tests skipped)";
+            }
 
             if (passedMembers != report.memberReports.size()) {
                 if (passedMembers == 0) {

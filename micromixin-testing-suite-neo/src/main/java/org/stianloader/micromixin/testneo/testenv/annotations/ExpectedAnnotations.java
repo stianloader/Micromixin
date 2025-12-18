@@ -12,4 +12,5 @@ import org.jetbrains.annotations.NotNull;
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface ExpectedAnnotations {
     @NotNull Class<? extends Annotation> @NotNull[] value();
+    @NotNull String capability() default "";
 }
