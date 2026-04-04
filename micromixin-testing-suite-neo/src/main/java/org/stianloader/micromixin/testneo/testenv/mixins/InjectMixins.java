@@ -13,6 +13,18 @@ import org.stianloader.micromixin.testneo.testenv.targets.InjectMixinsTarget;
 
 @Mixin(InjectMixinsTarget.class)
 public class InjectMixins {
+
+    @Mixin(InjectMixinsTarget.CaptureArgumentsOverflow.class)
+    private static class CaptureArgumentsOverflow {
+        @Inject(method = { "captureArgumentsOverflow()V" }, at = { @At("HEAD") })
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "onArgumentCaptureOverflow")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "onArgumentCaptureOverflow", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private void onArgumentCaptureOverflow(InjectMixinsTarget target, CallbackInfo ci) {
+            Signaller.setSignal(1);
+        }
+    }
+
     @Mixin(InjectMixinsTarget.WrongCallbackInfoClass.class)
     private static class WrongCallbackInfoClass {
         @Inject(method = "wrongCallbackInfoClass", at = @At("TAIL"))

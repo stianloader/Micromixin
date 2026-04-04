@@ -90,7 +90,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
     public void apply(@NotNull ClassNode to, @NotNull HandlerContextHelper hctx,
             @NotNull MixinStub sourceStub, @NotNull MixinMethodStub source,
             @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
-        MixinVendor primaryBehaviour = this.validate0(source, logger, sharedBuilder, true);
+        MixinVendor primaryBehaviour = this.validate0(source, this.logger, sharedBuilder, true);
 
         if (primaryBehaviour == MixinVendor.MICROMIXIN) {
             this.applyMicromixin(to, hctx, sourceStub, source, remapper, sharedBuilder);

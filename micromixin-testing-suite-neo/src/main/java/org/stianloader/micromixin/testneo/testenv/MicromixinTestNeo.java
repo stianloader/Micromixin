@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalInt;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +32,7 @@ import org.stianloader.micromixin.testneo.testenv.annotations.InvokeArgument;
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeStaticMethod;
 import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 import org.stianloader.micromixin.testneo.testenv.targets.InjectMixinsTarget;
+import org.stianloader.micromixin.testneo.testenv.targets.LocalCaptureMixinsTarget;
 import org.stianloader.micromixin.testneo.testenv.targets.OverwriteMixinsTarget;
 
 public class MicromixinTestNeo {
@@ -85,15 +88,19 @@ public class MicromixinTestNeo {
             cr.accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG);
 
             List<AnnotationNode> annotations = node.invisibleAnnotations;
+
             if (annotations != null) {
                 for (AnnotationNode an : node.invisibleAnnotations) {
                     if (!an.desc.equals("Lorg/stianloader/micromixin/testneo/testenv/annotations/IncludeClasses$IncludeFailingClass;")) {
                         continue;
                     }
+
                     List<Object> values = an.values;
+
                     if (values == null) {
                         throw new AssertionError();
                     }
+
                     for (int i = 0; i < values.size(); i += 2) {
                         if (((String) values.get(i)).equals("value")) {
                             for (Object o : (List<?>) values.get(i + 1)) {
@@ -102,13 +109,22 @@ public class MicromixinTestNeo {
                                 } else if (!(o instanceof Type)) {
                                     throw new AssertionError();
                                 }
+
                                 Type type = (Type) o;
+
                                 try (MemberReport mr = new MemberReport(report, "<clinit>/" + type.getClassName(), "()V")) {
                                     boolean loaded = false;
                                     boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
+
                                     try {
                                         SLF4JLogger.setThreadLoggingClassloadingFailures(false);
-                                        transformedTargetClass.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
+                                        Class<?> clazz = transformedTargetClass.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
+
+                                        if (clazz.getClassLoader() != transformedTargetClass.getClassLoader()) {
+                                            throw new ClassNotFoundException("Wrong Classloader. (Fallback CL?)");
+                                        }
+
+                                        loaded = true;
                                     } catch (ClassNotFoundException cnfe) {
                                         continue;
                                     } finally {
@@ -117,6 +133,7 @@ public class MicromixinTestNeo {
                                         } else {
                                             mr.reportSucess(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
                                         }
+
                                         SLF4JLogger.setThreadLoggingClassloadingFailures(loggingCLFailures);
                                     }
                                 }
@@ -139,6 +156,7 @@ public class MicromixinTestNeo {
 
                 {
                     AssertMemberName assertName = method.getDeclaredAnnotation(AssertMemberName.class);
+
                     if (assertName != null) {
                         memberNames = new AssertMemberNames() {
                             @Override
@@ -160,10 +178,7 @@ public class MicromixinTestNeo {
                 testExpectedAnnotations:
                 if (expectedAnnotations != null) {
                     for (Object o : ((List<?>) System.getProperties().getOrDefault("org.stianloader.micromixin.testneo.omitCapabilities", Collections.emptyList()))) {
-                        System.err.println(o);
-                        System.err.println(expectedAnnotations.capability());
                         if (o != null && o.toString().equals(expectedAnnotations.capability())) {
-                            System.err.println("BROKEN");
                             memberReport.reportSkip(TestConstraint.EXPECTED_ANNOTATIONS_PRESENT);
                             break testExpectedAnnotations;
                         }
@@ -232,6 +247,38 @@ public class MicromixinTestNeo {
     private static void evaluateClass(@NotNull Class<?> transformedTargetClass, @NotNull TestReport report) {
         try (ClassReport classreport = new ClassReport(report, transformedTargetClass.getName())) {
             MicromixinTestNeo.evaluateClass(transformedTargetClass, classreport);
+        }
+    }
+
+    private static void evaluateClass(@NotNull Supplier<Class<?>> transformedTargetClass, @NotNull TestReport report, @NotNull String requestedCapability) {
+        boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
+        Class<?> clazz = null;
+        NoClassDefFoundError stored = null;
+
+        try {
+            SLF4JLogger.setThreadLoggingClassloadingFailures(false);
+            clazz = transformedTargetClass.get();
+        } catch (NoClassDefFoundError ignored) {
+            stored = ignored;
+        } finally {
+            SLF4JLogger.setThreadLoggingClassloadingFailures(loggingCLFailures);
+        }
+
+        try (ClassReport classreport = new ClassReport(report, clazz == null ? "<unknown>" : Objects.requireNonNull(clazz.getName()))) {
+            for (Object o : ((List<?>) System.getProperties().getOrDefault("org.stianloader.micromixin.testneo.omitCapabilities", Collections.emptyList()))) {
+                if (o != null && o.toString().equals(requestedCapability)) {
+                    try (MemberReport memberReport = new MemberReport(classreport, "*", "*")) {
+                        memberReport.reportSkip(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
+                    }
+                    return;
+                }
+            }
+
+            if (clazz == null) {
+                throw new IllegalStateException(stored);
+            }
+
+            MicromixinTestNeo.evaluateClass(clazz, classreport);
         }
     }
 
@@ -327,6 +374,7 @@ public class MicromixinTestNeo {
         try (TestReport report = new TestReport(true)) {
             MicromixinTestNeo.evaluateClass(InjectMixinsTarget.class, report);
             MicromixinTestNeo.evaluateClass(OverwriteMixinsTarget.class, report);
+            MicromixinTestNeo.evaluateClass(() -> {return LocalCaptureMixinsTarget.class;}, report, "LOCAL_CAPTURE");
         }
     }
 }

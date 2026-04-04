@@ -23,6 +23,7 @@ public class MixinStub implements Comparable<MixinStub> {
         List<MixinMethodStub> methods = new ArrayList<MixinMethodStub>();
         List<MixinFieldStub> fields = new ArrayList<MixinFieldStub>();
         List<MixinParseException> delayedExceptions = null;
+
         for (MethodNode method : node.methods) {
             if (method == null) {
                 throw new NullPointerException();
@@ -41,6 +42,7 @@ public class MixinStub implements Comparable<MixinStub> {
                 }
             }
         }
+
         for (FieldNode field : node.fields) {
             if (field == null) {
                 throw new NullPointerException();
@@ -58,6 +60,7 @@ public class MixinStub implements Comparable<MixinStub> {
                 }
             }
         }
+
         return new MixinStub(node, MixinHeader.parse(node, defaultPriority), Collections.unmodifiableCollection(methods), Collections.unmodifiableCollection(fields), delayedExceptions, codeSourceURI);
     }
 
@@ -92,13 +95,16 @@ public class MixinStub implements Comparable<MixinStub> {
             throw (RuntimeException) rethrown;
         }
 
-        SimpleRemapper remapper = getRemapper(target, hctx, sharedBuilder);
+        SimpleRemapper remapper = this.getRemapper(target, hctx, sharedBuilder);
+
         for (MixinFieldStub stub : this.fields) {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);
         }
+
         for (MixinMethodStub stub : this.methods) {
             stub.applyTo(target, hctx, this, remapper, sharedBuilder);
         }
+
         // Merge interfaces
         for (String itf : this.sourceNode.interfaces) {
             if (!target.interfaces.contains(itf)) {
@@ -123,12 +129,15 @@ public class MixinStub implements Comparable<MixinStub> {
         // We may need to analyse the proper behaviour there
         r.remapClassName(this.sourceNode.name, targetClass.name);
         // Note: Before calling the #collectMappings methods, the class mappings should be known (as it greatly simplifies the method/field lookup process)
+
         for (MixinFieldStub field : this.fields) {
             field.collectMappings(targetClass, hctx, this, r, sharedBuilder);
         }
+
         for (MixinMethodStub method : this.methods) {
             method.collectMappings(targetClass, hctx, this, r, sharedBuilder);
         }
+
         return r;
     }
 

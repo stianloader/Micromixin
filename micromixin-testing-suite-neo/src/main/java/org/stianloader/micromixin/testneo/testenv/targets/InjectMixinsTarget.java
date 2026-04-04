@@ -8,8 +8,21 @@ import org.stianloader.micromixin.testneo.testenv.annotations.IncludeClasses.Inc
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeArgument;
 import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 
-@IncludeFailingClass(InjectMixinsTarget.WrongCallbackInfoClass.class)
+@IncludeFailingClass({
+    InjectMixinsTarget.CaptureArgumentsOverflow.class,
+    InjectMixinsTarget.WrongCallbackInfoClass.class
+})
 public class InjectMixinsTarget {
+
+    public static class CaptureArgumentsOverflow {
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "captureArgumentsOverflow")
+        @ExpectSignaller(signalValue = 1)
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
+        public final void captureArgumentsOverflow() {
+            // nothing
+        }
+    }
+
     public static class WrongCallbackInfoClass {
         @ExpectSignaller(signalValue = 1)
         @AssertMemberName(constraint = AssertConstraint.IS, value = "wrongCallbackInfoClass")

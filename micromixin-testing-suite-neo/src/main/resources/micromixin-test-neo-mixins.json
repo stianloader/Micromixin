@@ -6,7 +6,12 @@
   "compatibilityLevel": "JAVA_11",
   "mixins": [
     "InjectMixins",
+    "InjectMixins$CaptureArgumentsOverflow",
     "InjectMixins$WrongCallbackInfoClass",
-    "OverwriteMixins"
+    "OverwriteMixins",
+    "LocalCaptureMixins",
+    "LocalCaptureMixins$NoArgsCaptureInLocalCapture",
+    "LocalCaptureMixins$NoArgsCaptureInLocalCaptureUnderflow",
+    "LocalCaptureMixins$NoArgsOverflow"
   ]
 }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypeReference;
@@ -54,6 +55,16 @@ import org.stianloader.micromixin.transform.internal.util.locals.LocalCaptureRes
 import org.stianloader.micromixin.transform.internal.util.locals.LocalsCapture;
 
 public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub> {
+
+    @NotNull
+    public static final String CAPTURE_LOCALS_NONE = "NO_CAPTURE";
+
+    @NotNull
+    public static final String CAPTURE_LOCALS_FAIL_HARD = "CAPTURE_FAILHARD";
+
+    @NotNull
+    public static final String CAPTURE_LOCALS_PRINT = "PRINT";
+
     private final int allow;
     @NotNull
     public final Collection<SlicedInjectionPointSelector> at;
@@ -451,10 +462,11 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
      */
     private void captureLocals(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target,
             @NotNull InsnList out, AbstractInsnNode inspectionTarget, @NotNull StringBuilder sharedBuilder) {
-        if (this.locals.equals("NO_CAPTURE")) {
+        if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_NONE)) {
             // Nothing to do
             return;
         }
+
         LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(inspectionTarget), this.transformer.getPool());
 
         int initialFrameSize = ASMUtil.getInitialFrameSize(target);
@@ -469,12 +481,14 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         } else {
             int maxLocals = frame.getLocals();
             DescString requesterDesc = new DescString(this.injectSource.desc);
+
             while (requesterDesc.hasNext()) {
                 String desc = requesterDesc.nextType();
                 if (ASMUtil.CALLBACK_INFO_DESC.equals(desc) || ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(desc)) {
                     break;
                 }
             }
+
             while (requesterDesc.hasNext()) {
                 requestedLocals.add(requesterDesc.nextType());
             }
@@ -484,11 +498,15 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             for (int i = initialFrameSize; i < maxLocals; i++) {
                 BasicValue local = frame.getLocal(i);
                 Type localType = local.getType();
+
                 if (localType == null) {
                     StringWriter sw = new StringWriter();
+
                     AbstractInsnNode hackInstruction = new InsnNode(Opcodes.NOP);
+
                     hackInstruction.invisibleTypeAnnotations = new ArrayList<TypeAnnotationNode>();
                     hackInstruction.invisibleTypeAnnotations.add(new TypeAnnotationNode(TypeReference.RESOURCE_VARIABLE, null, "Lorg/stianloader/micromixin/internal/MixinInjectAnnotationTraceLabel;"));
+
                     try {
                         target.instructions.insertBefore(inspectionTarget, hackInstruction);
                         TraceMethodVisitor tmv = new TraceMethodVisitor(new Textifier());
@@ -497,17 +515,21 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                     } finally {
                         target.instructions.remove(hackInstruction);
                     }
+
                     throw new AssertionError("localType == null, for i = " + i + "; initialFrameSize = " + initialFrameSize + "; maxLocals = " + maxLocals + "; frame[i] = " + local + "; frame = " + frame + "; frame[i].class= " + local.getClass() + "; frame[i].size = " + local.getSize() + "; target = " + targetClass.name + "." + target.name + target.desc+ "; source = " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + "; ats = {" + this.at + "}; targetCode = \n" + sw.toString());
                 }
+
                 String desc = localType.getDescriptor();
                 providedLocals.add(desc);
+
                 if (ASMUtil.isCategory2(desc.codePointAt(0))) {
                     i++;
                 }
             }
 
             int requestedCount = requestedLocals.size();
-            if (requestedCount < providedLocals.size()) {
+
+            if (requestedCount > providedLocals.size()) {
                 errorMessage = "Handler " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + " whishes to capture more locals than " + targetClass.name + "." + target.name + target.desc + " can provide. Provided: " + providedLocals + ", Requested: " + requestedLocals + ".";
                 break errorFailfast;
             }
@@ -530,7 +552,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             }
         }
 
-        if (this.locals.equals("CAPTURE_FAILHARD")) {
+        if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_FAIL_HARD)) {
             if (errorMessage != null) {
                 throw new Error(errorMessage);
             }
@@ -552,12 +574,15 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
      * @return True to abort injection (for example with PRINT), false otherwise.
      */
     private boolean captureLocalsEarly(@NotNull ClassNode handlerOwner, @NotNull ClassNode targetClass, @NotNull MethodNode target, AbstractInsnNode inspectionTarget, @NotNull StringBuilder sharedBuilder) {
-        if (this.locals.equals("NO_CAPTURE") || this.locals.equals("CAPTURE_FAILHARD")) {
+        if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_NONE)
+                || this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_FAIL_HARD)) {
             // Nothing to do, for now
             return false;
         }
+
         LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(inspectionTarget), this.transformer.getPool());
-        if (this.locals.equals("PRINT")) {
+
+        if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_PRINT)) {
             KeyValueTableSection injectionPointInfo = new KeyValueTableSection();
             CommentTable printTable = new CommentTable().addSection(injectionPointInfo);
 
@@ -599,6 +624,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             System.err.println(printTable);
             return true;
         }
+
         throw new IllegalStateException("Unsupported local capture flag: \"" + this.locals + "\"");
     }
 
@@ -661,10 +687,13 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
     private static int scanNextFreeLVTIndex(@NotNull MethodNode method) {
         int currentUsed = 0;
+
         if ((method.access & Opcodes.ACC_STATIC) == 0) {
             currentUsed++;
         }
+
         DescString dstring = new DescString(method.desc);
+
         while (dstring.hasNext()) {
             if (ASMUtil.isCategory2(dstring.nextReferenceType())) {
                 currentUsed += 2;
@@ -672,6 +701,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 currentUsed++;
             }
         }
+
         for (AbstractInsnNode insn = method.instructions.getFirst(); insn != null; insn = insn.getNext()) {
             if (insn.getType() == AbstractInsnNode.VAR_INSN) {
                 int idx = ((VarInsnNode) insn).var;
@@ -681,6 +711,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
                 currentUsed = Math.max(currentUsed, idx);
             }
         }
+
         return ++currentUsed;
     }
 
@@ -712,22 +743,37 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         DescString targetDesc = new DescString(targetMethod.desc);
 
         int lvtIndex = 0;
+
         if ((targetMethod.access & Opcodes.ACC_STATIC) == 0) {
             lvtIndex++;
         }
 
+        @Nullable
+        String errorProbableCause = null;
+
         while (handlerDesc.hasNext() && targetDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
+
             if (handlerType.equals(ASMUtil.CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
-                if (this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_DESC + ")")
-                        || this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC + ")")) {
+                if (this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_DESC)
+                        || this.injectSource.desc.startsWith("(" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
                     // Not capturing any argument is supported even in the case of an argument underflow.
-                    return;
+
+                    // Provided we aren't capturing locals that is.
+                    // When capturing locals, argument capture becomes mandatory again
+                    if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_NONE)
+                            || this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_PRINT)) {
+                        return;
+                    } else {
+                        errorProbableCause = "Local capture is enabled, which means that arguments need to get captured too. However, no arguments were captured";
+                    }
                 }
+
                 // Argument underflow (not supported by the spongeian implementation - even though underflows are supported for local capture):
                 // the break will cause an exception to fire - that is intended.
                 break;
             }
+
             String targetType = targetDesc.nextType();
             if (!handlerType.equals(targetType)) {
                 // TODO Can it also be subtypes? Answer: @Coerce would do that
@@ -748,9 +794,26 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
         }
 
         if (targetDesc.hasNext()) {
-            // Argument underflows are not supported by the spongeian implementation
-            throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
-                    + "the target method has more arguments than the source method is capturing.");
+            List<String> unmatchedTargetDescs = new ArrayList<String>();
+
+            do {
+                unmatchedTargetDescs.add(targetDesc.nextType());
+            } while (targetDesc.hasNext());
+
+            // Argument underflows are not supported by the spongeian implementation - neither do we for parity reasons, at least for now.
+
+            String message = "Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc
+                    + ", however the target method has more arguments than the source handler method is capturing. In specific, the handler forgot to capture following types: " + unmatchedTargetDescs;
+
+            if (errorProbableCause != null) {
+                message += ". Most probable cause: " + errorProbableCause + ".";
+            } else {
+                message += ". Hints:\n1. When capturing at least one argument, all arguments must be captured, too. In other words, argument capture underflows are not supported (neither in micromixin, nor in conventional spongeian mixin implementations)."
+                        + "\n2. When capturing local variables is enabled, all arguments must get captured - even when no local variables actually get captured."
+                        + "\n3. Captured arguments come before the CallbackInfo/CallbackInfoReturnable<T> type, whilst captured local variables come after CallbackInfo/CallbackInfoReturnable<T> type.";
+            }
+
+            throw new IllegalStateException(message);
         } else if (handlerDesc.hasNext()) {
             String handlerType = handlerDesc.nextType();
             if (handlerType.equals(ASMUtil.CALLBACK_INFO_DESC) || handlerType.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC)) {
@@ -759,7 +822,7 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
             // handler wishes to capture more arguments than it should.
             // It is rather self-explanatory that argument overflows are not supported.
             throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " injects into " + targetClass.name + "." + targetMethod.name + targetMethod.desc + ", however "
-                    + "the target method has less arguments than the source method is wishing to capture. The first extraneous argument is of type: " + handlerType);
+                    + "the target method has less arguments than the source handler method is wishing to capture. The first extraneous argument is of type: " + handlerType);
         } else {
             // Both lists exhausted without reaching a CI or a CIR parameter.
             throw new IllegalStateException("Handler method " + sourceStub.sourceNode.name + "." + this.injectSource.name + this.injectSource.desc + " must have a CallbackInfo or a CallbackInfoReturnable in it's arguments. But it does not.");

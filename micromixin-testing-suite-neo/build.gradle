@@ -6,30 +6,33 @@ plugins {
 }
 
 group = 'org.stianloader'
-def archivesBaseName = 'micromixin-testing-suite-neo'
-version = '0.8.0'
+version = '0.8.1'
+
+base {
+    archivesName = 'micromixin-testing-suite-neo'
+}
 
 repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        name 'stianloader'
-        url 'https://stianloader.org/maven'
+        name = 'stianloader'
+        url = 'https://stianloader.org/maven'
     }
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.8'
-    api 'org.ow2.asm:asm-commons:9.8'
-    api 'org.ow2.asm:asm-tree:9.8'
-    api 'org.ow2.asm:asm-util:9.8'
+    api 'org.ow2.asm:asm:9.9.1'
+    api 'org.ow2.asm:asm-commons:9.9.1'
+    api 'org.ow2.asm:asm-tree:9.9.1'
+    api 'org.ow2.asm:asm-util:9.9.1'
     // https://stianloader.org/maven/org/stianloader/picoresolve
     api 'org.stianloader:picoresolve:1.0.0-a20250923'
     // https://mvnrepository.com/artifact/org.json/json
-    api 'org.json:json:20250517'
+    api 'org.json:json:20251224'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    compileOnly 'org.jetbrains:annotations:26.0.2-1'
+    compileOnly 'org.jetbrains:annotations:26.1.0'
     compileOnly project(":micromixin-annotations")
 }
 
@@ -49,7 +52,7 @@ compileJava {
 }
 
 jar {
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 
@@ -63,7 +66,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 
     from sourceSets.main.allSource
 
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 }
@@ -95,8 +98,8 @@ clean {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId project.group
-            artifactId project.archivesBaseName
+            groupId = project.group
+            artifactId = base.archivesName.get()
 
             from components['java']
             artifact sourcesJar

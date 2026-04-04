@@ -133,9 +133,13 @@ public @interface Inject {
      * can be captured. Unneeded trailing arguments can be removed (up to the {@link CallbackInfo}/
      * {@link CallbackInfoReturnable}). Leading arguments cannot be removed, nor any arguments in between.
      *
-     * <p>Arguments can be captured regardless of the local capture. Captured arguments need to be added before
-     * the {@link CallbackInfo} or {@link CallbackInfoReturnable} argument, <b>captured locals need to be added
-     * after that argument.</b>
+     * <p>In the same vein, when capturing local variables is enabled (i.e. {@link #locals()} is not
+     * {@link LocalCapture#NO_CAPTURE}), <b>all arguments MUST also be captured</b>. Cause for this is an
+     * implementation quirk within the spongeian mixin implementation.
+     *
+     * <p>However, arguments can also be captured even when local captures is disabled.
+     * Captured arguments need to be added before the {@link CallbackInfo} or
+     * {@link CallbackInfoReturnable} argument, whilst captured locals need to be added after that argument.
      *
      * <p>Local capture cannot capture arguments - for that argument capture should be used.
      * In medium to highly obfuscated environments, where local variables share the same index as

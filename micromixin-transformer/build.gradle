@@ -10,8 +10,11 @@ plugins {
 }
 
 group = 'org.stianloader'
-def archivesBaseName = 'micromixin-transformer'
-version = '0.8.0'
+version = '0.8.1'
+
+base {
+    archivesName = 'micromixin-transformer'
+}
 
 repositories {
     mavenLocal()
@@ -19,10 +22,10 @@ repositories {
 }
 
 dependencies {
-    api 'org.ow2.asm:asm:9.8'
-    api 'org.ow2.asm:asm-commons:9.8'
-    api 'org.ow2.asm:asm-tree:9.8'
-    api 'org.ow2.asm:asm-util:9.8'
+    api 'org.ow2.asm:asm:9.9.1'
+    api 'org.ow2.asm:asm-commons:9.9.1'
+    api 'org.ow2.asm:asm-tree:9.9.1'
+    api 'org.ow2.asm:asm-util:9.9.1'
     api 'org.json:json:20230618' // Note: It is likely that one cannot update this dependency without breaking compilation. Handle with care.
     compileOnlyApi 'org.jetbrains:annotations-java5:24.1.0'
     // junit 4 is the last version of junit that I am aware of that still works with Java 6
@@ -153,7 +156,7 @@ jar {
         include 'module-info.class'
     }
 
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 
@@ -170,7 +173,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
         from sourceSets.java9.allSource
     }
 
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 }
@@ -183,8 +186,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId project.group
-            artifactId project.archivesBaseName
+            groupId = project.group
+            artifactId = base.archivesName.get()
 
             from components['java']
             artifact sourcesJar

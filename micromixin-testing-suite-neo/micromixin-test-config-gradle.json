@@ -34,7 +34,8 @@
                 "org.stianloader.sll.log.level": "INFO"
             },
             "omitCapabilities": [
-                "COPY_ANNOTATIONS"
+                "COPY_ANNOTATIONS",
+                "LOCAL_CAPTURE"
             ]
         },
         {

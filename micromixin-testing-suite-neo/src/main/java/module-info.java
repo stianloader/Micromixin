@@ -1,4 +1,4 @@
-module org.stianloader.micromixin.testneo {
+open module org.stianloader.micromixin.testneo {
     requires org.stianloader.picoresolve;
     requires org.json;
     requires java.instrument;

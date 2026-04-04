@@ -6,8 +6,11 @@ plugins {
 }
 
 group = 'org.stianloader'
-def archivesBaseName = 'micromixin-annotations'
-version = '0.8.0'
+version = '0.8.1'
+
+base {
+    archivesName = 'micromixin-annotations'
+}
 
 repositories {
     mavenLocal()
@@ -106,7 +109,7 @@ jar {
         include 'module-info.class'
     }
 
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 
@@ -123,7 +126,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
         from sourceSets.java9.allSource
     }
 
-    into('META-INF/LICENSES/' + archivesBaseName) {
+    into('META-INF/LICENSES/' + base.archivesName.get()) {
         from project.rootProject.file("LICENSE")
     }
 }
@@ -136,8 +139,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId project.group
-            artifactId project.archivesBaseName
+            groupId = project.group
+            artifactId = base.archivesName.get()
 
             from components['java']
             artifact sourcesJar

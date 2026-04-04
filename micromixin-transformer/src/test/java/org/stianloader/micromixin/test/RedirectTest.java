@@ -125,7 +125,7 @@ public class RedirectTest {
 
         {
             ClassNode node = nodes.get(RedirectTest.GENERATED_PACKAGE_PATH_TARGET + "/RedirectArgumentCapture");
-            transformer.transform(Objects.requireNonNull(node));
+            transformer.transform(Objects.requireNonNull(node), null);
             CheckClassAdapter checker = new CheckClassAdapter(null);
             node.accept(checker);
         }
