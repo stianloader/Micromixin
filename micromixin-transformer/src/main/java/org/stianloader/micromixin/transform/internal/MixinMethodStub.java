@@ -25,6 +25,7 @@ import org.stianloader.micromixin.transform.internal.annotation.VirtualClInitMer
 import org.stianloader.micromixin.transform.internal.annotation.VirtualConstructorMergeAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.micromixin.MicromixinCanonicalOverwriteAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasModifyReturnValueAnnotation;
+import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasWrapOperationAnnotation;
 
 public class MixinMethodStub implements ClassMemberStub {
 
@@ -56,6 +57,8 @@ public class MixinMethodStub implements ClassMemberStub {
                 } else if (annot.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
                     if (annot.desc.equals("Lcom/llamalad7/mixinextras/injector/ModifyReturnValue;")) {
                         annotations.add(MixinExtrasModifyReturnValueAnnotation.parse(node, method, annot, transformer, sharedBuilder));
+                    } else if (annot.desc.equals("Lcom/llamalad7/mixinextras/injector/wrapoperation/WrapOperation;")) {
+                        annotations.add(MixinExtrasWrapOperationAnnotation.parse(node, method, annot, transformer, sharedBuilder));
                     } else {
                         throw new MixinParseException("Unimplemented MixinExtras annotation: " + annot.desc);
                     }

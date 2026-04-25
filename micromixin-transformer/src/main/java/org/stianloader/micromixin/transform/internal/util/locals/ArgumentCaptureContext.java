@@ -19,8 +19,10 @@ import org.stianloader.micromixin.transform.internal.annotation.AbstractOverlayA
 import org.stianloader.micromixin.transform.internal.annotation.MixinInjectAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.MixinModifyConstantAnnotation;
 import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasModifyReturnValueAnnotation;
+import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasWrapOperationAnnotation;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.DescString;
+import org.stianloader.micromixin.transform.internal.util.PrintUtils;
 
 public class ArgumentCaptureContext {
 
@@ -67,6 +69,7 @@ public class ArgumentCaptureContext {
                 }
             }
         }
+
         return false;
     }
 
@@ -102,7 +105,7 @@ public class ArgumentCaptureContext {
      *
      * <p>This method has the added benefit of also checking whether the non-captured argument
      * matches the return type, as would be expected from these modify handlers. Due to this restriction
-     * this method is not meant to be used for redirect handlers or other annotations such as &#64;WrapOperation.
+     * this method is not meant to be used for redirect handlers or other annotations such as {@link MixinExtrasWrapOperationAnnotation &#64;WrapOperation}.
      * Meanwhile other annotations (mainly {@link MixinInjectAnnotation &#64;Inject}) do not support processing
      * argument and local capture using {@link ArgumentCaptureContext} at all. They most likely have their
      * own dedicated infrastructure as such or have clear technical reasons to not do so (as is the case for
@@ -160,6 +163,76 @@ public class ArgumentCaptureContext {
         return new ArgumentCaptureContext(Collections.unmodifiableList(arguments));
     }
 
+    /**
+     * Parses the captured arguments for annotation handlers such as {@link MixinExtrasWrapOperationAnnotation WrapOperation}.
+     *
+     * @param owner The {@link ClassNode} in which the wrap handler is located in.
+     * @param mixinSource The {@link MethodNode} which is the wrap handler's source (as opposed to the target method, which is irrelevant)
+     * @param annotationName The name of the annotation that invoked this method. For debugging reasons only (this string is added to a thrown {@link MixinParseException}).
+     * @param sharedBuilder A shared {@link StringBuilder} instance. The content of this builder might get overwritten.
+     * @return The {@link ArgumentCaptureContext} instance that corresponds to the {@link MethodNode MethodNode's} signature
+     * with whom the insertion of argument and local capture can be more easily pulled off without having dedicated
+     * implementations for every annotation.
+     */
+    @NotNull
+    public static ArgumentCaptureContext parseWrapHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName, @NotNull StringBuilder sharedBuilder) {
+        DescString dString = new DescString(mixinSource.desc);
+        List<AnnotationNode>[] parameterAnnotations = mixinSource.invisibleParameterAnnotations;
+
+        boolean hasOperation = false;
+
+        int paramIndex;
+        for (paramIndex = 0; dString.hasNext(); paramIndex++) {
+            String type = dString.nextType();
+
+            if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[paramIndex])) {
+                sharedBuilder.setLength(0);
+                sharedBuilder.append("The provided wrap handler ")
+                    .append(owner.name)
+                    .append(".")
+                    .append(mixinSource.name)
+                    .append(mixinSource.desc)
+                    .append(" has an incompatible annotation on parameter ")
+                    .append(paramIndex)
+                    .append(" (a ");
+                PrintUtils.fastPrettySingleDesc(type, 0, sharedBuilder);
+                sharedBuilder.append("). Note that all arguments before (and including) the Operation<T> parameter of a @")
+                    .append(annotationName)
+                    .append(" handler is inelibible of argument capture (not to be confused with operand capture). Captured arguments come after the argument of type 'Operation<T>'.");
+
+                throw new MixinParseException(sharedBuilder.toString());
+            }
+
+            if (type.equals("L" + MixinExtrasWrapOperationAnnotation.OPERATION_TYPE + ";")) {
+                hasOperation = true;
+                break;
+            }
+        }
+
+        if (!hasOperation) {
+            throw new MixinParseException("Invalid wrap handler " + owner.name + "." + mixinSource.name + mixinSource.desc + ": A method annotated with @" + annotationName + " must have an argument of type " + MixinExtrasWrapOperationAnnotation.OPERATION_TYPE);
+        } else if (!dString.hasNext()) {
+            return ArgumentCaptureContext.NO_CAPTURES;
+        }
+
+        List<CapturedArgument> arguments = new ArrayList<ArgumentCaptureContext.CapturedArgument>();
+
+        do {
+            if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[paramIndex])) {
+                // TODO implement local capture via @Local
+                throw new MixinParseException("The @" + annotationName + "-annotated handler method " + owner.name + "." + mixinSource.name + mixinSource.desc + " uses @Local to capture local variables, but this feature is not yet supported.");
+            } else {
+                String type = dString.nextType();
+                arguments.add(new CapturedArgument(paramIndex++, type));
+                if (ASMUtil.isCategory2(type.codePointAt(0))) {
+                    paramIndex++;
+                }
+            }
+        } while (dString.hasNext());
+
+        return new ArgumentCaptureContext(Collections.unmodifiableList(arguments));
+    }
+
     @NotNull
     private final List<CapturedArgument> capturedArguments;
 
@@ -187,6 +260,7 @@ public class ArgumentCaptureContext {
             if (!captureArg.capturedType.equals(availableLocals.get(captureArg.captureOffset))) {
                 throw new IllegalStateException("Unable to capture argument: Descriptor mismatch: Captured argument tries to capture an " + captureArg.capturedType + " at offset " + captureArg.captureOffset + ", but instead there is a " + availableLocals.get(captureArg.captureOffset) + " at this place. Failed mixin stub: " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc() + " targets " + targetNode.name + "." + targetMethod.name + targetMethod.desc);
             }
+
             output.add(new VarInsnNode(ASMUtil.getLoadOpcode(captureArg.capturedType.codePointAt(0)), localOffset + captureArg.captureOffset));
         }
     }

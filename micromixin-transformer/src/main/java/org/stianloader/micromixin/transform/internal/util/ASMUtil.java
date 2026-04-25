@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
@@ -25,6 +26,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -234,10 +236,40 @@ public class ASMUtil {
         DescString dstring = new DescString(methodDesc);
         int count = 0;
         while (dstring.hasNext()) {
-            dstring.nextType();
+            dstring.nextReferenceType();
             count++;
         }
         return count;
+    }
+
+    @NotNull
+    @Contract(pure = true, value = "null -> fail; !null -> new")
+    public static AbstractInsnNode getBoxInsn(@NotNull String type) {
+        switch (type.charAt(0)) {
+        case 'B':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;");
+        case 'C':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;");
+        case 'D':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;");
+        case 'I':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;");
+        case 'F':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;");
+        case 'S':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;");
+        case 'J':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;");
+        case 'V':
+            throw new UnsupportedOperationException("Cannot box void");
+        case 'Z':
+            return new MethodInsnNode(Opcodes.INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;");
+        case 'L':
+        case '[':
+            throw new UnsupportedOperationException("Cannot box references");
+        default:
+            throw new UnsupportedOperationException("Cannot box type: " + type);
+        }
     }
 
     @Nullable
@@ -423,6 +455,324 @@ public class ASMUtil {
             next = next.getNext();
         }
         return next;
+    }
+
+    @NotNull
+    public static final String getOpcodeName(int opcode) {
+        switch (opcode) {
+        case Opcodes.AALOAD:
+            return "AALOAD";
+        case Opcodes.AASTORE:
+            return "AASTORE";
+        case Opcodes.ACONST_NULL:
+            return "AASTORE";
+        case Opcodes.ALOAD:
+            return "ALOAD";
+        case Opcodes.ANEWARRAY:
+            return "ANEWARRAY";
+        case Opcodes.ARETURN:
+            return "ARETURN";
+        case Opcodes.ARRAYLENGTH:
+            return "ARRAYLENGTH";
+        case Opcodes.ASTORE:
+            return "ASTORE";
+        case Opcodes.ATHROW:
+            return "ATHROW";
+        case Opcodes.BALOAD:
+            return "BALOAD";
+        case Opcodes.BASTORE:
+            return "BASTORE";
+        case Opcodes.BIPUSH:
+            return "BIPUSH";
+        case Opcodes.CALOAD:
+            return "CALOAD";
+        case Opcodes.CASTORE:
+            return "CASTORE";
+        case Opcodes.CHECKCAST:
+            return "CHECKCAST";
+        case Opcodes.D2F:
+            return "D2F";
+        case Opcodes.D2I:
+            return "D2I";
+        case Opcodes.D2L:
+            return "D2L";
+        case Opcodes.DADD:
+            return "DADD";
+        case Opcodes.DALOAD:
+            return "DALOAD";
+        case Opcodes.DASTORE:
+            return "DASTORE";
+        case Opcodes.DCMPG:
+            return "DCMPG";
+        case Opcodes.DCMPL:
+            return "DCMPL";
+        case Opcodes.DCONST_0:
+            return "DCONST_0";
+        case Opcodes.DCONST_1:
+            return "DCONST_1";
+        case Opcodes.DDIV:
+            return "DDIV";
+        case Opcodes.DLOAD:
+            return "DLOAD";
+        case Opcodes.DMUL:
+            return "DMUL";
+        case Opcodes.DNEG:
+            return "DNEG";
+        case Opcodes.DREM:
+            return "DREM";
+        case Opcodes.DRETURN:
+            return "DRETURN";
+        case Opcodes.DSTORE:
+            return "DSTORE";
+        case Opcodes.DSUB:
+            return "DSUB";
+        case Opcodes.DUP:
+            return "DUP";
+        case Opcodes.DUP2:
+            return "DUP2";
+        case Opcodes.DUP2_X1:
+            return "DUP2_X1";
+        case Opcodes.DUP2_X2:
+            return "DUP2_X2";
+        case Opcodes.DUP_X1:
+            return "DUP_X1";
+        case Opcodes.DUP_X2:
+            return "DUP_X2";
+        case Opcodes.F2D:
+            return "F2D";
+        case Opcodes.F2I:
+            return "F2I";
+        case Opcodes.F2L:
+            return "F2L";
+        case Opcodes.FADD:
+            return "FADD";
+        case Opcodes.FALOAD:
+            return "FALOAD";
+        case Opcodes.FASTORE:
+            return "FASTORE";
+        case Opcodes.FCMPG:
+            return "FCMP";
+        case Opcodes.FCMPL:
+            return "FCMPL";
+        case Opcodes.FCONST_0:
+            return "FCONST_0";
+        case Opcodes.FCONST_1:
+            return "FCONST_1";
+        case Opcodes.FCONST_2:
+            return "FCONST_2";
+        case Opcodes.FDIV:
+            return "FDIV";
+        case Opcodes.FLOAD:
+            return "FLOAD";
+        case Opcodes.FMUL:
+            return "FMUL";
+        case Opcodes.FNEG:
+            return "FNEG";
+        case Opcodes.FREM:
+            return "FREM";
+        case Opcodes.FRETURN:
+            return "FRETURN";
+        case Opcodes.FSTORE:
+            return "FSTORE";
+        case Opcodes.FSUB:
+            return "FSUB";
+        case Opcodes.GETFIELD:
+            return "GETFIELD";
+        case Opcodes.GETSTATIC:
+            return "GETSTATIC";
+        case Opcodes.GOTO:
+            return "GOTO";
+        case Opcodes.I2B:
+            return "I2B";
+        case Opcodes.I2C:
+            return "I2C";
+        case Opcodes.I2D:
+            return "I2D";
+        case Opcodes.I2F:
+            return "I2F";
+        case Opcodes.I2L:
+            return "I2L";
+        case Opcodes.I2S:
+            return "I2S";
+        case Opcodes.IADD:
+            return "IADD";
+        case Opcodes.IALOAD:
+            return "IALOAD";
+        case Opcodes.IAND:
+            return "IAND";
+        case Opcodes.IASTORE:
+            return "IASTORE";
+        case Opcodes.ICONST_0:
+            return "ICONST_0";
+        case Opcodes.ICONST_1:
+            return "ICONST_1";
+        case Opcodes.ICONST_2:
+            return "ICONST_2";
+        case Opcodes.ICONST_3:
+            return "ICONST_3";
+        case Opcodes.ICONST_4:
+            return "ICONST_4";
+        case Opcodes.ICONST_5:
+            return "ICONST_5";
+        case Opcodes.ICONST_M1:
+            return "ICONST_M1";
+        case Opcodes.IDIV:
+            return "IDIV";
+        case Opcodes.IF_ACMPEQ:
+            return "IF_ACMPEQ";
+        case Opcodes.IF_ACMPNE:
+            return "IF_ACMPNE";
+        case Opcodes.IF_ICMPEQ:
+            return "IF_ICMPEQ";
+        case Opcodes.IF_ICMPGE:
+            return "IF_ICMPGE";
+        case Opcodes.IF_ICMPGT:
+            return "IF_ICMPGT";
+        case Opcodes.IF_ICMPLE:
+            return "IF_ICMPLE";
+        case Opcodes.IF_ICMPLT:
+            return "IF_ICMPLT";
+        case Opcodes.IF_ICMPNE:
+            return "IF_ICMPNE";
+        case Opcodes.IFEQ:
+            return "IFEQ";
+        case Opcodes.IFGE:
+            return "IFGE";
+        case Opcodes.IFGT:
+            return "IFGT";
+        case Opcodes.IFLE:
+            return "IFLE";
+        case Opcodes.IFLT:
+            return "IFLT";
+        case Opcodes.IFNE:
+            return "IFNE";
+        case Opcodes.IFNONNULL:
+            return "IFNONNULL";
+        case Opcodes.IFNULL:
+            return "IFNULL";
+        case Opcodes.IINC:
+            return "IINC";
+        case Opcodes.ILOAD:
+            return "ILOAD";
+        case Opcodes.IMUL:
+            return "IMUL";
+        case Opcodes.INEG:
+            return "INEG";
+        case Opcodes.INSTANCEOF:
+            return "INSTANCEOF";
+        case Opcodes.INVOKEDYNAMIC:
+            return "INVOKEDYNAMIC";
+        case Opcodes.INVOKEINTERFACE:
+            return "INVOKEINTERFACE";
+        case Opcodes.INVOKESPECIAL:
+            return "INVOKESPECIAL";
+        case Opcodes.INVOKESTATIC:
+            return "INVOKESTATIC";
+        case Opcodes.INVOKEVIRTUAL:
+            return "INVOKEVIRTUAL";
+        case Opcodes.IOR:
+            return "IOR";
+        case Opcodes.IREM:
+            return "IREM";
+        case Opcodes.IRETURN:
+            return "IRETURN";
+        case Opcodes.ISHL:
+            return "ISHL";
+        case Opcodes.ISHR:
+            return "ISHR";
+        case Opcodes.ISTORE:
+            return "ISTORE";
+        case Opcodes.ISUB:
+            return "ISUB";
+        case Opcodes.IUSHR:
+            return "IUSHR";
+        case Opcodes.IXOR:
+            return "IXOR";
+        case Opcodes.JSR:
+            return "JSR";
+        case Opcodes.L2D:
+            return "L2D";
+        case Opcodes.L2F:
+            return "L2F";
+        case Opcodes.L2I:
+            return "L2I";
+        case Opcodes.LADD:
+            return "LADD";
+        case Opcodes.LALOAD:
+            return "LALOAD";
+        case Opcodes.LAND:
+            return "LAND";
+        case Opcodes.LASTORE:
+            return "LASTORE";
+        case Opcodes.LCMP:
+            return "LCMP";
+        case Opcodes.LCONST_0:
+            return "LCONST_0";
+        case Opcodes.LCONST_1:
+            return "LCONST_1";
+        case Opcodes.LDC:
+            return "LDC";
+        case Opcodes.LDIV:
+            return "LDIV";
+        case Opcodes.LLOAD:
+            return "LLOAD";
+        case Opcodes.LMUL:
+            return "LMUL";
+        case Opcodes.LNEG:
+            return "LNEG";
+        case Opcodes.LOOKUPSWITCH:
+            return "LOOKUPSWITCH";
+        case Opcodes.LOR:
+            return "LOR";
+        case Opcodes.LREM:
+            return "LREM";
+        case Opcodes.LRETURN:
+            return "LRETURN";
+        case Opcodes.LSHL:
+            return "LSHL";
+        case Opcodes.LSHR:
+            return "LSHR";
+        case Opcodes.LSTORE:
+            return "LSTORE";
+        case Opcodes.LSUB:
+            return "LSUB";
+        case Opcodes.LUSHR:
+            return "LUSHR";
+        case Opcodes.LXOR:
+            return "LXOR";
+        case Opcodes.MONITORENTER:
+            return "MONITORENTER";
+        case Opcodes.MONITOREXIT:
+            return "MONITOREXIT";
+        case Opcodes.MULTIANEWARRAY:
+            return "MULTIANEWARRAY";
+        case Opcodes.NOP:
+            return "NOP";
+        case Opcodes.POP:
+            return "NOP";
+        case Opcodes.POP2:
+            return "POP2";
+        case Opcodes.PUTFIELD:
+            return "POP2";
+        case Opcodes.PUTSTATIC:
+            return "PUTSTATIC";
+        case Opcodes.RET:
+            return "RET";
+        case Opcodes.RETURN:
+            return "RETURN";
+        case Opcodes.SALOAD:
+            return "SALOAD";
+        case Opcodes.SASTORE:
+            return "SASTORE";
+        case Opcodes.SIPUSH:
+            return "SIPUSH";
+        case Opcodes.SWAP:
+            return "SWAP";
+        case Opcodes.TABLESWITCH:
+            return "TABLESWITCH";
+        default:
+            throw new IllegalArgumentException("Unserializable opcode: " + opcode);
+        }
     }
 
     @NotNull
@@ -902,6 +1252,30 @@ public class ASMUtil {
         }
     }
 
+    @NotNull
+    @Contract(pure = true, value = "_ -> new")
+    public static AbstractInsnNode pushInt(int v) {
+        if (v < 6 && v >= -1) {
+            if (v < -1) {
+                if (v >= Byte.MIN_VALUE) {
+                    return new IntInsnNode(Opcodes.BIPUSH, v);
+                } else if (v >= Short.MIN_VALUE) {
+                    return new IntInsnNode(Opcodes.SIPUSH, v);
+                } else {
+                    return new LdcInsnNode(v);
+                }
+            } else {
+                return new InsnNode(Opcodes.ICONST_0 + v);
+            }
+        } else if (v <= Byte.MAX_VALUE) {
+            return new IntInsnNode(Opcodes.BIPUSH, v);
+        } else if (v <= Short.MAX_VALUE) {
+            return new IntInsnNode(Opcodes.SIPUSH, v);
+        } else {
+            return new LdcInsnNode(v);
+        }
+    }
+
     public static AbstractInsnNode shiftInsn(AbstractInsnNode insn, int offset) {
         if (offset == 0) {
             return insn;
@@ -946,5 +1320,52 @@ public class ASMUtil {
             }
         }
         return uniformDepth;
+    }
+
+    public static void unboxType(@NotNull String unboxedType, @NotNull InsnList out) {
+        switch (unboxedType.charAt(0)) {
+        case 'B':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Byte"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Byte", "byteValue", "()B"));
+            return;
+        case 'C':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Character"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C"));
+            return;
+        case 'D':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Double"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D"));
+            return;
+        case 'I':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Integer"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I"));
+            return;
+        case 'F':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Float"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F"));
+            return;
+        case 'S':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Short"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Short", "shortValue", "()S"));
+            return;
+        case 'J':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Long"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Long", "longValue", "()J"));
+            return;
+        case 'V':
+            throw new UnsupportedOperationException("Cannot unbox void");
+        case 'Z':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, "java/lang/Boolean"));
+            out.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z"));
+            return;
+        case 'L':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, unboxedType.substring(1, unboxedType.length() - 1)));
+            return;
+        case '[':
+            out.add(new TypeInsnNode(Opcodes.CHECKCAST, unboxedType));
+            return;
+        default:
+            throw new UnsupportedOperationException("Cannot unbox type: " + unboxedType);
+        }
     }
 }

@@ -17,6 +17,12 @@ public class PrintUtils {
         throw new AssertionError();
     }
 
+    @NotNull
+    public static final String cardinalSuffix(int cardinalNum) {
+        int rem = cardinalNum % 10;
+        return rem == 1 ? "st" : rem == 2 ? "nd" : rem == 3 ? "rd" : "th";
+    }
+
     public static final void fastPrettyArguments(@NotNull String desc, @NotNull StringBuilder out) {
         if (desc.codePointAt(1) == ')') {
             // No arguments. We can optimise this method then.

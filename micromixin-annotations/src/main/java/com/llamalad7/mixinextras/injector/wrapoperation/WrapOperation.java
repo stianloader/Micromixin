@@ -1,25 +1,31 @@
-package com.llamalad7.mixinextras.injector;
+package com.llamalad7.mixinextras.injector.wrapoperation;
 
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.At.Shift;
 import org.spongepowered.asm.mixin.injection.Desc;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * The {@link ModifyReturnValue} annotation allows to apply a function on the
- * return value of a method. More specifically, the mixin implementation will
- * call the modify return value handler with the original return value and
- * return the actual return value.
+ * <h3>Abstract</3>
+ *
+ * The {@link WrapOperation} annotation defines an injector which is capable of
+ * wrapping a single instruction and modify it.
+ *
+ * <h3>WrapOperation versus {@link Redirect}</h3>
+ *
+ * <p>In a sense, {@link WrapOperation} behaves similar to {@link Redirect},
+ * except that the original instruction callsite is preserved and can be used.
+ * This also means that {@link WrapOperation} injectors are not mutually exclusive
+ * to each other and thus are compatible, as long as the original operation is being called.
  *
  * <h3>Availability</h3>
  *
@@ -31,79 +37,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * likely that your loader supports it, provided you are either using SLL or
  * a loader written for minecraft (such as neoforge or fabric).
  *
- * <h3>ModifyReturnValue versus Inject</h3>
- *
- * <p>Usage of {@link ModifyReturnValue} should be preferred over other
- * annotations such as {@link Inject} for it's supposed capability of being
- * easily and safely chained. In truth we do not see if that is really the case
- * under the micromixin-transformer implementation. Usage of
- *
- * <blockquote><pre><code>
- * &#64;Inject(...)
- * private void handleCallback(CallbackInfoReturnable&lt;T&gt; cir) {
- *      cir.setReturnValue(apply(cir.getReturnValue()));
- * }
- * </code></pre></blockquote>
- *
- * can and should be replaced with
- *
- * <blockquote><pre><code>
- * &#64;ModifyReturnValue(...)
- * private T handleCallback(T original) {
- *      return apply(original);
- * }
- * </code></pre></blockquote>
- *
- * <p>Aside from the aforementioned improvements this annotations does not
- * (as seen above) allocate a {@link CallbackInfoReturnable} and is as such more performant.
- * It should as such be used in hot code whenever appropriate.
- * While the assumption that the CallbackInfoReturnable allocation will get
- * inlined or otherwise optimized in the JVM may be true, some JVMs might
- * not follow this and will show a notable performance gain when using
- * this annotation over {@link Inject}.
- *
- * <h3>Signature and visibility modifiers</h3>
- *
- * <p>The {@link ModifyReturnValue} handler (also known as the "return value modifier") MUST
- * declare the same return type (subtypes are not supported) as the return type of the targeted
- * method. If the targeted method is <code>static</code>, the handler MUST be <code>static</code>
- * and <code>private</code>. For non-<code>static</code> targets the access modifiers are
- * not of relevance, except for constructors where the handler must be <code>static</code> when
- * not injecting immediately before the final return via <code>TAIL</code>.
- *
- * <p>The handler should furthermore also have the original return type (supertypes are not supported)
- * as it's argument.
- *
- * <p>The value that is modified must be the first argument of the return value modifier handler
- * method. All other arguments are there for argument capture.
- *
- * <h3>Argument and local capture</h3>
- *
- * <p>At this point in time, local capture is not supported.
- *
- * <p>Argument capture behaves the same way as {@link ModifyConstant}. The arguments that can be captured
- * are the arguments with whom the target method was called with (do note that it is permissible for the
- * values to be reassigned - so while it guarantees the argument was captured, the value of the argument
- * may have been altered) - or more plainly, argument capture means that the arguments of the target method
- * are captured and passed to the return value modifier handler method.
- *
- * <p>Captured arguments must be defined in the same order as the target method.
- * It is not permissible to "skip" arguments, but it is permissible to not capture trailing arguments
- * - leading arguments need to be captured however under the premise of the "no skipping" requirement.
- *
- * <p>Reassigning captured arguments in the return value modifier method has no effect on the target method.
- * As such, the behaviour is quite similar to the argument and local variable capture behaviour of {@link Inject}.
+ * <p>
  */
 @Documented
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RUNTIME)
 @Target(METHOD)
-public @interface ModifyReturnValue {
+public @interface WrapOperation {
 
     /**
      * The maximum amount of injection points that should be allowed. If the value of this
-     * element is below 1 or if the value is below the {@link ModifyReturnValue#require() minimum amount}
+     * element is below 1 or if the value is below the {@link WrapOperation#require() minimum amount}
      * of allowable injection points then the limit is not being enforced. However,
-     * {@link ModifyReturnValue#expect()} has no influence on {@link ModifyReturnValue#allow()}.
+     * {@link WrapOperation#expect()} has no influence on {@link WrapOperation#allow()}.
      *
      * <p>Furthermore this limit is only valid per target class. That is, if multiple target classes are
      * defined as per {@link Mixin#value()} or {@link Mixin#targets()} then this limit is only applicable
@@ -111,7 +56,7 @@ public @interface ModifyReturnValue {
      * that the targeted classes are not known until they are loaded in by the classloader, at which point
      * all the injection logic occurs.
      *
-     * <p>This limit is shared across all methods (as defined by {@link ModifyReturnValue#method()})
+     * <p>This limit is shared across all methods (as defined by {@link WrapOperation#method()})
      * targeted by the handler within a class.
      *
      * @return The maximum amount targeted of injection points within the target class.
@@ -124,8 +69,22 @@ public @interface ModifyReturnValue {
      * through {@link #require()}), however transformation does not occur (Micromixin still copies the handler into
      * the target class anyways).
      *
-     * <p>For {@link ModifyReturnValue} the injection points MUST target return instructions. If that is not the
-     * case, the class will fail to transform.
+     * <p>For {@link WrapOperation} the injection points MUST target one of the following instructions:
+     * <ul>
+     *  <li><code>INVOKESTATIC</code></li>
+     *  <li><code>INVOKESPECIAL</code> (<b>but constructor calls are not supported</b>)</li>
+     *  <li><code>INVOKEVIRTUAL</code></li>
+     *  <li><code>INVOKEINTERFACE</code></li>
+     * </ul>
+     * If that is not the case, the class will fail to transform.
+     *
+     * <p>Note that at this point in time, micromixin-transformer only supports {@link WrapOperation} on MethodInsnNodes,
+     * which means that micromixin-transformer supports modifying less operations than stock MixinExtras.
+     * In a similar vein, targeting <code>INVOKEDYNAMIC</code> instructions is not supported either.
+     *
+     * <p>When targeting an instruction, the instruction immediately before must be selected, i.e.
+     * using <code>INVOKE</code> injection point (see {@link At#value()}). A <code>INVOKE_ASSIGN</code> injection
+     * point is unsupported however (at least at this point), unless {@link Shift#BEFORE} is used.
      *
      * @return The injection points.
      */
@@ -192,7 +151,7 @@ public @interface ModifyReturnValue {
      *
      * @return The target selectors that define the target method of the handler.
      */
-    public String[] method();
+    String[] method();
 
     /**
      * The minimum amount of amount of injection points. If less injection points are found (as per {@link #at()}).

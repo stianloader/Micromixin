@@ -34,6 +34,7 @@ import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 import org.stianloader.micromixin.testneo.testenv.targets.InjectMixinsTarget;
 import org.stianloader.micromixin.testneo.testenv.targets.LocalCaptureMixinsTarget;
 import org.stianloader.micromixin.testneo.testenv.targets.OverwriteMixinsTarget;
+import org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget;
 
 public class MicromixinTestNeo {
     @Nullable
@@ -149,6 +150,11 @@ public class MicromixinTestNeo {
         }
 
         for (Method method : declaredMethods) {
+
+            if (method.isSynthetic() && (method.getName().startsWith("lambda$") || method.getName().startsWith("mixinextras$bridge$"))) {
+                continue;
+            }
+
             try (MemberReport memberReport = new MemberReport(report, method)) {
                 ExpectedAnnotations expectedAnnotations = method.getDeclaredAnnotation(ExpectedAnnotations.class);
                 AssertMemberNames memberNames = method.getDeclaredAnnotation(AssertMemberNames.class);
@@ -254,9 +260,10 @@ public class MicromixinTestNeo {
         boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
         Class<?> clazz = null;
         NoClassDefFoundError stored = null;
+        boolean hasCap = MicromixinTestNeo.hasCapability(requestedCapability);
 
         try {
-            SLF4JLogger.setThreadLoggingClassloadingFailures(false);
+            SLF4JLogger.setThreadLoggingClassloadingFailures(hasCap);
             clazz = transformedTargetClass.get();
         } catch (NoClassDefFoundError ignored) {
             stored = ignored;
@@ -265,13 +272,11 @@ public class MicromixinTestNeo {
         }
 
         try (ClassReport classreport = new ClassReport(report, clazz == null ? "<unknown>" : Objects.requireNonNull(clazz.getName()))) {
-            for (Object o : ((List<?>) System.getProperties().getOrDefault("org.stianloader.micromixin.testneo.omitCapabilities", Collections.emptyList()))) {
-                if (o != null && o.toString().equals(requestedCapability)) {
-                    try (MemberReport memberReport = new MemberReport(classreport, "*", "*")) {
-                        memberReport.reportSkip(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
-                    }
-                    return;
+            if (!hasCap) {
+                try (MemberReport memberReport = new MemberReport(classreport, "*", "*")) {
+                    memberReport.reportSkip(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
                 }
+                return;
             }
 
             if (clazz == null) {
@@ -279,6 +284,10 @@ public class MicromixinTestNeo {
             }
 
             MicromixinTestNeo.evaluateClass(clazz, classreport);
+
+            if (stored != null) {
+                SLF4JLogger.error(MicromixinTestNeo.class, "Class could not be loaded", stored);
+            }
         }
     }
 
@@ -368,6 +377,16 @@ public class MicromixinTestNeo {
         return constructor.newInstance(args);
     }
 
+    private static boolean hasCapability(String requestedCapability) {
+        for (Object o : ((List<?>) System.getProperties().getOrDefault("org.stianloader.micromixin.testneo.omitCapabilities", Collections.emptyList()))) {
+            if (o != null && o.toString().equals(requestedCapability)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static void main(String[] args) {
         SLF4JLogger.info(MicromixinTestNeo.class, "Testing environment with CL " + MicromixinTestNeo.class.getClassLoader().getName());
 
@@ -375,6 +394,15 @@ public class MicromixinTestNeo {
             MicromixinTestNeo.evaluateClass(InjectMixinsTarget.class, report);
             MicromixinTestNeo.evaluateClass(OverwriteMixinsTarget.class, report);
             MicromixinTestNeo.evaluateClass(() -> {return LocalCaptureMixinsTarget.class;}, report, "LOCAL_CAPTURE");
+            MicromixinTestNeo.evaluateClass(() -> {
+                try {
+                    return MicromixinTestNeo.class.getClassLoader().loadClass("org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget");
+                } catch (ClassNotFoundException e) {
+                    NoClassDefFoundError ncdfe = new NoClassDefFoundError();
+                    ncdfe.addSuppressed(e);
+                    throw ncdfe;
+                }
+            }, report, "WRAP_OP");
         }
     }
 }
