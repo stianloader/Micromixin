@@ -13,6 +13,7 @@
     "LocalCaptureMixins$NoArgsCaptureInLocalCapture",
     "LocalCaptureMixins$NoArgsCaptureInLocalCaptureUnderflow",
     "LocalCaptureMixins$NoArgsOverflow",
-    "WrapOpMixins"
+    "WrapOpMixins",
+    "WrapOpMixins$WrapOpCancellable"
   ]
 }

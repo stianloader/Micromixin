@@ -89,8 +89,10 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
                 handlerInvokeOpcode = Opcodes.INVOKESTATIC;
             }
 
-            this.capturedArgs.appendCaptures(to, Objects.requireNonNull(method, "method may not be null"), source, Objects.requireNonNull(insn, "insn may not be null"), inject);
+            InsnList postInject = new InsnList();
+            this.capturedArgs.appendCaptures(to, Objects.requireNonNull(method, "method may not be null"), source, Objects.requireNonNull(insn, "insn may not be null"), inject, postInject);
             inject.add(new MethodInsnNode(handlerInvokeOpcode, to.name, handlerNode.name, handlerNode.desc));
+            inject.add(postInject);
             method.instructions.insert(insn, inject);
         }
     }

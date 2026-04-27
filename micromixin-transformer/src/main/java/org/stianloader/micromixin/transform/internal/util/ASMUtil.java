@@ -438,6 +438,17 @@ public class ASMUtil {
         }
     }
 
+    /**
+     * Get the size of an object on the stack (or in other words, how many slots a given type occupies in the LVT).
+     *
+     * @param descType The input type in field descriptor notation.
+     * @return {@code 2} for objects of computational type category 2 (see {@link #isCategory2(int)}), else {@code 1}.
+     * @see #isCategory2(int)
+     */
+    public static int getLVTSize(@NotNull String descType) {
+        return ASMUtil.isCategory2(descType.charAt(0)) ? 2 : 1;
+    }
+
     @Nullable
     public static MethodNode getMethod(@NotNull ClassNode node, @NotNull String name, @NotNull String desc) {
         for (MethodNode method : node.methods) {

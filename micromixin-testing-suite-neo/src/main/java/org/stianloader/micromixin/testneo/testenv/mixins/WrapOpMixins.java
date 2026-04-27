@@ -5,6 +5,7 @@ import java.util.function.IntConsumer;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertConstraint;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertMemberName;
@@ -13,9 +14,66 @@ import org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Cancellable;
 
 @Mixin(WrapOpMixinsTarget.class)
 public class WrapOpMixins {
+
+    @Mixin(WrapOpMixinsTarget.WrapOpCancellable.class)
+    private static class WrapOpCancellable {
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCI()V" }, require = 3, allow = 3)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCI")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCI", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCI(IntConsumer reciever, int arg1, Operation<Void> op, @Cancellable CallbackInfo ci) {
+            if (arg1 == 3) {
+                ci.cancel();
+            }
+
+            op.call(reciever, arg1 + 1);
+        }
+
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCIWithArgI(I)V" }, require = 2, allow = 2)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCIWithArgI")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgI", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCIWithArgI(IntConsumer reciever, int arg1, Operation<Void> op, int captured, @Cancellable CallbackInfo ci) {
+            if (captured == 3) {
+                ci.cancel();
+            }
+
+            op.call(reciever, arg1 + 1);
+        }
+
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCIWithArgJ(J)V" }, require = 2, allow = 2)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCIWithArgJ")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCIWithArgJ(IntConsumer reciever, int arg1, Operation<Void> op, long captured, @Cancellable CallbackInfo ci) {
+            if (captured == 3) {
+                ci.cancel();
+            }
+
+            op.call(reciever, arg1 + 1);
+        }
+
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testUnusedCI()V" }, require = 1, allow = 1)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testUnusedCI")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testUnusedCI", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testUnusedCI(IntConsumer reciever, int arg1, Operation<Void> op, @Cancellable CallbackInfo ci) {
+            op.call(reciever, 1);
+        }
+
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testUsedCI()V" }, require = 2, allow = 2)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testUsedCI")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testUsedCI", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testUsedCI(IntConsumer reciever, int arg1, Operation<Void> op, @Cancellable CallbackInfo ci) {
+            op.call(reciever, arg1 * 2);
+            ci.cancel();
+        }
+    }
 
     @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testWrapOpSI()V" }, require = 1, allow = 1)
     @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "onSignalTestWrapOpSI")

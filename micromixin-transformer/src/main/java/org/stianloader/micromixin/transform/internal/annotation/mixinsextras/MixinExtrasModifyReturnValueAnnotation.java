@@ -94,8 +94,11 @@ public class MixinExtrasModifyReturnValueAnnotation extends MixinAnnotation<Mixi
             } else {
                 opcode = Opcodes.INVOKESTATIC;
             }
-            this.capturedArguments.appendCaptures(to, method, source, entry.shiftedInstruction, inject);
+
+            InsnList postInject = new InsnList();
+            this.capturedArguments.appendCaptures(to, method, source, entry.shiftedInstruction, inject, postInject);
             inject.add(new MethodInsnNode(opcode, to.name, handlerNode.name, handlerNode.desc));
+            inject.add(postInject);
             method.instructions.insertBefore(entry.shiftedInstruction, inject);
         }
     }

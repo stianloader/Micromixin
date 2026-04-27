@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
@@ -11,7 +12,12 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
@@ -22,16 +28,12 @@ import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.Mix
 import org.stianloader.micromixin.transform.internal.annotation.mixinsextras.MixinExtrasWrapOperationAnnotation;
 import org.stianloader.micromixin.transform.internal.util.ASMUtil;
 import org.stianloader.micromixin.transform.internal.util.DescString;
+import org.stianloader.micromixin.transform.internal.util.Objects;
 import org.stianloader.micromixin.transform.internal.util.PrintUtils;
 
 public class ArgumentCaptureContext {
 
-    public static enum ArgumentType {
-        CANCELLABLE,
-        NORMAL_ARGUMENT;
-    }
-
-    private static final class CapturedArgument {
+    private static final class CapturedArgument implements Capturing {
         @NotNull
         private final String capturedType;
 
@@ -42,53 +44,200 @@ public class ArgumentCaptureContext {
          *
          * <p>Be aware that some computational types take two entries in the LVT,
          * that is doubles and longs have a different size than ints or objects.
+         *
+         * <p>In other words, this is the LVT index of the
+         * captured argument to load via {@link VarInsnNode} (except
+         * for non-static methods, where it is incremented by 1 beforehand).
          */
         private final int captureOffset;
 
         public CapturedArgument(int offset, @NotNull String capturedType) {
             this.captureOffset = offset;
-            this.capturedType = capturedType;
+            this.capturedType = Objects.requireNonNull(capturedType, "'capturedType' may not be null!");
+        }
+
+        @Override
+        public void capture(@NotNull InsnList outputInstructionListBeforeInject, @NotNull InsnList outputInstructionListAfterInject, @NotNull MixinMethodStub sourceStub, @NotNull ClassNode targetNode, @NotNull MethodNode targetMethod, @NotNull List<String> availableArgs) {
+            int localOffset = (targetMethod.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+
+            if (this.captureOffset >= availableArgs.size()) {
+                throw new IndexOutOfBoundsException("Cannot capture arguments of target method: The injector defined by " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc() + " is probably attempting to capture more arguments than are available in the target method. Capture offset outside applicable bounds: " + this.captureOffset + ". Available capturable arguments: " + availableArgs + ". As such the maximum value is " + availableArgs.size() + " (exclusive).");
+            }
+
+            if (!this.capturedType.equals(availableArgs.get(this.captureOffset))) {
+                throw new IllegalStateException("Unable to capture argument: Descriptor mismatch: Captured argument tries to capture an " + this.capturedType + " at offset " + this.captureOffset + ", but instead there is a " + availableArgs.get(this.captureOffset) + " at this place. Failed mixin stub: " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc() + " targets " + targetNode.name + "." + targetMethod.name + targetMethod.desc);
+            }
+
+            outputInstructionListBeforeInject.add(new VarInsnNode(ASMUtil.getLoadOpcode(this.capturedType.codePointAt(0)), localOffset + this.captureOffset));
         }
     }
 
-    @NotNull
-    private static final ArgumentCaptureContext NO_CAPTURES = new ArgumentCaptureContext(Collections.<CapturedArgument>emptyList());
+    private static final class CapturedCallbackInfo implements Capturing {
+        @NotNull
+        private final String capturedType;
 
-    private static boolean captureLocals(@Nullable List<AnnotationNode> annotations) {
-        if (annotations == null) {
-            return false;
+        private final int paramIndex;
+
+        public CapturedCallbackInfo(int paramIndex, @NotNull String capturedType) {
+            this.paramIndex = paramIndex;
+            this.capturedType = capturedType;
         }
 
-        for (AnnotationNode annotationNode : annotations) {
-            if (annotationNode.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
-                if (annotationNode.desc.equals("Lcom/llamalad7/mixinextras/sugar/Local;")) {
-                    return true;
-                } else {
-                    // TODO support @Share
-                    throw new MixinParseException("Unknown/Unimplemented annotation: " + annotationNode.desc);
+        @Override
+        public void capture(@NotNull InsnList outputInstructionListBeforeInject, @NotNull InsnList outputInstructionListAfterInject, @NotNull MixinMethodStub sourceStub, @NotNull ClassNode targetNode, @NotNull MethodNode targetMethod, @NotNull List<String> targetMethodArgTypes) {
+            int returnType = targetMethod.desc.codePointBefore(targetMethod.desc.length());
+
+            if (returnType != 'V') {
+                if (!ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(this.capturedType)) {
+                    throw new IllegalStateException("The target method " + targetMethod.name + targetMethod.desc + " returns void, but the parameter at index " + this.paramIndex + " of type '" + this.capturedType + "' is annotated with @Cancellable. The type should be '" + ASMUtil.CALLBACK_INFO_RETURNABLE_DESC + "' in this case. Invalid mixin: " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc());
                 }
+            } else {
+                if (!ASMUtil.CALLBACK_INFO_DESC.equals(this.capturedType)) {
+                    throw new IllegalStateException("The target method " + targetMethod.name + targetMethod.desc + " returns void, but the parameter at index " + this.paramIndex + " of type '" + this.capturedType + "' is annotated with @Cancellable. The type should be '" + ASMUtil.CALLBACK_INFO_DESC + "' in this case. Invalid mixin: " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc());
+                }
+            }
+
+            int callbackSlot = ASMUtil.loadCallbackInfoInstance(targetMethod, outputInstructionListBeforeInject);
+            outputInstructionListAfterInject.add(new VarInsnNode(Opcodes.ALOAD, callbackSlot));
+            outputInstructionListAfterInject.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_NAME, "isCancelled", "()Z"));
+            LabelNode label = new LabelNode();
+            outputInstructionListAfterInject.add(new JumpInsnNode(Opcodes.IFEQ, label));
+
+            if (returnType == 'V') {
+                outputInstructionListAfterInject.add(new InsnNode(Opcodes.RETURN));
+            } else {
+                String methodName;
+                String returnDesc;
+                int returnOpcode;
+
+                switch (returnType) {
+                case ';': // objects &  arrays
+                    methodName = "getReturnValue";
+                    returnDesc = "()Ljava/lang/Object;";
+                    returnOpcode = Opcodes.ARETURN;
+                    break;
+                case 'I': // int
+                    methodName = "getReturnValueI";
+                    returnDesc = "()I";
+                    returnOpcode = Opcodes.IRETURN;
+                    break;
+                case 'S': // short
+                    methodName = "getReturnValueS";
+                    returnDesc = "()S";
+                    returnOpcode = Opcodes.IRETURN;
+                    break;
+                case 'C': // char
+                    methodName = "getReturnValueC";
+                    returnDesc = "()C";
+                    returnOpcode = Opcodes.IRETURN;
+                    break;
+                case 'Z': // boolean
+                    methodName = "getReturnValueZ";
+                    returnDesc = "()Z";
+                    returnOpcode = Opcodes.IRETURN;
+                    break;
+                case 'B': // byte
+                    methodName = "getReturnValueB";
+                    returnDesc = "()B";
+                    returnOpcode = Opcodes.IRETURN;
+                    break;
+                case 'F': // float
+                    methodName = "getReturnValueF";
+                    returnDesc = "()F";
+                    returnOpcode = Opcodes.FRETURN;
+                    break;
+                case 'J': // long
+                    methodName = "getReturnValueJ";
+                    returnDesc = "()J";
+                    returnOpcode = Opcodes.LRETURN;
+                    break;
+                case 'D': // double
+                    methodName = "getReturnValueD";
+                    returnDesc = "()D";
+                    returnOpcode = Opcodes.DRETURN;
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unknown reference type: " + returnType + " for return desc of method " + targetMethod.name + targetMethod.desc);
+                }
+
+                outputInstructionListAfterInject.add(new VarInsnNode(Opcodes.ALOAD, callbackSlot));
+                outputInstructionListAfterInject.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, ASMUtil.CALLBACK_INFO_RETURNABLE_NAME, methodName, returnDesc));
+
+                if (returnType == ';') {
+                    int beginReturnIndex = targetMethod.desc.lastIndexOf(')') + 1;
+
+                    if (targetMethod.desc.codePointAt(beginReturnIndex) == 'L') {
+                        outputInstructionListAfterInject.add(new TypeInsnNode(Opcodes.CHECKCAST, targetMethod.desc.substring(beginReturnIndex + 1, targetMethod.desc.length() - 1)));
+                    } else {
+                        outputInstructionListAfterInject.add(new TypeInsnNode(Opcodes.CHECKCAST, targetMethod.desc.substring(beginReturnIndex)));
+                    }
+                }
+
+                outputInstructionListAfterInject.add(new InsnNode(returnOpcode));
+            }
+
+            outputInstructionListAfterInject.add(label);
+        }
+    }
+
+    public static enum CaptureType {
+        CANCELLABLE,
+        NORMAL_ARGUMENT;
+    }
+
+    private static interface Capturing {
+        void capture(@NotNull InsnList outputInstructionListBeforeInject, @NotNull InsnList outputInstructionListAfterInject, @NotNull MixinMethodStub sourceStub, @NotNull ClassNode targetNode, @NotNull MethodNode targetMethod, @NotNull List<String> targetMethodArgTypes);
+    }
+
+    @NotNull
+    private static final ArgumentCaptureContext NO_CAPTURES = new ArgumentCaptureContext(Collections.<Capturing>emptyList());
+
+    @NotNull
+    @Contract(pure = false, mutates = "arg1")
+    private static ArgumentCaptureContext baseParse(@NotNull ClassNode mixinSourceClass, @NotNull MethodNode mixinSource, @NotNull DescString dString, int paramOffset, int lvtOffset) {
+        List<Capturing> arguments = new ArrayList<Capturing>();
+        int argCaptureLVTIndex = 0; // Used for argument capture (to offset everything loaded by operand capture and other miscellaneous things)
+
+        while (dString.hasNext()) {
+            CaptureType captureType = ArgumentCaptureContext.getType(mixinSource.invisibleParameterAnnotations, paramOffset++);
+            String type = dString.nextType();
+
+            if (captureType == CaptureType.NORMAL_ARGUMENT) {
+                arguments.add(new CapturedArgument(argCaptureLVTIndex, type));
+                int size = ASMUtil.getLVTSize(type);
+                lvtOffset += size;
+                argCaptureLVTIndex += size;
+            } else if (captureType == CaptureType.CANCELLABLE) {
+                if (!type.equals(ASMUtil.CALLBACK_INFO_RETURNABLE_DESC) && !type.equals(ASMUtil.CALLBACK_INFO_DESC)) {
+                    throw new MixinParseException("Illegal mixin detected: A parameter of type '" + type + "' was annotated as @Cancellable. However, @Cancellable can only be applied on parameters of type CallbackInfo or CallbackInfoReturnable. Triggered by: " + mixinSourceClass.name + "." + mixinSource.name + mixinSource.desc + ", parameter " + (paramOffset - 1));
+                }
+
+                arguments.add(new CapturedCallbackInfo(paramOffset - 1, type));
+                lvtOffset++;
+            } else {
+                throw new UnsupportedOperationException("Unknown/Unsupported capture type " + captureType + ". Triggered by " + mixinSourceClass.name + "." + mixinSource.name + mixinSource.desc);
             }
         }
 
-        return false;
+        return new ArgumentCaptureContext(Collections.unmodifiableList(arguments));
     }
 
     @NotNull
-    public static ArgumentType getType(List<AnnotationNode>[] invisibileParameterAnnotations, int argumentIndex) {
+    public static CaptureType getType(@Nullable List<AnnotationNode>[] invisibileParameterAnnotations, int argumentIndex) {
         if (invisibileParameterAnnotations == null) {
-            return ArgumentType.NORMAL_ARGUMENT;
+            return CaptureType.NORMAL_ARGUMENT;
         }
 
         List<AnnotationNode> annotations = invisibileParameterAnnotations[argumentIndex];
 
         if (annotations == null) {
-            return ArgumentType.NORMAL_ARGUMENT;
+            return CaptureType.NORMAL_ARGUMENT;
         }
 
         for (AnnotationNode annotationNode : annotations) {
             if (annotationNode.desc.startsWith("Lcom/llamalad7/mixinextras/")) {
                 if (annotationNode.desc.equals("Lcom/llamalad7/mixinextras/sugar/Cancellable;")) {
-                    return ArgumentType.CANCELLABLE;
+                    return CaptureType.CANCELLABLE;
                 } else {
                     // TODO support @Local, support @Share
                     throw new MixinParseException("Unknown/Unimplemented annotation: " + annotationNode.desc);
@@ -96,7 +245,7 @@ public class ArgumentCaptureContext {
             }
         }
 
-        return ArgumentType.NORMAL_ARGUMENT;
+        return CaptureType.NORMAL_ARGUMENT;
     }
 
     /**
@@ -126,7 +275,7 @@ public class ArgumentCaptureContext {
         DescString dString = new DescString(mixinSource.desc);
         List<AnnotationNode>[] parameterAnnotations = mixinSource.invisibleParameterAnnotations;
 
-        if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[0])) {
+        if (ArgumentCaptureContext.getType(parameterAnnotations, 0) != CaptureType.NORMAL_ARGUMENT) {
             throw new MixinParseException("The provided modify handler " + owner.name + "." + mixinSource.name + mixinSource.desc + " has an incompatible annotation on the original (or captured) argument that needs to be modified. Note that the first parameter of a modifier handler is ineligible for argument capture when using @" + annotationName);
         }
 
@@ -145,22 +294,7 @@ public class ArgumentCaptureContext {
             return ArgumentCaptureContext.NO_CAPTURES;
         }
 
-        int offset = 0;
-        List<CapturedArgument> arguments = new ArrayList<ArgumentCaptureContext.CapturedArgument>();
-        while (dString.hasNext()) {
-            if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[offset + 1])) {
-                // TODO implement local capture via @Local
-                throw new MixinParseException("The @" + annotationName + "-annotated modifier method " + owner.name + "." + mixinSource.name + mixinSource.desc + " uses @Local to capture local variables, but this feature is not yet supported.");
-            } else {
-                String type = dString.nextType();
-                arguments.add(new CapturedArgument(offset++, type));
-                if (ASMUtil.isCategory2(type.codePointAt(0))) {
-                    offset++;
-                }
-            }
-        }
-
-        return new ArgumentCaptureContext(Collections.unmodifiableList(arguments));
+        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, 1, ASMUtil.getLVTSize(returnType));
     }
 
     /**
@@ -178,14 +312,14 @@ public class ArgumentCaptureContext {
     public static ArgumentCaptureContext parseWrapHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName, @NotNull StringBuilder sharedBuilder) {
         DescString dString = new DescString(mixinSource.desc);
         List<AnnotationNode>[] parameterAnnotations = mixinSource.invisibleParameterAnnotations;
-
         boolean hasOperation = false;
-
+        int lvtIndex = 0;
         int paramIndex;
+
         for (paramIndex = 0; dString.hasNext(); paramIndex++) {
             String type = dString.nextType();
 
-            if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[paramIndex])) {
+            if (ArgumentCaptureContext.getType(parameterAnnotations, paramIndex) != CaptureType.NORMAL_ARGUMENT) {
                 sharedBuilder.setLength(0);
                 sharedBuilder.append("The provided wrap handler ")
                     .append(owner.name)
@@ -203,8 +337,11 @@ public class ArgumentCaptureContext {
                 throw new MixinParseException(sharedBuilder.toString());
             }
 
+            lvtIndex += ASMUtil.getLVTSize(type);
+
             if (type.equals("L" + MixinExtrasWrapOperationAnnotation.OPERATION_TYPE + ";")) {
                 hasOperation = true;
+                paramIndex++;
                 break;
             }
         }
@@ -215,37 +352,23 @@ public class ArgumentCaptureContext {
             return ArgumentCaptureContext.NO_CAPTURES;
         }
 
-        List<CapturedArgument> arguments = new ArrayList<ArgumentCaptureContext.CapturedArgument>();
-
-        do {
-            if (parameterAnnotations != null && ArgumentCaptureContext.captureLocals(parameterAnnotations[paramIndex])) {
-                // TODO implement local capture via @Local
-                throw new MixinParseException("The @" + annotationName + "-annotated handler method " + owner.name + "." + mixinSource.name + mixinSource.desc + " uses @Local to capture local variables, but this feature is not yet supported.");
-            } else {
-                String type = dString.nextType();
-                arguments.add(new CapturedArgument(paramIndex++, type));
-                if (ASMUtil.isCategory2(type.codePointAt(0))) {
-                    paramIndex++;
-                }
-            }
-        } while (dString.hasNext());
-
-        return new ArgumentCaptureContext(Collections.unmodifiableList(arguments));
+        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, paramIndex, lvtIndex);
     }
 
     @NotNull
-    private final List<CapturedArgument> capturedArguments;
+    private final List<Capturing> capturedArguments;
 
-    private ArgumentCaptureContext(@NotNull List<CapturedArgument> arguments) {
+    private ArgumentCaptureContext(@NotNull List<Capturing> arguments) {
         this.capturedArguments = arguments;
     }
 
-    public void appendCaptures(@NotNull ClassNode targetNode, @NotNull MethodNode targetMethod, @NotNull MixinMethodStub sourceStub, @NotNull AbstractInsnNode selectedInjectionPointInsn, @NotNull InsnList output) {
+    public void appendCaptures(@NotNull ClassNode targetNode, @NotNull MethodNode targetMethod, @NotNull MixinMethodStub sourceStub, @NotNull AbstractInsnNode selectedInjectionPointInsn, @NotNull InsnList outputInstructionListBeforeInject, @NotNull InsnList outputInstructionListAfterInject) {
         if (this.capturedArguments.isEmpty()) {
             return;
         }
 
         List<String> availableLocals = new ArrayList<String>();
+
         for (DescString dString = new DescString(targetMethod.desc); dString.hasNext();) {
             String arg = dString.nextType();
             availableLocals.add(arg);
@@ -254,14 +377,8 @@ public class ArgumentCaptureContext {
             }
         }
 
-        int localOffset = (targetMethod.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
-
-        for (CapturedArgument captureArg : this.capturedArguments) {
-            if (!captureArg.capturedType.equals(availableLocals.get(captureArg.captureOffset))) {
-                throw new IllegalStateException("Unable to capture argument: Descriptor mismatch: Captured argument tries to capture an " + captureArg.capturedType + " at offset " + captureArg.captureOffset + ", but instead there is a " + availableLocals.get(captureArg.captureOffset) + " at this place. Failed mixin stub: " + sourceStub.getOwner().name + "." + sourceStub.getName() + sourceStub.getDesc() + " targets " + targetNode.name + "." + targetMethod.name + targetMethod.desc);
-            }
-
-            output.add(new VarInsnNode(ASMUtil.getLoadOpcode(captureArg.capturedType.codePointAt(0)), localOffset + captureArg.captureOffset));
+        for (Capturing captureArg : this.capturedArguments) {
+            captureArg.capture(outputInstructionListBeforeInject, outputInstructionListAfterInject, sourceStub, targetNode, targetMethod, availableLocals);
         }
     }
 }

@@ -246,7 +246,7 @@ public class MixinExtrasWrapOperationAnnotation extends MixinAnnotation<MixinMet
             }
 
             injectBefore.add(this.wrapInstruction(to, hctx, entry.shiftedInstruction));
-            this.capturedArguments.appendCaptures(to, method, source, entry.shiftedInstruction, injectBefore);
+            this.capturedArguments.appendCaptures(to, method, source, entry.shiftedInstruction, injectBefore, injectAfter);
 
             MethodInsnNode replacementInsn = new MethodInsnNode(opcode, to.name, handlerNode.name, handlerNode.desc);
             method.instructions.insertBefore(entry.shiftedInstruction, injectBefore);

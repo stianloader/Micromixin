@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -21,12 +22,14 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.stianloader.micromixin.testneo.MicromixinTestingSuiteNeo;
 import org.stianloader.micromixin.testneo.testenv.TestReport.ClassReport;
 import org.stianloader.micromixin.testneo.testenv.TestReport.MemberReport;
 import org.stianloader.micromixin.testneo.testenv.TestReport.TestConstraint;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertMemberName;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectSignaller;
+import org.stianloader.micromixin.testneo.testenv.annotations.ExpectSignaller.ExpectSignals;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectedAnnotations;
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeArgument;
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeStaticMethod;
@@ -34,7 +37,6 @@ import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 import org.stianloader.micromixin.testneo.testenv.targets.InjectMixinsTarget;
 import org.stianloader.micromixin.testneo.testenv.targets.LocalCaptureMixinsTarget;
 import org.stianloader.micromixin.testneo.testenv.targets.OverwriteMixinsTarget;
-import org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget;
 
 public class MicromixinTestNeo {
     @Nullable
@@ -79,7 +81,7 @@ public class MicromixinTestNeo {
         }
     }
 
-    private static void evaluateClass(@NotNull Class<?> transformedTargetClass, @NotNull ClassReport report) {
+    private static void evaluateClass(@NotNull Class<?> transformedTargetClass, @NotNull ClassReport report, @NotNull TestReport reportOwner) {
         List<@NotNull Method> declaredMethods = new ArrayList<>(Arrays.asList(transformedTargetClass.getDeclaredMethods()));
 
         // Fetch failing cases
@@ -92,55 +94,85 @@ public class MicromixinTestNeo {
 
             if (annotations != null) {
                 for (AnnotationNode an : node.invisibleAnnotations) {
-                    if (!an.desc.equals("Lorg/stianloader/micromixin/testneo/testenv/annotations/IncludeClasses$IncludeFailingClass;")) {
-                        continue;
-                    }
+                    if (an.desc.equals("Lorg/stianloader/micromixin/testneo/testenv/annotations/IncludeClasses$IncludeFailingClass;")) {
+                        List<Object> values = an.values;
 
-                    List<Object> values = an.values;
+                        if (values == null) {
+                            throw new AssertionError();
+                        }
 
-                    if (values == null) {
-                        throw new AssertionError();
-                    }
+                        for (int i = 0; i < values.size(); i += 2) {
+                            if (((String) values.get(i)).equals("value")) {
+                                for (Object o : (List<?>) values.get(i + 1)) {
+                                    if (o == null) {
+                                        throw new AssertionError();
+                                    } else if (!(o instanceof Type)) {
+                                        throw new AssertionError();
+                                    }
 
-                    for (int i = 0; i < values.size(); i += 2) {
-                        if (((String) values.get(i)).equals("value")) {
-                            for (Object o : (List<?>) values.get(i + 1)) {
-                                if (o == null) {
-                                    throw new AssertionError();
-                                } else if (!(o instanceof Type)) {
-                                    throw new AssertionError();
-                                }
+                                    Type type = (Type) o;
 
-                                Type type = (Type) o;
+                                    try (MemberReport mr = new MemberReport(report, "<clinit>/" + type.getClassName(), "()V")) {
+                                        boolean loaded = false;
+                                        boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
 
-                                try (MemberReport mr = new MemberReport(report, "<clinit>/" + type.getClassName(), "()V")) {
-                                    boolean loaded = false;
-                                    boolean loggingCLFailures = SLF4JLogger.isThreadLoggingClassloadingFailures();
+                                        try {
+                                            SLF4JLogger.setThreadLoggingClassloadingFailures(false);
+                                            Class<?> clazz = transformedTargetClass.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
 
-                                    try {
-                                        SLF4JLogger.setThreadLoggingClassloadingFailures(false);
-                                        Class<?> clazz = transformedTargetClass.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
+                                            if (clazz.getClassLoader() != transformedTargetClass.getClassLoader()) {
+                                                throw new ClassNotFoundException("Wrong Classloader. (Fallback CL?)");
+                                            }
 
-                                        if (clazz.getClassLoader() != transformedTargetClass.getClassLoader()) {
-                                            throw new ClassNotFoundException("Wrong Classloader. (Fallback CL?)");
+                                            loaded = true;
+                                        } catch (ClassNotFoundException cnfe) {
+                                            continue;
+                                        } finally {
+                                            if (loaded) {
+                                                mr.reportFailure(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
+                                            } else {
+                                                mr.reportSucess(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
+                                            }
+
+                                            SLF4JLogger.setThreadLoggingClassloadingFailures(loggingCLFailures);
                                         }
-
-                                        loaded = true;
-                                    } catch (ClassNotFoundException cnfe) {
-                                        continue;
-                                    } finally {
-                                        if (loaded) {
-                                            mr.reportFailure(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
-                                        } else {
-                                            mr.reportSucess(TestConstraint.TRANSFORMATION_FAILURE_EXPECTED);
-                                        }
-
-                                        SLF4JLogger.setThreadLoggingClassloadingFailures(loggingCLFailures);
                                     }
                                 }
+                            } else {
+                                SLF4JLogger.error(MicromixinTestNeo.class, "Unknown annotation attribute: " + values.get(i));
                             }
-                        } else {
-                            SLF4JLogger.error(MicromixinTestNeo.class, "Unknown annotation attribute: " + values.get(i));
+                        }
+                    } else if (an.desc.equals("Lorg/stianloader/micromixin/testneo/testenv/annotations/IncludeClasses$IncludePassingClasses;")) {
+                        List<Object> values = an.values;
+
+                        if (values == null) {
+                            throw new AssertionError();
+                        }
+
+                        for (int i = 0; i < values.size(); i += 2) {
+                            if (((String) values.get(i)).equals("value")) {
+                                for (Object o : (List<?>) values.get(i + 1)) {
+                                    if (o == null) {
+                                        throw new AssertionError();
+                                    } else if (!(o instanceof Type)) {
+                                        throw new AssertionError();
+                                    }
+
+                                    final Type type = (Type) o;
+
+                                    MicromixinTestNeo.evaluateClass(() -> {
+                                        try {
+                                            return MicromixinTestNeo.class.getClassLoader().loadClass(type.getInternalName().replace('/', '.'));
+                                        } catch (ClassNotFoundException e) {
+                                            NoClassDefFoundError ncdfe = new NoClassDefFoundError();
+                                            ncdfe.addSuppressed(e);
+                                            throw ncdfe;
+                                        }
+                                    }, reportOwner, "GENERIC_LOAD_CLASS");
+                                }
+                            } else {
+                                SLF4JLogger.error(MicromixinTestNeo.class, "Unknown annotation attribute: " + values.get(i));
+                            }
                         }
                     }
                 }
@@ -156,12 +188,13 @@ public class MicromixinTestNeo {
             }
 
             try (MemberReport memberReport = new MemberReport(report, method)) {
-                ExpectedAnnotations expectedAnnotations = method.getDeclaredAnnotation(ExpectedAnnotations.class);
-                AssertMemberNames memberNames = method.getDeclaredAnnotation(AssertMemberNames.class);
-                ExpectSignaller expectSignaller = method.getDeclaredAnnotation(ExpectSignaller.class);
+                ExpectedAnnotations expectedAnnotations = MicromixinTestNeo.getDeclaredAnnotation(method, ExpectedAnnotations.class);
+                AssertMemberNames memberNames = MicromixinTestNeo.getDeclaredAnnotation(method, AssertMemberNames.class);
+                ExpectSignaller expectSignaller = MicromixinTestNeo.getDeclaredAnnotation(method, ExpectSignaller.class);
+                ExpectSignals expectSignals = MicromixinTestNeo.getDeclaredAnnotation(method, ExpectSignals.class);
 
                 {
-                    AssertMemberName assertName = method.getDeclaredAnnotation(AssertMemberName.class);
+                    AssertMemberName assertName = MicromixinTestNeo.getDeclaredAnnotation(method, AssertMemberName.class);
 
                     if (assertName != null) {
                         memberNames = new AssertMemberNames() {
@@ -217,6 +250,42 @@ public class MicromixinTestNeo {
                     }
                 }
 
+                if (expectSignals != null) {
+                    if (expectSignaller != null) {
+                        throw new AssertionError();
+                    }
+
+                    try {
+                        for (ExpectSignaller signaller : expectSignals.value()) {
+                            Object reciever = null;
+                            if (!Modifier.isStatic(method.getModifiers())) {
+                                reciever = MicromixinTestNeo.evaluteConstructor(method.getDeclaringClass(), signaller.constructorArgs());
+                            } else if (signaller.constructorArgs().length != 0) {
+                                throw new IllegalStateException("constructor arguments defined for static method.");
+                            }
+
+                            Signaller.resetSignal();
+                            MicromixinTestNeo.evaluateMethod(method, reciever, signaller.args());
+                            OptionalInt readSignal = Signaller.readSignal();
+
+                            if (readSignal.isEmpty()) {
+                                throw new IllegalStateException("Signaller not called.");
+                            } else if (readSignal.getAsInt() != signaller.signalValue()) {
+                                throw new IllegalStateException("Signal value mismatch (got " + readSignal.getAsInt() + ", expected " + signaller.signalValue() + ")");
+                            }
+                        }
+
+                        memberReport.reportSucess(TestConstraint.SIGNAL_VALUES);
+                    } catch (Throwable t) {
+                        if (t instanceof ThreadDeath) {
+                            throw (ThreadDeath) t;
+                        } else if (t instanceof OutOfMemoryError) {
+                            throw (OutOfMemoryError) t;
+                        }
+                        memberReport.reportFailure(TestConstraint.SIGNAL_VALUES, t);
+                    }
+                }
+
                 if (expectSignaller != null) {
                     try {
                         Object reciever = null;
@@ -252,7 +321,7 @@ public class MicromixinTestNeo {
 
     private static void evaluateClass(@NotNull Class<?> transformedTargetClass, @NotNull TestReport report) {
         try (ClassReport classreport = new ClassReport(report, transformedTargetClass.getName())) {
-            MicromixinTestNeo.evaluateClass(transformedTargetClass, classreport);
+            MicromixinTestNeo.evaluateClass(transformedTargetClass, classreport, report);
         }
     }
 
@@ -283,7 +352,7 @@ public class MicromixinTestNeo {
                 throw new IllegalStateException(stored);
             }
 
-            MicromixinTestNeo.evaluateClass(clazz, classreport);
+            MicromixinTestNeo.evaluateClass(clazz, classreport, report);
 
             if (stored != null) {
                 SLF4JLogger.error(MicromixinTestNeo.class, "Class could not be loaded", stored);
@@ -375,6 +444,11 @@ public class MicromixinTestNeo {
         Constructor<T> constructor = reciever.getConstructor(argTypes);
 
         return constructor.newInstance(args);
+    }
+
+    @Nullable
+    private static <T extends Annotation> T getDeclaredAnnotation(@NotNull AccessibleObject recv, @NotNull Class<T> annotationClass) {
+        return recv.getDeclaredAnnotation(annotationClass);
     }
 
     private static boolean hasCapability(String requestedCapability) {

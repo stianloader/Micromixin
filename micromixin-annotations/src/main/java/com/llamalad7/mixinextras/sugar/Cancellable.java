@@ -11,9 +11,15 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 
 /**
  * The Cancellable annotation can be applied on arguments of a {@link Redirect} handler
@@ -53,9 +59,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *   <li>This annotation may not be applied in conjunction with {@link Inject}.</li>
  *   <li>This annotation cannot be applied on non-injecting handlers - this means that it is
  *   illegal to use this annotation on {@link Unique}, {@link Overwrite}, or {@link Shadow}.</li>
- *   <li>As of time of writing, micromixin-transformer only permits use in conjunction with
- *   {@link Redirect}, but this restriction is likely to be lifted in future revisions of
- *   micromixin-transformer.</li>
+ *   <li>As of time of writing, micromixin-transformer only permits use in conjunction with following
+ *   injectors:
+ *   <ul>
+ *    <li>{@link Redirect}</li>
+ *    <li>{@link ModifyConstant}</li>
+ *    <li>{@link ModifyReturnValue} (though, you probably shouldn't in that case)</li>
+ *    <li>{@link ModifyVariable}</li>
+ *    <li>{@link WrapOperation}</li>
+ *   </ul>
+ *   As micromixin-transformer gradually adds support for more injectors, more injectors .
+ *   In some instances, injectors such as {@link ModifyArg} might not be supported right now,
+ *   but might see support in the future.</li>
  * </ul>
  *
  * <h3>Example usage</h3>

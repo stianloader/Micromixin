@@ -10,6 +10,9 @@ import java.lang.annotation.Target;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.At.Shift;
+
+import com.llamalad7.mixinextras.sugar.Cancellable;
+
 import org.spongepowered.asm.mixin.injection.Desc;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
@@ -37,7 +40,65 @@ import org.spongepowered.asm.mixin.injection.Slice;
  * likely that your loader supports it, provided you are either using SLL or
  * a loader written for minecraft (such as neoforge or fabric).
  *
- * <p>
+ * <h3>Signature and visibility modifiers</h3>
+ *
+ * <p>The {@link WrapOperation} handler MUST
+ * declare the same return type (subtypes are not supported) as the return type of the targeted
+ * instruction (if the instruction does not return an operand, use {@code void}).
+ *
+ * <p>The {@link WrapOperation} handler's argument list must be prefixed by the
+ * input operands of the targeted instruction - including the receiver operand - in
+ * the order they are used in the targeted instruction. The argument list is followed by
+ * and argument of type {@link Operation}. The {@link Operation} argument should have the
+ * same generic type as the result operand of the targeted instruction. For a method call
+ * returning void, use {@link Void} - for a primitive such as {@code int}, use the boxed
+ * equivalent (here {@link Integer}). While the generic signature of the {@link Operation}
+ * argument is technically not enforced by the mixin transformer, failing to use the correct
+ * generic signature can cause runtime issues (specifically, {@link ClassCastException}).
+ * All arguments following the {@link Operation} argument are available for argument capture
+ * (for example for {@link Cancellable}).
+ *
+ * <p>If the targeted method is <code>static</code>, the handler MUST be <code>static</code>
+ * and <code>private</code>. For non-<code>static</code> targets the access modifiers are
+ * not of relevance, except for constructors where the handler must be <code>static</code> when
+ * not injecting immediately before the final return via <code>TAIL</code>.
+ *
+ * <h3>Compatible instructions</h3>
+ *
+ * Micromixin-transformer's implementation of {@link WrapOperation} may transform any of the following instructions:
+ * <ul>
+ *  <li>InvokeInterface</li>
+ *  <li>InvokeSpecial (except for superconstructor calls)</li>
+ *  <li>InvokeStatic</li>
+ *  <li>InvokeVirtual</li>
+ * </li>
+ *
+ * <p>However, stock MixinExtras can transform other instructions, too - for example (not exhaustive):
+ * <ul>
+ *  <li>AAStore</li>
+ *  <li>AALoad</li>
+ *  <li>AStore</li>
+ *  <li>ALoad</li>
+ *  <li>BAStore</li>
+ *  <li>BALoad</li>
+ *  <li>CAStore</li>
+ *  <li>CALoad</li>
+ *  <li>CheckCast</li>
+ *  <li>DAStore</li>
+ *  <li>DALoad</li>
+ *  <li>DStore</li>
+ *  <li>DLoad</li>
+ *  <li>IAStore</li>
+ *  <li>IALoad</li>
+ *  <li>InstanceOf</li>
+ *  <li>GetField</li>
+ *  <li>GetStatic</li>
+ *  <li>PutField</li>
+ *  <li>PutStatic</li>
+ *  <li>etc. etc.</li>
+ * </ul>
+ *
+ * @since 0.9.0
  */
 @Documented
 @Retention(RUNTIME)

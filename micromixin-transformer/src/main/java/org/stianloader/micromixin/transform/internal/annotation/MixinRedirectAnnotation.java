@@ -39,7 +39,7 @@ import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 import org.stianloader.micromixin.transform.internal.util.DescString;
 import org.stianloader.micromixin.transform.internal.util.Objects;
 import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext;
-import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext.ArgumentType;
+import org.stianloader.micromixin.transform.internal.util.locals.ArgumentCaptureContext.CaptureType;
 
 public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -225,7 +225,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 }
 
                 String handlerArgumentType = handlerSignature.nextType();
-                if (ArgumentCaptureContext.getType(handlerNode.invisibleParameterAnnotations, handlerSignatureIndex++) != ArgumentType.NORMAL_ARGUMENT) {
+                if (ArgumentCaptureContext.getType(handlerNode.invisibleParameterAnnotations, handlerSignatureIndex++) != CaptureType.NORMAL_ARGUMENT) {
                     throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + handlerNode.desc + "' includes the improperly annotated argument " + handlerArgumentType + " at index " + (handlerSignatureIndex - 1) + "; Only arguments eligble for argument capture may be annotated with @Local, @Share, @Cancellable, or similar. However, this argument is not eligble for argument capture as it is part of the expected descriptor for the targetted instruction: " + expectedDesc);
                 }
 
@@ -322,9 +322,9 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
         int capturedArgIndex = (targetMethod.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
         do {
             String capturedType = remainingHandlerSignature.nextType();
-            ArgumentType action = ArgumentCaptureContext.getType(this.injectSource.invisibleParameterAnnotations, handlerSignatureIndex++);
+            CaptureType action = ArgumentCaptureContext.getType(this.injectSource.invisibleParameterAnnotations, handlerSignatureIndex++);
 
-            if (action == ArgumentType.NORMAL_ARGUMENT) {
+            if (action == CaptureType.NORMAL_ARGUMENT) {
                 if (!targetMethodDesc.hasNext()) {
                     throw new IllegalStateException("The descriptor of the handler method '" + this.injectSource.name + this.injectSource.desc + "' does not matched the expected signature required to redirect the selected instruction (argument capture overrun). The expected descriptor would be follows: " + expectedDesc + ". Descriptor of target method for reference: " + targetMethod.desc);
                 }
@@ -337,7 +337,7 @@ public final class MixinRedirectAnnotation extends MixinAnnotation<MixinMethodSt
                 if (ASMUtil.isCategory2(type)) {
                     capturedArgIndex++;
                 }
-            } else if (action == ArgumentType.CANCELLABLE) {
+            } else if (action == CaptureType.CANCELLABLE) {
                 int returnType = targetMethod.desc.codePointBefore(targetMethod.desc.length());
                 if (returnType != 'V') {
                     if (!ASMUtil.CALLBACK_INFO_RETURNABLE_DESC.equals(capturedType)) {

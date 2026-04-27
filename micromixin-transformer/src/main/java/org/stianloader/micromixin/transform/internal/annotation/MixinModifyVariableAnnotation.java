@@ -355,10 +355,12 @@ public class MixinModifyVariableAnnotation extends MixinAnnotation<MixinMethodSt
                     handlerInvokeOpcode = Opcodes.INVOKESTATIC;
                 }
 
+                InsnList postInject = new InsnList();
                 inject.add(new VarInsnNode(ASMUtil.getLoadOpcode(computationalArgumentType), selectedLocal));
-                this.capturedArgs.appendCaptures(to, Objects.requireNonNull(method, "method may not be null"), source, injectLoc, inject);
+                this.capturedArgs.appendCaptures(to, Objects.requireNonNull(method, "method may not be null"), source, injectLoc, inject, postInject);
                 inject.add(new MethodInsnNode(handlerInvokeOpcode, to.name, handlerNode.name, handlerNode.desc));
                 inject.add(new VarInsnNode(ASMUtil.getStoreOpcode(computationalArgumentType), selectedLocal));
+                inject.add(postInject);
                 method.instructions.insertBefore(injectLoc, inject);
             }
         }

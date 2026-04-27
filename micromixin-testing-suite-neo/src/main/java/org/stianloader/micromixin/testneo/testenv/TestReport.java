@@ -199,6 +199,7 @@ public class TestReport implements AutoCloseable {
         EXPECTED_ANNOTATIONS_PRESENT,
         MEMBER_NAME_CONFORMITY,
         SIGNALLER_VALUE,
+        SIGNAL_VALUES,
         TRANSFORMATION_FAILURE_EXPECTED;
     }
 
