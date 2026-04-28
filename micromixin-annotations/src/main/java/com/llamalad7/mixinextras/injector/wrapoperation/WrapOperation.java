@@ -18,17 +18,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Slice;
 
 /**
- * <h3>Abstract</3>
- *
  * The {@link WrapOperation} annotation defines an injector which is capable of
  * wrapping a single instruction and modify it.
- *
- * <h3>WrapOperation versus {@link Redirect}</h3>
- *
- * <p>In a sense, {@link WrapOperation} behaves similar to {@link Redirect},
- * except that the original instruction callsite is preserved and can be used.
- * This also means that {@link WrapOperation} injectors are not mutually exclusive
- * to each other and thus are compatible, as long as the original operation is being called.
  *
  * <h3>Availability</h3>
  *
@@ -39,6 +30,18 @@ import org.spongepowered.asm.mixin.injection.Slice;
  * However, as MixinExtras is widely used in the minecraft scene it is very
  * likely that your loader supports it, provided you are either using SLL or
  * a loader written for minecraft (such as neoforge or fabric).
+ *
+ * <h3>WrapOperation versus {@link Redirect}</h3>
+ *
+ * <p>In a sense, {@link WrapOperation} behaves similar to {@link Redirect},
+ * except that the original instruction callsite is preserved and can be used
+ * by other injectors, enabling chaining. Further, because the original call is preserved
+ * through an {@link Operation}, it can be reused in the mixin method without having
+ * to write the call yourself. This is especially useful when targeting different
+ * method calls that still share the same signature. Now, a single injector can target different
+ * calls while still being able to call the original call manually.
+ * This also means that {@link WrapOperation} injectors are not mutually exclusive
+ * to each other and thus are compatible, as long as the original operation is being called.
  *
  * <h3>Signature and visibility modifiers</h3>
  *
@@ -71,7 +74,7 @@ import org.spongepowered.asm.mixin.injection.Slice;
  *  <li>InvokeSpecial (except for superconstructor calls)</li>
  *  <li>InvokeStatic</li>
  *  <li>InvokeVirtual</li>
- * </li>
+ * </ul>
  *
  * <p>However, stock MixinExtras can transform other instructions, too - for example (not exhaustive):
  * <ul>

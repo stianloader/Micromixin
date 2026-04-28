@@ -78,7 +78,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
  * follows: <code>private static {type} handlerName({type}[] array, int index)</code>. Likewise write access would have
  * following signature: <code>private static void handlerName({type}[] array, int index, {type} element)</code>.
  *
- * @see {@link WrapOperation} In environments where {@link WrapOperation} is available, {@link WrapOperation} should be
+ * @see WrapOperation In environments where {@link WrapOperation} is available, {@link WrapOperation} should be
  * preferred over {@link Redirect}. This is because {@link Redirect} does not mesh well in combination with other
  * injectors. Or, in other words, no two injectors can redirect the same instruction whilst two injectors
  * can wrap the same instruction using {@link WrapOperation}.

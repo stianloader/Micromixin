@@ -8,15 +8,19 @@ import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectSignaller;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectSignaller.ExpectSignals;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectedAnnotations;
+import org.stianloader.micromixin.testneo.testenv.annotations.IncludeClasses.IncludeFailingClass;
 import org.stianloader.micromixin.testneo.testenv.annotations.IncludeClasses.IncludePassingClasses;
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeArgument;
 import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
-import org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget.WrapOpCancellable;
 
 @IncludePassingClasses({
-    WrapOpCancellable.class
+    WrapOpMixinsTarget.WrapOpCancellable.class
+})
+@IncludeFailingClass({
+    WrapOpMixinsTarget.WrapOpCancellableNonTrailing.class
 })
 public class WrapOpMixinsTarget {
+
     public static class WrapOpCancellable {
         @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCI")
         @ExpectSignaller(signalValue = 4)
@@ -49,6 +53,36 @@ public class WrapOpMixinsTarget {
             Signaller.setSignal(8);
         }
 
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ2")
+        @ExpectSignaller(signalValue = 8, args = {
+                @InvokeArgument(longValue = 1, type = long.class),
+                @InvokeArgument(longValue = 4, type = long.class)
+        })
+        @ExpectSignaller(signalValue = 2, args = {
+                @InvokeArgument(longValue = 3, type = long.class),
+                @InvokeArgument(longValue = 3, type = long.class)
+        })
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignals.class})
+        public static void testConditionallyUsedCIWithArgJ2(long flagJ, long flagJ2) {
+            ((IntConsumer) Signaller::setSignal).accept(1);
+
+            Signaller.setSignal(8);
+        }
+
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ3")
+        @ExpectSignaller(signalValue = 9, args = {
+                @InvokeArgument(longValue = 1, type = long.class),
+                @InvokeArgument(longValue = 4, type = long.class)
+        })
+        @ExpectSignaller(signalValue = 2, args = {
+                @InvokeArgument(longValue = 3, type = long.class),
+                @InvokeArgument(longValue = 3, type = long.class)
+        })
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignals.class})
+        public static void testConditionallyUsedCIWithArgJ3(long flagJ, long flagJ2) {
+            ((IntConsumer) Signaller::setSignal).accept(1);
+        }
+
         @AssertMemberName(constraint = AssertConstraint.IS, value = "testUnusedCI")
         @ExpectSignaller(signalValue = 1)
         @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
@@ -62,6 +96,19 @@ public class WrapOpMixinsTarget {
         public static void testUsedCI() {
             ((IntConsumer) Signaller::setSignal).accept(1);
             ((IntConsumer) Signaller::setSignal).accept(4);
+        }
+    }
+
+    public static class WrapOpCancellableNonTrailing {
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ")
+        @ExpectSignaller(signalValue = 8, args = @InvokeArgument(longValue = 1, type = long.class))
+        @ExpectSignaller(signalValue = 2, args = @InvokeArgument(longValue = 3, type = long.class))
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignals.class})
+        public static void testConditionallyUsedCIWithArgJ(long flagJ) {
+            ((IntConsumer) Signaller::setSignal).accept(1);
+            ((IntConsumer) Signaller::setSignal).accept(3);
+
+            Signaller.setSignal(8);
         }
     }
 

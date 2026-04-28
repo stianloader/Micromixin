@@ -10,6 +10,7 @@ import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertConstraint;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertMemberName;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectedAnnotations;
+import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 import org.stianloader.micromixin.testneo.testenv.targets.WrapOpMixinsTarget;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
@@ -57,6 +58,32 @@ public class WrapOpMixins {
             op.call(reciever, arg1 + 1);
         }
 
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCIWithArgJ2(JJ)V" }, require = 1, allow = 1)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCIWithArgJ2")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ2", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCIWithArgJ2(IntConsumer reciever, int arg1, Operation<Void> op, long captured, long captured2, @Cancellable CallbackInfo ci) {
+            if (captured == captured2) {
+                ci.cancel();
+            }
+
+            op.call(reciever, arg1 + 1);
+        }
+
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCIWithArgJ3(JJ)V" }, require = 1, allow = 1)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCIWithArgJ3")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ3", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCIWithArgJ3(IntConsumer reciever, int arg1, Operation<Void> op, long captured, long captured2, @Cancellable CallbackInfo ci) {
+            if (captured == captured2) {
+                Signaller.setSignal(2);
+                ci.cancel();
+                return;
+            }
+
+            op.call(reciever, arg1 + 8);
+        }
+
         @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testUnusedCI()V" }, require = 1, allow = 1)
         @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testUnusedCI")
         @AssertMemberName(constraint = AssertConstraint.IS, value = "testUnusedCI", negate = true)
@@ -72,6 +99,21 @@ public class WrapOpMixins {
         private static void testUsedCI(IntConsumer reciever, int arg1, Operation<Void> op, @Cancellable CallbackInfo ci) {
             op.call(reciever, arg1 * 2);
             ci.cancel();
+        }
+    }
+
+    @Mixin(WrapOpMixinsTarget.WrapOpCancellableNonTrailing.class)
+    private static class WrapOpCancellableNonTrailing {
+        @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testConditionallyUsedCIWithArgJ(J)V" }, require = 2, allow = 2)
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testConditionallyUsedCIWithArgJ")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testConditionallyUsedCIWithArgJ(IntConsumer reciever, int arg1, Operation<Void> op, @Cancellable CallbackInfo ci, long captured) {
+            if (captured == 3) {
+                ci.cancel();
+            }
+
+            op.call(reciever, arg1 + 1);
         }
     }
 
