@@ -64,14 +64,24 @@ public class MixinHeader {
                 throw new MixinParseException("Unimplemented key in @Mixin: " + name);
             }
         }
+
         List<String> saneTargets = new ArrayList<String>();
+
         for (String t : targets) {
             if (t.charAt(0) != 'L') {
                 throw new MixinParseException("Incorrect mixin target in class " + node.name + ": " + t + " (Note: arrays and primitives are not supported.)");
             }
+
+            String saneTarget = t.substring(1, t.length() - 1);
+
+            if (saneTarget.equals(node.name)) {
+                throw new MixinParseException("The mixin class " + node.name + " is attempting to transform itself. This indicates an issue within the mixin class itself. Verify the @Mixin targets of the class.");
+            }
+
             // IMPLEMENT verify class (somehow?)
-            saneTargets.add(t.substring(1, t.length() - 1));
+            saneTargets.add(saneTarget);
         }
+
         return new MixinHeader(Collections.unmodifiableCollection(saneTargets), priority);
     }
 }
