@@ -19,6 +19,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.stianloader.micromixin.transform.api.MixinLoggingFacade;
+import org.stianloader.micromixin.transform.api.MixinTransformer;
+import org.stianloader.micromixin.transform.api.MixinVendor;
 import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinParseException;
 import org.stianloader.micromixin.transform.internal.annotation.AbstractOverlayAnnotation;
@@ -181,8 +184,20 @@ public class ArgumentCaptureContext {
     }
 
     public static enum CaptureType {
-        CANCELLABLE,
-        NORMAL_ARGUMENT;
+        CANCELLABLE("com/llamalad7/mixinextras/sugar/Cancellable"),
+        NORMAL_ARGUMENT(null);
+
+        @Nullable
+        private final String annotationName;
+
+        private CaptureType(@Nullable String annotationName) {
+            this.annotationName = annotationName;
+        }
+
+        @Nullable
+        public String getAnnotationName() {
+            return this.annotationName;
+        }
     }
 
     private static interface Capturing {
@@ -194,13 +209,32 @@ public class ArgumentCaptureContext {
 
     @NotNull
     @Contract(pure = false, mutates = "arg1")
-    private static ArgumentCaptureContext baseParse(@NotNull ClassNode mixinSourceClass, @NotNull MethodNode mixinSource, @NotNull DescString dString, int paramOffset, int lvtOffset) {
+    private static ArgumentCaptureContext baseParse(@NotNull ClassNode mixinSourceClass, @NotNull MethodNode mixinSource, @NotNull DescString dString, int paramOffset, int lvtOffset, @NotNull MixinLoggingFacade logger, @Nullable MixinVendor vendorCompatibility) {
         List<Capturing> arguments = new ArrayList<Capturing>();
         int argCaptureLVTIndex = 0; // Used for argument capture (to offset everything loaded by operand capture and other miscellaneous things)
+
+        CaptureType previousType = null;
 
         while (dString.hasNext()) {
             CaptureType captureType = ArgumentCaptureContext.getType(mixinSource.invisibleParameterAnnotations, paramOffset++);
             String type = dString.nextType();
+
+            validateCaptureType:
+            if (previousType != null && previousType != CaptureType.NORMAL_ARGUMENT && captureType == CaptureType.NORMAL_ARGUMENT) {
+
+                if (vendorCompatibility == MixinVendor.MICROMIXIN) {
+                    break validateCaptureType; // "Standard" and special (e.g. Cancellable) arguments can be interspersed in micromixin
+                } else if (vendorCompatibility == null) {
+                    logger.warn(ArgumentCaptureContext.class, "The mixin handler {}.{}{} has a parameter annotated for argument capture (i.e. it is not annotated with @Cancellable, @Share, @Local, or similar) at parameter index {}, however the parameter before that was annotated with @{}. Under sponge-like mixin implementations, this behaviour is not supported. As such, this mixin will not run in an environment using a spongeian mixin transformer. To suppress this warning message, explicitly enable the MICROMIXIN vendor compatibility mode using the '{}' system property.", mixinSourceClass.name, mixinSource.name, mixinSource.desc, paramOffset - 1, previousType.getAnnotationName(), MixinTransformer.VENDOR_COMPAT_SYSTEM_PROPERTY);
+                    break validateCaptureType;
+                } else if (vendorCompatibility.isSpongeLike()) {
+                    throw new MixinParseException("Invalid mixin handler: " + mixinSourceClass.name + "." + mixinSource.name + mixinSource.desc + " captures a @" + captureType.getAnnotationName() + "-annotated parameter before capturing a parameter without special annotations at index " + (paramOffset - 1) + ". Special parameters (such as those annotated with @Cancellable, @Share, or @Local) must come after parameters used for argument capture without additional meaning when using the " + vendorCompatibility + " vendor compatibility mode. Consider using the MICROMIXIN vendor compatibility mode, which supports this behaviour.");
+                } else {
+                    throw new UnsupportedOperationException("Unknown/Unsupported mixin vendor: " + vendorCompatibility);
+                }
+            }
+
+            previousType = captureType;
 
             if (captureType == CaptureType.NORMAL_ARGUMENT) {
                 arguments.add(new CapturedArgument(argCaptureLVTIndex, type));
@@ -266,12 +300,14 @@ public class ArgumentCaptureContext {
      * @param owner The {@link ClassNode} in which the modify handler is located in.
      * @param mixinSource The {@link MethodNode} which is the modify handler's source (as opposed to the target method, which is irrelevant)
      * @param annotationName The name of the annotation that invoked this method. For debugging reasons only (this string is added to a thrown {@link MixinParseException}).
+     * @param logger The logger to use for warning messages (mostly related to vendor compatibility warnings).
+     * @param vendorCompat The {@link MixinVendor} compatibility mode to use whilst parsing argument captures.
      * @return The {@link ArgumentCaptureContext} instance that corresponds to the {@link MethodNode MethodNode's} signature
      * with whom the insertion of argument and local capture can be more easily pulled off without having dedicated
      * implementations for every annotation.
      */
     @NotNull
-    public static ArgumentCaptureContext parseModifyHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName) {
+    public static ArgumentCaptureContext parseModifyHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName, @NotNull MixinLoggingFacade logger, @Nullable MixinVendor vendorCompat) {
         DescString dString = new DescString(mixinSource.desc);
         List<AnnotationNode>[] parameterAnnotations = mixinSource.invisibleParameterAnnotations;
 
@@ -294,7 +330,7 @@ public class ArgumentCaptureContext {
             return ArgumentCaptureContext.NO_CAPTURES;
         }
 
-        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, 1, ASMUtil.getLVTSize(returnType));
+        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, 1, ASMUtil.getLVTSize(returnType), logger, vendorCompat);
     }
 
     /**
@@ -304,12 +340,14 @@ public class ArgumentCaptureContext {
      * @param mixinSource The {@link MethodNode} which is the wrap handler's source (as opposed to the target method, which is irrelevant)
      * @param annotationName The name of the annotation that invoked this method. For debugging reasons only (this string is added to a thrown {@link MixinParseException}).
      * @param sharedBuilder A shared {@link StringBuilder} instance. The content of this builder might get overwritten.
+     * @param logger The logger to use for warning messages (mostly related to vendor compatibility warnings).
+     * @param vendorCompat The {@link MixinVendor} compatibility mode to use whilst parsing argument captures.
      * @return The {@link ArgumentCaptureContext} instance that corresponds to the {@link MethodNode MethodNode's} signature
      * with whom the insertion of argument and local capture can be more easily pulled off without having dedicated
      * implementations for every annotation.
      */
     @NotNull
-    public static ArgumentCaptureContext parseWrapHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName, @NotNull StringBuilder sharedBuilder) {
+    public static ArgumentCaptureContext parseWrapHandler(@NotNull ClassNode owner, @NotNull MethodNode mixinSource, @NotNull String annotationName, @NotNull StringBuilder sharedBuilder, @NotNull MixinLoggingFacade logger, @Nullable MixinVendor vendorCompat) {
         DescString dString = new DescString(mixinSource.desc);
         List<AnnotationNode>[] parameterAnnotations = mixinSource.invisibleParameterAnnotations;
         boolean hasOperation = false;
@@ -352,7 +390,7 @@ public class ArgumentCaptureContext {
             return ArgumentCaptureContext.NO_CAPTURES;
         }
 
-        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, paramIndex, lvtIndex);
+        return ArgumentCaptureContext.baseParse(owner, mixinSource, dString, paramIndex, lvtIndex, logger, vendorCompat);
     }
 
     @NotNull

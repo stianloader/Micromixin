@@ -28,6 +28,7 @@ import org.stianloader.micromixin.transform.internal.MixinMethodStub;
 import org.stianloader.micromixin.transform.internal.MixinStub;
 import org.stianloader.micromixin.transform.internal.util.CodeCopyUtil;
 import org.stianloader.micromixin.transform.internal.util.LabelNodeMapper;
+import org.stianloader.micromixin.transform.internal.util.Objects;
 
 public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMethodStub> {
 
@@ -49,6 +50,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
                 insn = insn.getNext();
                 continue;
             }
+
             if (((MethodInsnNode) insn).name.equals("<init>") && (((MethodInsnNode) insn).owner.equals(node.superName) || ((MethodInsnNode) insn).owner.equals(node.name))) {
                 AbstractInsnNode prev = insn.getPrevious();
                 while (prev != null && prev.getOpcode() == -1) {
@@ -94,7 +96,7 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
 
         if (primaryBehaviour == MixinVendor.MICROMIXIN) {
             this.applyMicromixin(to, hctx, sourceStub, source, remapper, sharedBuilder);
-        } else if (primaryBehaviour == MixinVendor.SPONGE) {
+        } else if (primaryBehaviour.isSpongeLike()) {
             this.applySpongeian(to, hctx, sourceStub, source, remapper, sharedBuilder);
         } else {
             throw new AssertionError("Unknown, unsupported or otherwise incorrectly implemented vendor: " + primaryBehaviour);
@@ -290,29 +292,33 @@ public class VirtualConstructorMergeAnnotation extends MixinAnnotation<MixinMeth
                     return MixinVendor.MICROMIXIN;
                 } else {
                     String message = "Mixin constructor" + source.getOwner().name + ".<init>" + source.getDesc() + " is using inferred SPONGE compatibility, which requires LineNumberNodes to be known. The LineNumberNode of the superconstructor could not be ascertained. Potential fixes: Explicitly define MICROMIXIN constructor merging behaviour or keep/generate debug information for constructors of mixin classes.";
+
                     if (fatalErrors) {
                         throw new IllegalStateException("Invalid mixin: " + message);
                     } else {
                         logger.error(VirtualConstructorMergeAnnotation.class, message);
                     }
+
                     return MixinVendor.SPONGE;
                 }
-            } else if (this.vendorCompatibility == MixinVendor.SPONGE) {
+            } else if (this.vendorCompatibility.isSpongeLike()) {
                 String message = "Mixin constructor" + source.getOwner().name + ".<init>" + source.getDesc() + " is using explicitly defined SPONGE compatibility, which requires LineNumberNodes to be known. The LineNumberNode of the superconstructor could not be ascertained. Please read the micromixin documentation on differences between constructor merging implementations and consult the spongeian mixin documentation (ahem, source code) accordingly.";
+
                 if (fatalErrors) {
                     throw new IllegalStateException("Invalid mixin: " + message);
                 } else {
                     logger.error(VirtualConstructorMergeAnnotation.class, message);
                 }
-                return MixinVendor.SPONGE;
+
+                return Objects.requireNonNull(this.vendorCompatibility);
             } else {
                 throw new AssertionError("Unknown or incorrectly implemented vendor compatibility implementation: " + this.vendorCompatibility);
             }
         }
 
-        if (this.vendorCompatibility == MixinVendor.SPONGE) {
+        if (MixinVendor.isSpongeLike(this.vendorCompatibility)) {
             // Explicit compatibility checks will halt here.
-            return MixinVendor.SPONGE;
+            return Objects.requireNonNull(this.vendorCompatibility);
         }
 
         int firstLine = ((LineNumberNode) insn).line;

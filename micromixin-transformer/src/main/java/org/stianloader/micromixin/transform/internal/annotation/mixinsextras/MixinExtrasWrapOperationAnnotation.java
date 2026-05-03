@@ -60,7 +60,7 @@ public class MixinExtrasWrapOperationAnnotation extends MixinAnnotation<MixinMet
             throw new MixinParseException("The return value modifier method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
 
-        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseWrapHandler(node, method, "WrapOperation", sharedBuilder);
+        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseWrapHandler(node, method, "WrapOperation", sharedBuilder, transformer.getLogger(), transformer.getVendorCompatibilityMode());
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;

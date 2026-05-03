@@ -52,7 +52,7 @@ public class MixinModifyVariableAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("The variable modifier method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
 
-        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyVariable");
+        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyVariable", transformer.getLogger(), transformer.getVendorCompatibilityMode());
         List<MixinAtAnnotation> at = new ArrayList<MixinAtAnnotation>();
         List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;

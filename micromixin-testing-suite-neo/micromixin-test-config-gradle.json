@@ -76,7 +76,9 @@
                 "jansi.force": true,
                 "org.stianloader.sll.log.level": "INFO",
                 "classloader.dump": true,
-                "org.stianloader.micromixin.debug": true
+                "org.stianloader.micromixin.debug": true,
+                "org.stianloader.micromixin.transform.vendorCompat": "FABRIC",
+                "org.stianloader.micromixin.delayedParseException": true
             },
             "omitCapabilities": [
                 "FABRIC_ONLY"

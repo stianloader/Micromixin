@@ -109,7 +109,7 @@ public class MixinModifyConstantAnnotation extends MixinAnnotation<MixinMethodSt
             throw new MixinParseException("The constant value modifier method " + node.name + "." + method.name + method.desc + " is static, but isn't private. Consider making the method private.");
         }
 
-        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyConstant");
+        ArgumentCaptureContext argCapture = ArgumentCaptureContext.parseModifyHandler(node, method, "ModifyConstant", transformer.getLogger(), transformer.getVendorCompatibilityMode());
         List<MixinAtAnnotation> constantAts = new ArrayList<MixinAtAnnotation>();
         List<MixinSliceAnnotation> slice = new ArrayList<MixinSliceAnnotation>();
         Collection<MixinDescAnnotation> target = null;

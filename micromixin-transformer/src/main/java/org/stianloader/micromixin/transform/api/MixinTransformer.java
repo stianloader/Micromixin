@@ -8,11 +8,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.ApiStatus.AvailableSince;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +63,35 @@ public class MixinTransformer<M> {
 
     private static final boolean DEBUG = Boolean.getBoolean("org.stianloader.micromixin.debug");
 
+    /**
+     * Constant defining the name of the vendor compatibility system property.
+     *
+     * <p>Note: Please beware that javac inlines strings by default. Changes to the value of the string
+     * will as such not be reflected onto other libraries using this constant directly.
+     * As such, it is ill-advised to try to change this value.
+     *
+     * @since 0.9.0-a20260503
+     */
+    @NotNull
+    @AvailableSince("0.9.0-a20260503")
+    public static final String VENDOR_COMPAT_SYSTEM_PROPERTY = "org.stianloader.micromixin.transform.vendorCompat";
+
+    @Nullable
+    @AvailableSince("0.9.0-a20260503")
+    private static MixinVendor getDefaultVendorCompatibilityMode() {
+        Object vendorMode = System.getProperty(MixinTransformer.VENDOR_COMPAT_SYSTEM_PROPERTY);
+
+        if (vendorMode == null) {
+            return null;
+        }
+
+        if (!(vendorMode instanceof String)) {
+            throw new IllegalStateException("System argument bound to unknown class: " + vendorMode.getClass());
+        }
+
+        return MixinVendor.valueOf(vendorMode.toString().toUpperCase(Locale.ROOT));
+    }
+
     @NotNull
     private final BytecodeProvider<M> bytecodeProvider;
     private boolean delayParseExceptions = Boolean.getBoolean("org.stianloader.micromixin.delayedParseException");
@@ -81,6 +112,9 @@ public class MixinTransformer<M> {
     private final Map<ModularityAttached<M, String>, MixinConfig> packageDeclarations = new HashMap<ModularityAttached<M, String>, MixinConfig>();
     @NotNull
     private final ClassWrapperPool pool;
+    @Nullable
+    @AvailableSince("0.9.0-a20260503")
+    private MixinVendor vendorCompatibilityMode = MixinTransformer.getDefaultVendorCompatibilityMode();
 
     public MixinTransformer(@NotNull BytecodeProvider<M> bytecodeProvider, @NotNull ClassWrapperPool pool) {
         this.bytecodeProvider = bytecodeProvider;
@@ -332,5 +366,53 @@ public class MixinTransformer<M> {
                 this.getLogger().info(MixinTransformer.class, "Disassembled class file:\n", sw);
             }
         }
+    }
+
+    /**
+     * The vendor compatibility mode is a flag that defines which behaviour should be used when
+     * encountering behaviour that is inconsistent across mixin vendors or mixin implementations.
+     *
+     * <p>When not explicitly set via {@link #setVendorCompatibilityMode(MixinVendor)}
+     * or the system property, a default lenient mode should be used. When behaviour that
+     * might not be supported on all platforms is used, a warning log will be printed.
+     * This lenient mode corresponds to a {@link MixinVendor} value of {@code null}.
+     *
+     * <p>The default value of this flag is defined by the {@link MixinTransformer#VENDOR_COMPAT_SYSTEM_PROPERTY}
+     * system property. The value of that property may be one of the {@link Enum#name()}
+     * values within the {@link MixinVendor} enumeration.
+     *
+     * @return the current {@link MixinVendor} that is set via {@link #setVendorCompatibilityMode(MixinVendor)}
+     * or the system property
+     * @since 0.9.0-a20260503
+     */
+    @Nullable
+    @AvailableSince("0.9.0-a20260503")
+    public MixinVendor getVendorCompatibilityMode() {
+        return this.vendorCompatibilityMode;
+    }
+
+    /**
+     * The vendor compatibility mode is a flag that defines which behaviour should be used when
+     * encountering behaviour that is inconsistent across mixin vendors or mixin implementations.
+     *
+     * <p>When not explicitly set via {@link #setVendorCompatibilityMode(MixinVendor)}
+     * or the system property, a default lenient mode should be used. When behaviour that
+     * might not be supported on all platforms is used, a warning log will be printed.
+     * This lenient mode corresponds to a {@link MixinVendor} value of {@code null}.
+     *
+     * <p>The default value of this flag is defined by the {@link MixinTransformer#VENDOR_COMPAT_SYSTEM_PROPERTY}
+     * system property. The value of that property may be one of the {@link Enum#name()}
+     * values within the {@link MixinVendor} enumeration.
+     *
+     * <p>Note that in the future, this flag could be overridden on a per-mixin
+     * basis via annotations or an equivalent framework. However, as of writing (30 April 2026),
+     * such a framework does not yet exist.
+     *
+     * @param vendorCompatibilityMode The {@link MixinVendor} implementation to now use.
+     * @since 0.9.0-a20260503
+     */
+    @AvailableSince("0.9.0-a20260503")
+    public void setVendorCompatibilityMode(@Nullable MixinVendor vendorCompatibilityMode) {
+        this.vendorCompatibilityMode = vendorCompatibilityMode;
     }
 }
