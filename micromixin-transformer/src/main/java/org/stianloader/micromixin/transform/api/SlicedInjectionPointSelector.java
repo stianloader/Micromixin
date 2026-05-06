@@ -84,7 +84,10 @@ public class SlicedInjectionPointSelector {
     @Nullable
     public AbstractInsnNode getFirstInsn(@NotNull MethodNode method, @NotNull SimpleRemapper remapper, @NotNull StringBuilder sharedBuilder) {
         AbstractInsnNode insn = this.selector.getFirstInsn(method, this.from, this.to, remapper, sharedBuilder);
-        if (this.offset == 0) {
+
+        if (insn == null) {
+            return null;
+        } else if (this.offset == 0) {
             return insn;
         } else {
             return ASMUtil.shiftInsn(insn, this.offset);
