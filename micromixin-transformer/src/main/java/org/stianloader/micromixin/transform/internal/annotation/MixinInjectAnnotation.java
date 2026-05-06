@@ -469,6 +469,10 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
         LocalCaptureResult result = LocalsCapture.captureLocals(targetClass, target, Objects.requireNonNull(inspectionTarget), this.transformer.getPool());
 
+        if (result.error != null) {
+            throw new IllegalStateException("Cannot evaluate local capture for handler " + handlerOwner.name + "." + this.injectSource.name + this.injectSource.desc + " targetting an instruction within " + targetClass.name + "." + target.name + target.desc, result.error);
+        }
+
         int initialFrameSize = ASMUtil.getInitialFrameSize(target);
         Frame<BasicValue> frame = result.frame;
         List<String> requestedLocals = new ArrayList<String>();
@@ -554,7 +558,8 @@ public final class MixinInjectAnnotation extends MixinAnnotation<MixinMethodStub
 
         if (this.locals.equals(MixinInjectAnnotation.CAPTURE_LOCALS_FAIL_HARD)) {
             if (errorMessage != null) {
-                throw new Error(errorMessage);
+                // Mixin javadocs requests that we throw an Error here, but honestly that probably does more harm than good by eluding certain try-catch statements.
+                throw new IllegalStateException(errorMessage);
             }
         } else {
             throw new IllegalStateException("Unsupported local capture flag: \"" + this.locals + "\"");

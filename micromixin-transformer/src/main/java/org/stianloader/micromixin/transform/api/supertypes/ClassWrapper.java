@@ -24,6 +24,7 @@ public class ClassWrapper {
     public ClassWrapper(@NotNull String name, @Nullable String superName, @NotNull String[] superInterfaces, boolean isInterface, @NotNull ClassWrapperPool pool) {
         this.name = name;
         this.pool = pool;
+
         if (name.equals("java/lang/Object")) {
             this.itf = false;
             this.superInterfaces = new String[0];
@@ -40,6 +41,7 @@ public class ClassWrapper {
         if (obj instanceof ClassWrapper) {
             return ((ClassWrapper) obj).getName().equals(this.getName());
         }
+
         return false;
     }
 
@@ -55,8 +57,10 @@ public class ClassWrapper {
     @NotNull
     public Set<String> getAllImplementatingInterfaces() {
         Set<String> allInterfacesCache = this.allInterfacesCache;
+
         if (allInterfacesCache == null) {
             String superName = this.superName;
+
             if (superName == null) {
                 // Probably java/lang/Object
                 this.allInterfacesCache = allInterfacesCache = Collections.emptySet();
@@ -64,6 +68,7 @@ public class ClassWrapper {
             }
 
             allInterfacesCache = new HashSet<String>();
+
             for (String interfaceName : getSuperInterfacesName()) {
                 allInterfacesCache.addAll(this.pool.get(interfaceName).getAllImplementatingInterfaces());
             }
@@ -74,6 +79,7 @@ public class ClassWrapper {
                 allInterfacesCache.addAll(this.pool.get(superName).getAllImplementatingInterfaces());
             }
         }
+
         return allInterfacesCache;
     }
 
@@ -93,10 +99,12 @@ public class ClassWrapper {
     }
 
     public ClassWrapper getSuperWrapper() {
-        String superName = getSuper();
+        String superName = this.getSuper();
+
         if (superName == null) {
             throw new IllegalStateException(this.name + " does not have a super type.");
         }
+
         return this.pool.get(superName);
     }
 

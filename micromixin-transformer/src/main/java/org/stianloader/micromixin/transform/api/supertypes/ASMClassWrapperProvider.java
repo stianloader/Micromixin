@@ -12,12 +12,15 @@ public abstract class ASMClassWrapperProvider implements ClassWrapperProvider {
     @Override
     @Nullable
     public ClassWrapper provide(@NotNull String name, @NotNull ClassWrapperPool pool) {
-        ClassNode node = getNode(name);
+        ClassNode node = this.getNode(name);
+
         if (node == null) {
             return null;
         }
+
         String[] interfaces = new String[node.interfaces.size()];
         node.interfaces.toArray(interfaces);
+
         return new ClassWrapper(node.name, node.superName, interfaces,
                 (node.access & Opcodes.ACC_INTERFACE) != 0, pool);
     }

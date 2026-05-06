@@ -23,9 +23,10 @@ public class LocalsCapture {
     @NotNull
     public static LocalCaptureResult captureLocals(@NotNull ClassNode owner, @NotNull MethodNode method, @NotNull AbstractInsnNode inspectionTarget, @NotNull ClassWrapperPool pool) {
         Analyzer<BasicValue> analyzer = new Analyzer<BasicValue>(new MicromixinVerifier(pool));
+
         try {
             Frame<BasicValue>[] frames = analyzer.analyzeAndComputeMaxs(owner.name, method);
-            return new LocalCaptureResult(owner, method, getFrameAt(frames, method, inspectionTarget), frames);
+            return new LocalCaptureResult(owner, method, LocalsCapture.getFrameAt(frames, method, inspectionTarget), frames);
         } catch (AnalyzerException e) {
             return new LocalCaptureResult(owner, method, e);
         } catch (RuntimeException e) {
@@ -36,6 +37,7 @@ public class LocalsCapture {
     @Nullable
     private static <T extends Value> Frame<T> getFrameAt(Frame<T>[] frames, @NotNull MethodNode method, @NotNull AbstractInsnNode inspectionTarget) {
         int index = 0;
+
         for (AbstractInsnNode insn = method.instructions.getFirst(); insn != inspectionTarget; insn = insn.getNext()) {
             if (insn instanceof FrameNode) {
                 // TODO are frame nodes counted or no?
@@ -53,24 +55,31 @@ public class LocalsCapture {
 
         try {
             Frame<BasicValue>[] frames = analyzer.analyzeAndComputeMaxs(owner.name, method);
+
             for (AbstractInsnNode target : inspectionTargets) {
-                result.put(target, new LocalCaptureResult(owner, method, getFrameAt(frames, method, Objects.requireNonNull(target, "An element in the `inspectionTargets` list is null, but that is not permitted.")), frames));
+                result.put(target, new LocalCaptureResult(owner, method, LocalsCapture.getFrameAt(frames, method, Objects.requireNonNull(target, "An element in the `inspectionTargets` list is null, but that is not permitted.")), frames));
             }
+
             return result;
         } catch (AnalyzerException e) {
             LocalCaptureResult error = new LocalCaptureResult(owner, method, e);
+
             for (AbstractInsnNode insn : inspectionTargets) {
                 result.put(insn, error);
             }
+
             return result;
         } catch (RuntimeException e) {
             LocalCaptureResult error = new LocalCaptureResult(owner, method, e);
+
             for (AbstractInsnNode insn : inspectionTargets) {
                 if (result.containsKey(insn)) {
                     continue;
                 }
+
                 result.put(insn, error);
             }
+
             return result;
         }
     }

@@ -38,27 +38,30 @@ public class ClassWrapperPool {
 
     public boolean canAssign(@NotNull ClassWrapper superType, @NotNull ClassWrapper subType) {
         final String name = superType.getName();
+
         if (superType.isInterface()) {
             return this.isImplementingInterface(subType, name);
         } else {
             for (ClassWrapper type = subType; type != null; type = type.getSuperWrapper()) {
                 if (name.equals(type.getName()) || name.equals(type.getSuper())) {
                     return true;
-                }
-                if (type.getName().equals("java/lang/Object")) {
+                } else if (type.getName().equals("java/lang/Object")) {
                     return false;
                 }
             }
         }
+
         return false;
     }
 
     @NotNull
     public ClassWrapper get(@NotNull String className) {
         ClassWrapper wrapper = this.optGet(className);
+
         if (wrapper != null) {
             return wrapper;
         }
+
         throw new IllegalStateException("Wrapper for class not found for class: " + className);
     }
 
@@ -97,6 +100,7 @@ public class ClassWrapperPool {
         if (clazz.getName().equals("java/lang/Object")) {
             return false;
         }
+
         for (String interfaces : clazz.getSuperInterfacesName()) {
             if (interfaces.equals(interfaceName)) {
                 return true;
@@ -106,26 +110,35 @@ public class ClassWrapperPool {
                 }
             }
         }
+
         if (clazz.isInterface()) {
+            // interfaces cannot have meaningful superclasses
             return false;
         }
+
         return this.isImplementingInterface(clazz.getSuperWrapper(), interfaceName);
     }
 
     @Nullable
     public ClassWrapper optGet(@NotNull String className) {
+        if (className.isEmpty()) {
+            throw new IllegalArgumentException("className may not be an empty string");
+        } else if (className.codePointBefore(className.length()) == ';') {
+            throw new IllegalArgumentException("Invalid class name (accidentally used an array type?): " + className);
+        }
+
         ClassWrapper wrapper = this.wrappers.get(className);
         if (wrapper != null) {
             return wrapper;
         }
+
         for (ClassWrapperProvider provider : this.providers) {
-            wrapper = provider.provide(className, this);
-            if (wrapper == null) {
-                continue;
+            if ((wrapper = provider.provide(className, this)) != null) {
+                this.wrappers.put(className, wrapper);
+                return wrapper;
             }
-            this.wrappers.put(className, wrapper);
-            return wrapper;
         }
+
         return null;
     }
 }

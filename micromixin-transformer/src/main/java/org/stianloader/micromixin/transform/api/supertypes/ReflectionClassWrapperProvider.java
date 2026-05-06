@@ -15,6 +15,7 @@ public class ReflectionClassWrapperProvider implements ClassWrapperProvider {
     @Nullable
     public ClassWrapper provide(@NotNull String className, @NotNull ClassWrapperPool pool) {
         Class<?> clazz;
+
         try {
             clazz = Class.forName(className.replace('/', '.'), false, this.loader);
         } catch (ClassNotFoundException e) {
@@ -25,18 +26,23 @@ public class ReflectionClassWrapperProvider implements ClassWrapperProvider {
             // in case of a transformation failure)
             return null;
         }
+
         boolean itf = clazz.isInterface();
         String superName;
+
         if (itf) {
             superName = "java/lang/Object";
         } else {
             superName = clazz.getSuperclass().getName().replace('.', '/');
         }
+
         Class<?>[] interfaces = clazz.getInterfaces();
         String[] superInterfaces = new String[interfaces.length];
+
         for (int i = 0; i < interfaces.length; i++) {
             superInterfaces[i] = interfaces[i].getName().replace('.', '/');
         }
+
         return new ClassWrapper(className, superName, superInterfaces, itf, pool);
     }
 }
