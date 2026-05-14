@@ -100,6 +100,19 @@ public class WrapOpMixinsTarget {
         }
     }
 
+    public static class WrapOpCancellableNonTrailing {
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ")
+        @ExpectSignaller(signalValue = 8, args = @InvokeArgument(longValue = 1, type = long.class))
+        @ExpectSignaller(signalValue = 2, args = @InvokeArgument(longValue = 3, type = long.class))
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignals.class})
+        public static void testConditionallyUsedCIWithArgJ(long flagJ) {
+            ((IntConsumer) Signaller::setSignal).accept(1);
+            ((IntConsumer) Signaller::setSignal).accept(3);
+
+            Signaller.setSignal(8);
+        }
+    }
+
     @AssertMemberName(constraint = AssertConstraint.IS, value = "testLargeArgCount")
     @ExpectSignaller(signalValue = 0)
     @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
@@ -116,17 +129,20 @@ public class WrapOpMixinsTarget {
         Signaller.setSignal(v ? 1 : 0);
     }
 
-    public static class WrapOpCancellableNonTrailing {
-        @AssertMemberName(constraint = AssertConstraint.IS, value = "testConditionallyUsedCIWithArgJ")
-        @ExpectSignaller(signalValue = 8, args = @InvokeArgument(longValue = 1, type = long.class))
-        @ExpectSignaller(signalValue = 2, args = @InvokeArgument(longValue = 3, type = long.class))
-        @ExpectedAnnotations({AssertMemberName.class, ExpectSignals.class})
-        public static void testConditionallyUsedCIWithArgJ(long flagJ) {
-            ((IntConsumer) Signaller::setSignal).accept(1);
-            ((IntConsumer) Signaller::setSignal).accept(3);
+    @AssertMemberName(constraint = AssertConstraint.IS, value = "testLargeArgCountVirt")
+    @ExpectSignaller(signalValue = 0)
+    @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
+    public void testLargeArgCountVirt() {
+        boolean v = Arrays.equals(
+            new short[] { 1, 2, 3, 4 },
+            1,
+            3,
+            new short[] { 2, 3, 5 },
+            0,
+            2
+        );
 
-            Signaller.setSignal(8);
-        }
+        Signaller.setSignal(v ? 1 : 0);
     }
 
     @AssertMemberName(constraint = AssertConstraint.IS, value = "testWrapOpSI")

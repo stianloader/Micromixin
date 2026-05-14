@@ -228,7 +228,8 @@ public class MixinExtrasWrapOperationAnnotation extends MixinAnnotation<MixinMet
 
             if ((handlerNode.access & Opcodes.ACC_STATIC) == 0) {
                 opcode = Opcodes.INVOKEVIRTUAL;
-                ASMUtil.moveStackHead(entry.targetedMethod, entry.shiftedInstruction, entry.shiftedInstruction, expectedOperandTypes, expectedOperandTypes.size(), injectBefore, injectAfter);
+                InsnList afterLoad = new InsnList();
+                ASMUtil.moveStackHead(entry.targetedMethod, entry.shiftedInstruction, entry.shiftedInstruction, expectedOperandTypes, expectedOperandTypes.size(), injectBefore, afterLoad);
                 injectBefore.add(new VarInsnNode(Opcodes.ALOAD, 0));
 
                 if (!expectedOperandTypes.isEmpty()) {
@@ -241,6 +242,7 @@ public class MixinExtrasWrapOperationAnnotation extends MixinAnnotation<MixinMet
                     }
                 }
 
+                injectBefore.add(afterLoad);
             } else {
                 opcode = Opcodes.INVOKESTATIC;
             }
