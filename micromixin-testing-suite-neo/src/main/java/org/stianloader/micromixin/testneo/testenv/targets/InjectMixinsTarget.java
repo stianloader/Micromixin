@@ -2,15 +2,22 @@ package org.stianloader.micromixin.testneo.testenv.targets;
 
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertConstraint;
 import org.stianloader.micromixin.testneo.testenv.annotations.AssertMemberNames.AssertMemberName;
+
+import java.util.Arrays;
+
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectSignaller;
 import org.stianloader.micromixin.testneo.testenv.annotations.ExpectedAnnotations;
 import org.stianloader.micromixin.testneo.testenv.annotations.IncludeClasses.IncludeFailingClass;
+import org.stianloader.micromixin.testneo.testenv.annotations.IncludeClasses.IncludePassingClasses;
 import org.stianloader.micromixin.testneo.testenv.annotations.InvokeArgument;
 import org.stianloader.micromixin.testneo.testenv.communication.Signaller;
 
 @IncludeFailingClass({
     InjectMixinsTarget.CaptureArgumentsOverflow.class,
     InjectMixinsTarget.WrongCallbackInfoClass.class
+})
+@IncludePassingClasses({
+    InjectMixinsTarget.DotNames.class
 })
 public class InjectMixinsTarget {
 
@@ -20,6 +27,26 @@ public class InjectMixinsTarget {
         @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
         public final void captureArgumentsOverflow() {
             // nothing
+        }
+    }
+
+    public static class DotNames {
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testDotNames")
+        @ExpectSignaller(signalValue = 2)
+        @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
+        public static void testDotNames() {
+            boolean v = Arrays.equals(
+                new short[] { 1, 2, 3, 4 },
+                1,
+                3,
+                new short[] { 2, 3, 5 },
+                0,
+                2
+            );
+
+            if (!v) {
+                Signaller.setSignal(1);
+            }
         }
     }
 

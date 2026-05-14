@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -21,7 +22,8 @@ public class SelfmodificationTest {
     public void testForbiddenSelfmodification() throws InvalidMixinConfigException {
         BytecodeProvider<Void> bcProvider = new BytecodeProvider<Void>() {
             @Override
-            public ClassNode getClassNode(Void modularityAttachment, String internalName) throws ClassNotFoundException {
+            @NotNull
+            public ClassNode getClassNode(Void modularityAttachment, @NotNull String internalName) throws ClassNotFoundException {
                 if (internalName.equals("x/MixinTestClazz")) {
                     ClassNode node = new ClassNode();
                     node.visit(Opcodes.V1_8, 0, internalName, null, "java/lang/Object", null);

@@ -79,27 +79,36 @@ public class MultiplexLineNumberAllocator {
         SMAPRoot smap = new SMAPRoot(this.primaryFileName, stratum);
         List<FileSectionEntry> fileEntries = new ArrayList<FileSectionEntry>();
         List<LineInfo> lineInfos = new ArrayList<LineInfo>();
+
         for (LineAllocationFrame frame : this.allocationFrames) {
             String fileName = frame.allocator.sourceFile;
+
             if (fileName == null) {
                 fileName = "sourceFile";
             }
+
             String sourcePath = frame.allocator.nestHostClass;
+
             if (sourcePath == null) {
                 sourcePath = frame.allocator.outerClass;
+
                 if (sourcePath == null) {
                     sourcePath = frame.allocator.name;
                 }
             }
+
             int firstDollar = sourcePath.indexOf('$');
+
             if (firstDollar != -1) {
                 sourcePath = sourcePath.substring(0, firstDollar);
             }
+
             sourcePath += ".java";
             int fileId = this.fileIds.get(frame.allocator.name).intValue();
             fileEntries.add(new FileSectionEntry(fileId, fileName, sourcePath));
             lineInfos.add(new LineInfo(frame.allocatorStart, fileId, frame.allocationSize, 1, frame.allocatedStart));
         }
+
         FileSection fileSection = new FileSection(fileEntries);
         LineSection lineSection = new LineSection(lineInfos);
         smap.appendStratum(stratum, fileSection, lineSection, "org.stianloader.micromixin.transform");

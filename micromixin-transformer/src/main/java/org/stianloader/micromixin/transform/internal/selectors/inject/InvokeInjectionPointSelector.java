@@ -97,6 +97,10 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
         AbstractInsnNode insn = from == null ? method.instructions.getFirst() : from.getFirstInsn(method, remapper, sharedBuilder);
         AbstractInsnNode guard = to == null ? method.instructions.getLast() : to.getFirstInsn(method, remapper, sharedBuilder);
 
+        if (insn == null) {
+            throw new IllegalStateException("'from' selector did not match any instructions for method " + method.name + method.desc + ", using 'from' selector: " + from);
+        }
+
         for (; insn != null; insn = insn.getNext()) {
             if (insn instanceof MethodInsnNode) {
                 filter: {
@@ -112,8 +116,6 @@ public class InvokeInjectionPointSelector extends InjectionPointSelector {
             if(insn == guard) {
                 break;
             }
-
-            assert insn != null : "Exhausted instruction list"; // This exists to satisfy eclipse. Of course, the error condition will be dealt without relying on assertions in practice.
         }
 
         if (insn == null) {

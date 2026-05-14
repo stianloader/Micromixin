@@ -141,6 +141,14 @@ public class WrapOpMixins {
         op.call(1);
     }
 
+    @WrapOperation(at = { @At(value = "INVOKE", target = "Ljava/util/Arrays;equals([SII[SII)Z") }, method = { "testLargeArgCount()V" }, require = 1, allow = 1)
+    @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "onTestLargeArgCount")
+    @AssertMemberName(constraint = AssertConstraint.IS, value = "onTestLargeArgCount", negate = true)
+    @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+    private static boolean onTestLargeArgCount(short[] a, int b, int c, short[] d, int e, int f, Operation<Boolean> operation) {
+        return !operation.call(a, b, c, d, e, f);
+    }
+
     @WrapOperation(at = { @At(value = "INVOKE", target = "accept(I)V") }, method = { "testWrapOpVI()V" }, require = 1, allow = 1)
     @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "onSignalTestWrapOpVI")
     @AssertMemberName(constraint = AssertConstraint.IS, value = "onSignalTestWrapOpVI", negate = true)

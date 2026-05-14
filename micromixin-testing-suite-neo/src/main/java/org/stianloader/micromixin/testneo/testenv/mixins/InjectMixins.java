@@ -25,6 +25,17 @@ public class InjectMixins {
         }
     }
 
+    @Mixin(InjectMixinsTarget.DotNames.class)
+    private static class DotNames {
+        @Inject(method = { "testDotNames()V" }, at = { @At(value = "INVOKE", target = "java.util.Arrays.equals([SII[SII)Z") })
+        @AssertMemberName(constraint = AssertConstraint.CONTAINS, value = "testDotNames")
+        @AssertMemberName(constraint = AssertConstraint.IS, value = "testDotNames", negate = true)
+        @ExpectedAnnotations({ ExpectedAnnotations.class, AssertMemberNames.class })
+        private static void testDotNames(CallbackInfo ci) {
+            Signaller.setSignal(2);
+        }
+    }
+
     @Mixin(InjectMixinsTarget.WrongCallbackInfoClass.class)
     private static class WrongCallbackInfoClass {
         @Inject(method = "wrongCallbackInfoClass", at = @At("TAIL"))

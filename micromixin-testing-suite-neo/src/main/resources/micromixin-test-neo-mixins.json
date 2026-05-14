@@ -7,6 +7,7 @@
   "mixins": [
     "InjectMixins",
     "InjectMixins$CaptureArgumentsOverflow",
+    "InjectMixins$DotNames",
     "InjectMixins$WrongCallbackInfoClass",
     "OverwriteMixins",
     "LocalCaptureMixins",

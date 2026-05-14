@@ -1,5 +1,6 @@
 package org.stianloader.micromixin.testneo.testenv.targets;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -97,6 +98,22 @@ public class WrapOpMixinsTarget {
             ((IntConsumer) Signaller::setSignal).accept(1);
             ((IntConsumer) Signaller::setSignal).accept(4);
         }
+    }
+
+    @AssertMemberName(constraint = AssertConstraint.IS, value = "testLargeArgCount")
+    @ExpectSignaller(signalValue = 0)
+    @ExpectedAnnotations({AssertMemberName.class, ExpectSignaller.class})
+    public static void testLargeArgCount() {
+        boolean v = Arrays.equals(
+            new short[] { 1, 2, 3, 4 },
+            1,
+            3,
+            new short[] { 2, 3, 5 },
+            0,
+            2
+        );
+
+        Signaller.setSignal(v ? 1 : 0);
     }
 
     public static class WrapOpCancellableNonTrailing {

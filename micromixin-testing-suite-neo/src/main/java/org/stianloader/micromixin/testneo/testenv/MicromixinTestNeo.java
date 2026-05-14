@@ -183,7 +183,7 @@ public class MicromixinTestNeo {
 
         for (Method method : declaredMethods) {
 
-            if (method.isSynthetic() && (method.getName().startsWith("lambda$") || method.getName().startsWith("mixinextras$bridge$"))) {
+            if (method.isSynthetic() && (method.getName().startsWith("lambda$") || method.getName().startsWith("mixinextras$bridge$") || method.getName().equals("$jacocoInit"))) {
                 continue;
             }
 

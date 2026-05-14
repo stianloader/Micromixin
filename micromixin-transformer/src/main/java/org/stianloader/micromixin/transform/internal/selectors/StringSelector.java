@@ -1,7 +1,9 @@
 package org.stianloader.micromixin.transform.internal.selectors;
 
+import org.jetbrains.annotations.ApiStatus.Internal;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -15,11 +17,11 @@ import org.stianloader.micromixin.transform.internal.MixinStub;
 public class StringSelector implements MixinTargetSelector, InjectionPointConstraint {
 
     @Nullable
-    private final String owner;
+    private final String desc;
     @Nullable
     private final String name;
     @Nullable
-    private final String desc;
+    private final String owner;
 
     public StringSelector(@NotNull String text) {
         // Explicit target selectors can contain whitespace characters (such as space or tab)
@@ -53,9 +55,23 @@ public class StringSelector implements MixinTargetSelector, InjectionPointConstr
             this.owner = text.substring(1, semicolonIndex);
             startName = semicolonIndex + 1;
         } else {
-            this.owner = null;
-            startName = 0;
+            int dotIndex;
+
+            if (descStartIndex >= 0) {
+                dotIndex = text.lastIndexOf('.', descStartIndex);
+            } else {
+                dotIndex = -1; // Temporary measure till I figure that case out
+            }
+
+            if (dotIndex < 0) {
+                this.owner = null;
+                startName = 0;
+            } else {
+                this.owner = text.substring(0, dotIndex).replace('.', '/');
+                startName = dotIndex + 1;
+            }
         }
+
         if (descStartIndex == -1) {
             this.desc = null;
             endName = text.length();
@@ -66,6 +82,7 @@ public class StringSelector implements MixinTargetSelector, InjectionPointConstr
                 endName--;
             }
         }
+
         if (endName > startName) {
             this.name = text.substring(startName, endName);
         } else {
@@ -79,27 +96,25 @@ public class StringSelector implements MixinTargetSelector, InjectionPointConstr
         this.desc = desc;
     }
 
-    @Override
+    @Internal
+    @VisibleForTesting
     @Nullable
-    public MethodNode selectMethod(@NotNull ClassNode within, @NotNull MixinStub source) {
-        for (MethodNode method : within.methods) {
-            if (this.name != null && !method.name.equals(this.name)) {
-                continue;
-            }
-            if (this.desc != null && !method.desc.equals(this.desc)) {
-                continue;
-            }
-            if (this.owner != null && !within.name.equals(this.owner)) {
-                continue;
-            }
-            return method;
-        }
-        return null;
+    public String getDesc() {
+        return this.desc;
     }
 
-    @Override
-    public String toString() {
-        return "StringSelector[owner = " + this.owner + ", name = " + name + ", desc = " + desc + "]";
+    @Internal
+    @VisibleForTesting
+    @Nullable
+    public String getName() {
+        return this.name;
+    }
+
+    @Internal
+    @VisibleForTesting
+    @Nullable
+    public String getOwner() {
+        return this.owner;
     }
 
     @Override
@@ -125,5 +140,28 @@ public class StringSelector implements MixinTargetSelector, InjectionPointConstr
                     && (desc == null || desc.equals(fInsn.desc));
         }
         throw new IllegalArgumentException("Instructions of type " + insn.getClass().getName() + " cannot be verified by " + this.toString() + ". This indicates a bug in Micromixin or one of custom-made injection point selectors (should those be present).");
+    }
+
+    @Override
+    @Nullable
+    public MethodNode selectMethod(@NotNull ClassNode within, @NotNull MixinStub source) {
+        for (MethodNode method : within.methods) {
+            if (this.name != null && !method.name.equals(this.name)) {
+                continue;
+            }
+            if (this.desc != null && !method.desc.equals(this.desc)) {
+                continue;
+            }
+            if (this.owner != null && !within.name.equals(this.owner)) {
+                continue;
+            }
+            return method;
+        }
+        return null;
+    }
+
+    @Override
+    public String toString() {
+        return "StringSelector[owner = " + this.owner + ", name = " + name + ", desc = " + desc + "]";
     }
 }
